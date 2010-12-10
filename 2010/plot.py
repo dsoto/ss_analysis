@@ -44,49 +44,49 @@ def getHeaderStrings():
         d[i]=h
     return d
 
-plotColumn = 2
-plotDate = '12/07'
+plotColumnList = [1,6]
+plotDateList = ['12/02','12/03','12/04']
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
 #plotCircuitList = ['201','202','203','205','206','207','209','210','211','212']
 downsample = 20
 d = getHeaderStrings()
 
-fig = plt.figure()
-axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
 
 
 # create circuits loop here
-for plotCircuit in plotCircuitList:
-    # walk through files and generate temp file-like object
-    data = getData(plotCircuit, plotDate, downsample)
-    
-    if data != []:
-        # map time from float to int and then to string
-        time = map(int, data[:,0])
-        time = map(str, time)
-        
-        parsedDates = [dateutil.parser.parse(t) for t in time]
-        
-        # date2num returns a float number of seconds to represent date
-        mplDates = matplotlib.dates.date2num(parsedDates)
-        
-        axis.plot_date(mplDates, data[:,plotColumn], '.', label=plotCircuit)
+for plotColumn in plotColumnList:
+    for plotDate in plotDateList:
+        fig = plt.figure()
+        axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
 
+        for plotCircuit in plotCircuitList:
+            # walk through files and generate temp file-like object
+            data = getData(plotCircuit, plotDate, downsample)
+            
+            if data != []:
+                # map time from float to int and then to string
+                time = map(int, data[:,0])
+                time = map(str, time)
+                
+                parsedDates = [dateutil.parser.parse(t) for t in time]
+                
+                # date2num returns a float number of seconds to represent date
+                mplDates = matplotlib.dates.date2num(parsedDates)
+                
+                axis.plot_date(mplDates, data[:,plotColumn], '.', label=plotCircuit)
 
-# figure out how to set range from midnight to midnight
-print d[plotColumn]
-print plotDate
-print plotCircuitList
+            
+            # figure out how to set range from midnight to midnight
 
-dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
-axis.xaxis.set_major_formatter(dateFormatter)
-axis.set_xlabel("time of day")
-axis.set_ylabel(d[plotColumn])
-axis.legend(loc=(1.0,0.0))
-plotFileName = plotDate[0:2] + plotDate[3:5] + '_' + d[plotColumn]
-print plotFileName
-fig.savefig(plotFileName + ".pdf")
-#plt.show()
+        dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
+        axis.xaxis.set_major_formatter(dateFormatter)
+        axis.set_xlabel("time of day")
+        axis.set_ylabel(d[plotColumn])
+        axis.legend(loc=(1.0,0.0))
+        plotFileName = plotDate[0:2] + plotDate[3:5] + '_' + d[plotColumn]
+        print plotFileName
+        fig.savefig(plotFileName + ".pdf")
+        #plt.show()
 
 
 
