@@ -52,7 +52,7 @@ plotDateList = ['12/02','12/03','12/04','12/05','12/06','12/07','12/08','12/09']
 #plotDateList = ['12/06']
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
-plotSymbolList  = ['o', 'o', 'o', 'o', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
+plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
 #plotCircuitList = ['201','202','203','205','206','207','209','210','211','212']
 downsample = 100
 d = getHeaderStrings()
@@ -92,9 +92,11 @@ for plotColumn in plotColumnList:
         # create data output text space on figure
         dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
         axis.xaxis.set_major_formatter(dateFormatter)
+        fig.autofmt_xdate()
+        axis.grid()
         axis.set_xlabel("time of day")
         axis.set_ylabel(d[plotColumn])
-        axis.legend(loc=(1.0,0.0))
+        axis.legend(loc=(1.0,0.0), title='Circuit', numpoints=1)
         plotFileName = plotDate[0:2] + plotDate[3:5] + '_' + d[plotColumn]
         print plotFileName
         fig.savefig(plotFileName + ".pdf")
