@@ -46,12 +46,15 @@ def getHeaderStrings():
         d[i]=h
     return d
 
-plotColumnList = [1,2,6]
-plotDateList = ['12/02','12/03','12/04']
-plotDateList = ['12/06']
+#plotColumnList = [1,2,6]
+plotColumnList = [5]
+plotDateList = ['12/02','12/03','12/04','12/05','12/06','12/07','12/08','12/09']
+#plotDateList = ['12/06']
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
+plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
+plotSymbolList  = ['o', 'o', 'o', 'o', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
 #plotCircuitList = ['201','202','203','205','206','207','209','210','211','212']
-downsample = 20
+downsample = 100
 d = getHeaderStrings()
 
 
@@ -63,7 +66,7 @@ for plotColumn in plotColumnList:
         fig = plt.figure()
         axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
 
-        for plotCircuit in plotCircuitList:
+        for i, plotCircuit in enumerate(plotCircuitList):
             # walk through files and generate temp file-like object
             data = getData(plotCircuit, plotDate, downsample)
             
@@ -77,7 +80,11 @@ for plotColumn in plotColumnList:
                 # date2num returns a float number of seconds to represent date
                 mplDates = matplotlib.dates.date2num(parsedDates)
                 
-                axis.plot_date(mplDates, data[:,plotColumn], '.', label=plotCircuit)
+                axis.plot_date(mplDates, data[:,plotColumn], 
+                               marker = plotSymbolList[i], 
+                               markeredgecolor = plotColorList[i], 
+                               markerfacecolor = 'None',
+                               label=plotCircuit)
 
             
         # figure out how to set range from midnight to midnight
