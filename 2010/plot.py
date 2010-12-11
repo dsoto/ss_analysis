@@ -24,8 +24,10 @@ def getData(plotCircuit, plotDate, downsample):
                 # deal with case of one line file
                 if data == []:
                     data = tempData
+                    if data.shape == (19,):
+                        data = data.reshape(1,19)
                 elif tempData.shape == (19,):
-                    tempData.reshape(1,19)
+                    tempData = tempData.reshape(1,19)
                 else:
                     data = np.append(data, tempData, axis=0)
     # check for nonexistent data
@@ -44,8 +46,9 @@ def getHeaderStrings():
         d[i]=h
     return d
 
-plotColumnList = [1,6]
+plotColumnList = [1,2,6]
 plotDateList = ['12/02','12/03','12/04']
+plotDateList = ['12/06']
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
 #plotCircuitList = ['201','202','203','205','206','207','209','210','211','212']
 downsample = 20
@@ -56,6 +59,7 @@ d = getHeaderStrings()
 # create circuits loop here
 for plotColumn in plotColumnList:
     for plotDate in plotDateList:
+        # figure is created for each column and date but for multiple circuits
         fig = plt.figure()
         axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
 
@@ -76,8 +80,9 @@ for plotColumn in plotColumnList:
                 axis.plot_date(mplDates, data[:,plotColumn], '.', label=plotCircuit)
 
             
-            # figure out how to set range from midnight to midnight
-
+        # figure out how to set range from midnight to midnight
+        # figure out how to slant ticks
+        # create data output text space on figure
         dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
         axis.xaxis.set_major_formatter(dateFormatter)
         axis.set_xlabel("time of day")
