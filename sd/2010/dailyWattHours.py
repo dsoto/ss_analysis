@@ -74,7 +74,7 @@ def printDate(date):
     
 
 # main loop
-dateList = ['12/02','12/03','12/04','12/05','12/06']
+dateList = ['12/06','12/07','12/08','12/09','12/10','12/11','12/12','12/13']
 
 for date in dateList:
     printDate(date)
