@@ -54,12 +54,18 @@ def printDate(date):
             for filename in filenames:
                 if filename not in outputFileList:
                     outputFileList.append(filename)
-                    wattHourDict[filename] = 0
+                    wattHourDict[filename[10:13]] = 0
 
                 # open file and integrate
                 integral = 0
                 # construct path to file
                 fullfilename = dirname + '/' + filename
+                
+                if int(date[3:5]) < 16 and '200' not in filename:
+                    wattColumn = 2
+                else:
+                    wattColumn = 1
+                
                 data = np.loadtxt(fullfilename, 
                                   delimiter = ',', 
                                   usecols   = (0, wattColumn), 
@@ -70,20 +76,33 @@ def printDate(date):
                 else:
                     integral = integrateWatts(data)
 
-                wattHourDict[filename] += integral
+                wattHourDict[filename[10:13]] += integral
                 if verbose == 1:
                     print 'file', fullfilename
                     print 'integral', integral
 
-    print date
+    print
+    print date,
     keys = wattHourDict.keys()
     keys.sort()
+    keys = ['200','201','202','203','204','205','206',
+            '207','208','209','210','211','212']    
     for key in keys:
-        print key, wattHourDict[key]
+        print key, 
+    print
+    print '',
+    for key in keys:
+        if key in wattHourDict.keys():
+            print "%.1f" % wattHourDict[key],
+        else:
+            print '0.0',
     print
 
 # main loop
-dateList = ['12/17','12/18']
+dateList = ['12/08','12/09','12/10','12/11',
+            '12/12','12/13','12/14','12/15',
+            '12/16','12/17','12/18','12/19']
+dateList = ['12/23','12/24','12/25','12/26']
 
 for date in dateList:
     printDate(date)
