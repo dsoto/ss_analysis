@@ -16,6 +16,7 @@ verbose = 0
 
 numColumns = 20
 dataDirectory = '/Users/dsoto/current/mali/logs/sd/2010'
+dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/2010'
 
 
 def getData(plotCircuit, plotDate, downsample):
