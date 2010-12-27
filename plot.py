@@ -1,11 +1,16 @@
 '''
-todo: 
+script to plot out shared solar log data
 
-make directory independent by hardcoding path to data files
-
-fix so that you can plot mains 200 by putting proper formatting of columns
-
+configure type of plot by changing variables below
 '''
+
+plotColumnList = [1,2,5,6,19]
+plotDateList = ['12/24','12/23']
+plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
+
+
+downsample = 100
+
 
 import os
 import numpy as np
@@ -36,11 +41,17 @@ def getData(plotCircuit, plotDate, downsample):
                 # usecols = [crap] is a hideous hack to avoid text string column
                 if verbose == 1:
                     print dirname + '/' + filename
+                if '200' in plotCircuit:
+                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+                               11, 12, 13, 14, 15, 16, 17, 18]
+                else:                        
+                     usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+                                11, 12, 13, 14, 15, 16, 17, 18, 20]
                 tempData = np.loadtxt(dirname+'/'+filename, 
+                                      usecols = usecols,
                                       delimiter=',', 
-                                      usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
-                                                 11, 12, 13, 14, 15, 16, 17, 18, 20],
                                       skiprows = 1)
+
                 # deal with case of one line file
                 if data == []:
                     data = tempData
@@ -86,18 +97,10 @@ def getHeaderStrings():
     return d
 
 
-plotColumnList = [1,2,5,6,19]
-#plotColumnList = range(20)
-plotDateList = ['12/25']
-#plotDateList = ['12/06']
-# currently you cannot plot MAINS 200
-plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
-#plotCircuitList = ['208']
-plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
-plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
-#plotCircuitList = ['201','202','203','205','206','207','209','210','211','212']
-downsample = 100
 d = getHeaderStrings()
+
+plotColorList  = ['k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
+plotSymbolList  = ['o', 'x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
 
 
 
@@ -109,8 +112,10 @@ for plotColumn in plotColumnList:
         axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
 
         for i, plotCircuit in enumerate(plotCircuitList):
-            # walk through files and generate temp file-like object
-            data = getData(plotCircuit, plotDate, downsample)
+            # check if trying to plot credit for MAINS otherwise it will fail
+            if not ('200' in plotCircuit and plotColumn == 19):
+                # walk through files and generate temp file-like object
+                data = getData(plotCircuit, plotDate, downsample)
             
             if data != []:
                 # map time from float to int and then to string
