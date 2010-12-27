@@ -43,18 +43,39 @@ def getData(plotCircuit, plotDate, downsample):
 
 # create dictionary of header strings
 def getHeaderStrings():
-    headerString = 'Time Stamp,Watts,Volts,Amps,Watt Hours SC20,Watt Hours Today,Max Watts,Max Volts,Max Amps,Min Watts,Min Volts,Min Amps,Power Factor,Power Cycle,Frequency,Volt Amps,Relay Not Closed,Send Rate,Machine ID,Credit'
-    headers = headerString.split(',')
+    #headerString = 'Time Stamp,Watts,Volts,Amps,Watt Hours SC20,Watt Hours Today,Max Watts,Max Volts,Max Amps,Min Watts,Min Volts,Min Amps,Power Factor,Power Cycle,Frequency,Volt Amps,Relay Not Closed,Send Rate,Machine ID,Credit'
+    #headers = headerString.split(',')
     d = {}
+    headers = ['Time Stamp',
+               'Watts',
+               'Volts',
+               'Amps',
+               'Watt Hours SC20',
+               'Watt Hours Today',
+               'Max Watts',
+               'Max Volts',
+               'Max Amps',
+               'Min Watts',
+               'Min Volts',
+               'Min Amps',
+               'Power Factor',
+               'Power Cycle',
+               'Frequency',
+               'Volt Amps',
+               'Relay Not Closed',
+               'Send Rate',
+               'Machine ID',
+               'Credit']
     for i,h in enumerate(headers):
         d[i]=h
     return d
 
 
-plotColumnList = [2,5,6,19]
-plotColumnList = [1]
-plotDateList = ['12/16']
+plotColumnList = [1,2,5,6,19]
+#plotColumnList = range(20)
+plotDateList = ['12/26','12/25']
 #plotDateList = ['12/06']
+# currently you cannot plot MAINS 200
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
 #plotCircuitList = ['208']
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
