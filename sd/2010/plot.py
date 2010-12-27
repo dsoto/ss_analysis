@@ -123,6 +123,7 @@ for plotColumn in plotColumnList:
         axis.grid()
         axis.set_xlabel("time of day")
         axis.set_ylabel(d[plotColumn])
+        axis.set_title(plotDate + " " + d[plotColumn])
         axis.legend(loc=(1.0,0.0), title='Circuit', numpoints=1)
         plotFileName = plotDate[0:2] + plotDate[3:5] + '_' + d[plotColumn]
         print 'saving:', plotFileName
