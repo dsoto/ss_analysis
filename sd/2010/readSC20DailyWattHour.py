@@ -1,4 +1,5 @@
-# script to scrape log files for daily use
+# calculate daily watt hours directly from watt logs
+# this allows comparison between value reported by SC20
 
 import os    
 import numpy as np
