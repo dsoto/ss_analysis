@@ -1,4 +1,10 @@
 '''
+todo: 
+
+make directory independent by hardcoding path to data files
+
+fix so that you can plot mains 200 by putting proper formatting of columns
+
 '''
 
 import os
@@ -9,17 +15,26 @@ import matplotlib.dates
 verbose = 0
 
 numColumns = 20
+dataDirectory = '/Users/dsoto/current/mali/logs/sd/2010'
+
 
 def getData(plotCircuit, plotDate, downsample):
     if verbose == 1:
         print 'getting data for', plotCircuit, plotDate
     data = []
-    for dirname, dirnames, filenames in os.walk(plotDate):
+    directoryToWalk = dataDirectory + '/' + plotDate
+    if verbose == 1:
+        print directoryToWalk
+    for dirname, dirnames, filenames in os.walk(directoryToWalk):
+        if verbose == 1:
+            print dirname, dirnames, filenames
         for filename in filenames:
             if plotCircuit in filename:
-                if verbose ==1:
+                if verbose == 1:
                     print 'getting data for', dirname
                 # usecols = [crap] is a hideous hack to avoid text string column
+                if verbose == 1:
+                    print dirname + '/' + filename
                 tempData = np.loadtxt(dirname+'/'+filename, 
                                       delimiter=',', 
                                       usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
@@ -38,13 +53,12 @@ def getData(plotCircuit, plotDate, downsample):
     if data != []:
         index = range(0, data.shape[0], downsample)
         data = data[index]
-                    
+    if verbose == 1:
+        print data
     return data
 
 # create dictionary of header strings
 def getHeaderStrings():
-    #headerString = 'Time Stamp,Watts,Volts,Amps,Watt Hours SC20,Watt Hours Today,Max Watts,Max Volts,Max Amps,Min Watts,Min Volts,Min Amps,Power Factor,Power Cycle,Frequency,Volt Amps,Relay Not Closed,Send Rate,Machine ID,Credit'
-    #headers = headerString.split(',')
     d = {}
     headers = ['Time Stamp',
                'Watts',
@@ -73,7 +87,7 @@ def getHeaderStrings():
 
 plotColumnList = [1,2,5,6,19]
 #plotColumnList = range(20)
-plotDateList = ['12/26','12/25']
+plotDateList = ['12/25']
 #plotDateList = ['12/06']
 # currently you cannot plot MAINS 200
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
