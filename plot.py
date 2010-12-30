@@ -5,7 +5,7 @@ configure type of plot by changing variables below
 '''
 
 plotColumnList = [1,2,5,6,19]
-plotDateList = ['12/24','12/23']
+plotDateList = ['12/28','12/29']
 plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
 
 
@@ -117,21 +117,21 @@ for plotColumn in plotColumnList:
                 # walk through files and generate temp file-like object
                 data = getData(plotCircuit, plotDate, downsample)
             
-            if data != []:
-                # map time from float to int and then to string
-                time = map(int, data[:,0])
-                time = map(str, time)
-                
-                parsedDates = [dateutil.parser.parse(t) for t in time]
-                
-                # date2num returns a float number of seconds to represent date
-                mplDates = matplotlib.dates.date2num(parsedDates)
-                
-                axis.plot_date(mplDates, data[:,plotColumn], 
-                               marker = plotSymbolList[i], 
-                               markeredgecolor = plotColorList[i], 
-                               markerfacecolor = 'None',
-                               label=plotCircuit)
+                if data != []:
+                    # map time from float to int and then to string
+                    time = map(int, data[:,0])
+                    time = map(str, time)
+                    
+                    parsedDates = [dateutil.parser.parse(t) for t in time]
+                    
+                    # date2num returns a float number of seconds to represent date
+                    mplDates = matplotlib.dates.date2num(parsedDates)
+                    
+                    axis.plot_date(mplDates, data[:,plotColumn], 
+                                   marker = plotSymbolList[i], 
+                                   markeredgecolor = plotColorList[i], 
+                                   markerfacecolor = 'None',
+                                   label=plotCircuit)
 
             
         # figure out how to set range from midnight to midnight
