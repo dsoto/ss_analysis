@@ -28,10 +28,10 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
                 else:                        
                      usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
                                 11, 12, 13, 14, 15, 16, 17, 18, 20]
-                tempData = np.loadtxt(dirname+'/'+filename, 
                     numColumns = len(usecols)
+                tempData = np.loadtxt(dirname + '/' + filename, 
                                       usecols = usecols,
-                                      delimiter=',', 
+                                      delimiter = ',', 
                                       skiprows = 1)
 
                 # deal with case of one line file
@@ -45,6 +45,7 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
                     data = np.append(data, tempData, axis=0)
     # check for nonexistent data
     if data != []:
+        # decimate data by skipping 'downsample' samples
         index = range(0, data.shape[0], downsample)
         data = data[index]
     if verbose == 1:

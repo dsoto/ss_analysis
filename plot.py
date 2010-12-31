@@ -7,10 +7,7 @@ configure type of plot by changing variables below
 plotColumnList = [1,2,5,6,19]
 plotDateList = ['12/28','12/29']
 plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
-
-
 downsample = 100
-
 
 import numpy as np
 import matplotlib.pyplot as plt
