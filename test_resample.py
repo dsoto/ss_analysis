@@ -7,20 +7,12 @@ import dateutil.parser
 import matplotlib.dates
 import datetime
 
-plotDate = '12/27'
-plotCircuit = '211'
-dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/2010'
-downsample = 1
-plotCircuitList = ['201','202','203','205','206','207','208','209','210','211','212']
-
-dateStart = datetime.datetime(2010, 12, 26)
-
 def resampleData(data, dt):
     # convert time string to seconds
-    time = map(int, data[:,0])
-    time = map(str, time)
+    #time = map(int, data[:,0])
+    #time = map(str, time)
     # parsedDates are datetime objects
-    parsedDates = [dateutil.parser.parse(t) for t in time]
+    parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
     # mplDates are days 
     mplDates = matplotlib.dates.date2num(parsedDates)
     
@@ -38,17 +30,38 @@ def resampleData(data, dt):
         delta = min(abs(oldSeconds - second))
         index = np.argmin(abs(oldSeconds - second))
         if delta < 15:
-            newPower[i] = data[index, 1]        
+            newPower[i] = data['Watts'][index]        
 
     return newSeconds, newPower
 
-newSeconds = np.arange(0, 86400+1, 60)
+def getFigure():
+    fig = plt.figure()
+    axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
+    return fig, axis
 
+def formatFigure(fig, axis):
+    dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
+    axis.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+
+plotDate = '12/27'
+plotCircuit = '211'
+dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
+downsample = 1
+plotCircuitList = ['200','201','202','203','205','206','207','208','209','210','211','212']
+plotCircuitList = ['202','203','205','206','207','208','209','210','211','212']
+dateStart = datetime.datetime(2010, 12, 26)
+dateEnd = datetime.datetime(2010, 12, 27)
+
+# make newSeconds deal with dateStart and dateEnd
+newSeconds = np.arange(0, 86400+1, 60)
 totalPower = np.zeros(len(newSeconds))
 
 for plotCircuit in plotCircuitList:
 
-    data = ssp.getData(plotCircuit, plotDate, downsample, dataDirectory)
+    #data = ssp.getData(plotCircuit, plotDate, downsample, dataDirectory)
+    data = ssp.getFormattedData(plotCircuit, dateStart, dateEnd, 1, dataDirectory)
     
     newSeconds, newPower = resampleData(data, 60)
     
@@ -58,26 +71,27 @@ for plotCircuit in plotCircuitList:
                 for second in newSeconds]
     newTime = matplotlib.dates.date2num(newTime)
     
-    time = map(int, data[:,0])
-    time = map(str, time)
+    #time = map(int, data[:,0])
+    #time = map(str, time)
     # parsedDates are datetime objects
-    parsedDates = [dateutil.parser.parse(t) for t in time]
+    parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
     # mplDates are days 
     mplDates = matplotlib.dates.date2num(parsedDates)
     
-    totalPower += newPower
+    if '200' not in plotCircuit:
+        totalPower += newPower
     
-    fig = plt.figure()
-    axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
-    axis.plot_date(newTime,newPower,'x-')
-    axis.plot_date(mplDates,data[:,1],'+')
+    fig, axis = getFigure()
+    axis.plot_date(newTime,newPower,'-')
+    axis.plot_date(mplDates,data['Watts'],'+')
+    formatFigure(fig, axis)    
     plotFileName = 'rs_' + plotCircuit + '.pdf'
     print 'writing', plotFileName
     fig.savefig(plotFileName)
 
-fig = plt.figure()
-axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
-axis.plot_date(newTime,totalPower,'x-')
+fig, axis = getFigure()
+axis.plot_date(newTime,totalPower,'-')
+formatFigure(fig, axis)
 plotFileName = 'rs_total.pdf'
 fig.savefig(plotFileName)
 
