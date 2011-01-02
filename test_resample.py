@@ -7,7 +7,7 @@ import dateutil.parser
 import matplotlib.dates
 import datetime
 
-def resampleData(data, dt):
+def resampleData(data, dateStart, dateEnd, dt):
     # convert time string to seconds
     #time = map(int, data[:,0])
     #time = map(str, time)
@@ -17,12 +17,16 @@ def resampleData(data, dt):
     mplDates = matplotlib.dates.date2num(parsedDates)
     
     
-    oldSeconds = [(date - dateStart).seconds for date in parsedDates]
+    oldSeconds = [(date - dateStart).days * 86400 + 
+                  (date - dateStart).seconds for date in parsedDates]
     #print oldSeconds
         
     # loop through newSeconds and find new values
     # for power, if no neighboring value, power = 0
-    
+    # make newSeconds deal with dateStart and dateEnd
+    totalSeconds = (dateEnd - dateStart).days * 86400 + (dateEnd - dateStart).seconds
+    newSeconds = np.arange(0, totalSeconds+1, 60)
+
     newPower = np.zeros(len(newSeconds))
     
     for i, second in enumerate(newSeconds):
@@ -50,40 +54,47 @@ plotCircuit = '211'
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 downsample = 1
 plotCircuitList = ['200','201','202','203','205','206','207','208','209','210','211','212']
-plotCircuitList = ['202','203','205','206','207','208','209','210','211','212']
-dateStart = datetime.datetime(2010, 12, 26)
+#plotCircuitList = ['200']
+dateStart = datetime.datetime(2010, 12, 25)
 dateEnd = datetime.datetime(2010, 12, 27)
 
-# make newSeconds deal with dateStart and dateEnd
-newSeconds = np.arange(0, 86400+1, 60)
-totalPower = np.zeros(len(newSeconds))
+#totalPower = np.zeros(len(newSeconds))
+totalPower = []
 
 for plotCircuit in plotCircuitList:
-
-    #data = ssp.getData(plotCircuit, plotDate, downsample, dataDirectory)
     data = ssp.getFormattedData(plotCircuit, dateStart, dateEnd, 1, dataDirectory)
     
-    newSeconds, newPower = resampleData(data, 60)
+    dt = 60
+    newSeconds, newPower = resampleData(data, dateStart, dateEnd, dt)
     
     #convert newSeconds to datetime objects and then mpl days
+
     
-    newTime = [(dateStart + datetime.timedelta(days=1,seconds=int(second))) 
+    newTime = [(dateStart + datetime.timedelta(seconds=int(second))) 
                 for second in newSeconds]
     newTime = matplotlib.dates.date2num(newTime)
-    
-    #time = map(int, data[:,0])
-    #time = map(str, time)
+    newTime = []
+    for second in newSeconds:
+        deltaDays = second / 86400
+        deltaSeconds = second % 86400
+        newTime.append(dateStart+ datetime.timedelta(days = int(deltaDays),
+                                                     seconds = int(deltaSeconds)))
+    newTime = matplotlib.dates.date2num(newTime)
+                                                     
     # parsedDates are datetime objects
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
     # mplDates are days 
     mplDates = matplotlib.dates.date2num(parsedDates)
     
     if '200' not in plotCircuit:
-        totalPower += newPower
+        if totalPower == []:
+            totalPower = newPower
+        else:
+            totalPower += newPower
     
     fig, axis = getFigure()
     axis.plot_date(newTime,newPower,'-')
-    axis.plot_date(mplDates,data['Watts'],'+')
+    #axis.plot_date(mplDates,data['Watts'],'+')
     formatFigure(fig, axis)    
     plotFileName = 'rs_' + plotCircuit + '.pdf'
     print 'writing', plotFileName
@@ -94,5 +105,4 @@ axis.plot_date(newTime,totalPower,'-')
 formatFigure(fig, axis)
 plotFileName = 'rs_total.pdf'
 fig.savefig(plotFileName)
-
 
