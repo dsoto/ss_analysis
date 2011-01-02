@@ -146,9 +146,6 @@ def getHeaderStrings():
     return d
 
 def resampleData(data, dateStart, dateEnd, dt):
-    # convert time string to seconds
-    #time = map(int, data[:,0])
-    #time = map(str, time)
     # parsedDates are datetime objects
     print 'parsing dates'
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
@@ -158,13 +155,12 @@ def resampleData(data, dateStart, dateEnd, dt):
     
     oldSeconds = [(date - dateStart).days * 86400 + 
                   (date - dateStart).seconds for date in parsedDates]
-    #print oldSeconds
         
     # loop through newSeconds and find new values
     # for power, if no neighboring value, power = 0
     # make newSeconds deal with dateStart and dateEnd
     totalSeconds = (dateEnd - dateStart).days * 86400 + (dateEnd - dateStart).seconds
-    newSeconds = np.arange(0, totalSeconds+1, 60)
+    newSeconds = np.arange(0, totalSeconds+1, dt)
 
     newPower = np.zeros(len(newSeconds))
     
