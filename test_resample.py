@@ -12,6 +12,7 @@ def resampleData(data, dateStart, dateEnd, dt):
     #time = map(int, data[:,0])
     #time = map(str, time)
     # parsedDates are datetime objects
+    print 'parsing dates'
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
     # mplDates are days 
     mplDates = matplotlib.dates.date2num(parsedDates)
@@ -29,13 +30,14 @@ def resampleData(data, dateStart, dateEnd, dt):
 
     newPower = np.zeros(len(newSeconds))
     
+    print 'finding samples'
     for i, second in enumerate(newSeconds):
         # find nearest oldSeconds sample
         delta = min(abs(oldSeconds - second))
         index = np.argmin(abs(oldSeconds - second))
         if delta < 15:
             newPower[i] = data['Watts'][index]        
-
+    print 'returning result'
     return newSeconds, newPower
 
 def getFigure():
@@ -44,7 +46,8 @@ def getFigure():
     return fig, axis
 
 def formatFigure(fig, axis):
-    dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
+    #dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
     axis.xaxis.set_major_formatter(dateFormatter)
     fig.autofmt_xdate()
 
@@ -54,22 +57,24 @@ plotCircuit = '211'
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 downsample = 1
 plotCircuitList = ['200','201','202','203','205','206','207','208','209','210','211','212']
-#plotCircuitList = ['200']
-dateStart = datetime.datetime(2010, 12, 25)
+#plotCircuitList = ['201']
+dateStart = datetime.datetime(2010, 12, 17)
 dateEnd = datetime.datetime(2010, 12, 27)
 
 #totalPower = np.zeros(len(newSeconds))
 totalPower = []
 
 for plotCircuit in plotCircuitList:
+    print 'getting data for circuit ' + plotCircuit
     data = ssp.getFormattedData(plotCircuit, dateStart, dateEnd, 1, dataDirectory)
     
     dt = 60
+    print 'resampling data for ' + plotCircuit
     newSeconds, newPower = resampleData(data, dateStart, dateEnd, dt)
     
     #convert newSeconds to datetime objects and then mpl days
 
-    
+    print 'parsing dates for plotting'
     newTime = [(dateStart + datetime.timedelta(seconds=int(second))) 
                 for second in newSeconds]
     newTime = matplotlib.dates.date2num(newTime)
@@ -91,7 +96,7 @@ for plotCircuit in plotCircuitList:
             totalPower = newPower
         else:
             totalPower += newPower
-    
+    print 'plotting'
     fig, axis = getFigure()
     axis.plot_date(newTime,newPower,'-')
     #axis.plot_date(mplDates,data['Watts'],'+')
