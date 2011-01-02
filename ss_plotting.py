@@ -8,53 +8,29 @@ numColumns = 20
 
 
 def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
-    # get formats together for arrays
-    namesCircuit = ['Time Stamp',
-                'Watts',
-                'Volts',
-                'Amps',
-                'Watt Hours SC20',
-                'Watt Hours Today',
-                'Max Watts',
-                'Max Volts',
-                'Max Amps',
-                'Min Watts',
-                'Min Volts',
-                'Min Amps',
-                'Power Factor',
-                'Power Cycle',
-                'Frequency',
-                'Volt Amps',
-                'Relay Not Closed',
-                'Send Rate',
-                'Machine ID',
-                'Type',
-                'Credit']    
-    namesMains = namesCircuit[0:-1]
-    formatsCircuit = ['S14',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'float',
-                  'S8',
-                  'float']
-    formatsMains = formatsCircuit[0:-1]    
-    typeCircuit = np.dtype({'names':namesCircuit, 'formats':formatsCircuit})
-    typeMains = np.dtype({'names':namesMains, 'formats':formatsMains})
+    list = [('Time Stamp',       'S14'),
+            ('Watts',            'float'),
+            ('Volts',            'float'),
+            ('Amps',             'float'),
+            ('Watt Hours SC20',  'float'),
+            ('Watt Hours Today', 'float'),
+            ('Max Watts',        'float'),
+            ('Max Volts',        'float'),
+            ('Max Amps',         'float'),
+            ('Min Watts',        'float'),
+            ('Min Volts',        'float'),
+            ('Min Amps',         'float'),
+            ('Power Factor',     'float'),
+            ('Power Cycle',      'float'),
+            ('Frequency',        'float'),
+            ('Volt Amps',        'float'),
+            ('Relay Not Closed', 'float'),
+            ('Send Rate',        'float'),
+            ('Machine ID',       'float'),
+            ('Type',             'S8'),
+            ('Credit',           'float')]    
+    typeCircuit = np.dtype(list)
+    typeMains = np.dtype(list[0:-1])
 
     if '200' in circuit:
         type = typeMains
@@ -70,11 +46,10 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
         path += str(currentDatetime.day) + '/'
         path += str(currentDatetime.hour) 
         path = '%02d/%02d/%02d/%02d/' % (currentDatetime.year,
-                              currentDatetime.month,
-                              currentDatetime.day,
-                              currentDatetime.hour)
+                                         currentDatetime.month,
+                                         currentDatetime.day,
+                                         currentDatetime.hour)
         filename = '192_168_1_' + circuit + '.log'
-        
         file = dataDirectory + path + filename
 
         if verbose == 1:
