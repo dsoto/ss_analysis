@@ -83,7 +83,8 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
         # read log file            
         if os.path.isfile(file):
             newData = np.loadtxt(file, delimiter=',', dtype = type, skiprows = 1)
-            #print newData
+            # if newData is only one line it is a pita so discard it
+            # fixme: figure out how to append these one line logs
             if newData.shape != ():
                 if data == []:
                     data = newData
@@ -117,8 +118,8 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
                                11, 12, 13, 14, 15, 16, 17, 18]
                     numColumns = len(usecols)
                 else:                        
-                     usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
-                                11, 12, 13, 14, 15, 16, 17, 18, 20]
+                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+                            11, 12, 13, 14, 15, 16, 17, 18, 20]
                     numColumns = len(usecols)
                 tempData = np.loadtxt(dirname + '/' + filename, 
                                       usecols = usecols,
@@ -143,7 +144,6 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
         print data
     return data
 
-# create dictionary of header strings
 def getHeaderStrings():
     d = {}
     headers = ['Time Stamp',
