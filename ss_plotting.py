@@ -144,3 +144,54 @@ def getHeaderStrings():
     for i,h in enumerate(headers):
         d[i]=h
     return d
+
+def resampleData(data, dateStart, dateEnd, dt):
+    # convert time string to seconds
+    #time = map(int, data[:,0])
+    #time = map(str, time)
+    # parsedDates are datetime objects
+    print 'parsing dates'
+    parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
+    # mplDates are days 
+    mplDates = matplotlib.dates.date2num(parsedDates)
+    
+    
+    oldSeconds = [(date - dateStart).days * 86400 + 
+                  (date - dateStart).seconds for date in parsedDates]
+    #print oldSeconds
+        
+    # loop through newSeconds and find new values
+    # for power, if no neighboring value, power = 0
+    # make newSeconds deal with dateStart and dateEnd
+    totalSeconds = (dateEnd - dateStart).days * 86400 + (dateEnd - dateStart).seconds
+    newSeconds = np.arange(0, totalSeconds+1, 60)
+
+    newPower = np.zeros(len(newSeconds))
+    
+    findMethod = 0
+    threshold = 15
+    if findMethod == 0: 
+        print 'finding samples brute force'
+        for i, second in enumerate(newSeconds):
+            # find nearest oldSeconds sample
+            delta = min(abs(oldSeconds - second))
+            index = np.argmin(abs(oldSeconds - second))
+            if delta < 15:
+                newPower[i] = data['Watts'][index]
+                
+    if findMethod == 1:
+        # this section does not work yet
+        print 'finding samples indexing'
+        ind = 0
+        for i, sec in enumerate(newSeconds):
+            while 1:
+                dt1 = abs(oldSeconds[ind]-sec)
+                dt2 = abs(oldSeconds[ind+1]-sec)
+                if dt2 > dt1:
+                    if dt1 < threshold:
+                        newPower[i] = data['Watts'][ind]
+                    break
+                ind += 1
+            
+    print 'returning result'
+    return newSeconds, newPower
