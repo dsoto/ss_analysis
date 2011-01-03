@@ -38,9 +38,9 @@ def formatFigure(fig, axis):
     axis.xaxis.set_major_formatter(dateFormatter)
     fig.autofmt_xdate()
     axis.grid()
-    axis.set_title('Consumption for '+str(dateStart.month)+str(dateStart.day))
+    axis.set_title('Consumption for '+str(dateStart.month)+'-'+str(dateStart.day))
     axis.set_xlabel('Time of Day')
-    axis.set_ylabel('Power Consumption (Watts)')
+    axis.set_ylabel('Energy Consumption (Watt-Hours)')
     axis.legend(loc=(1.0,0.0), title='Circuit', numpoints=1)
 
 

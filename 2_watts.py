@@ -38,6 +38,7 @@ def formatFigure(fig, axis):
     axis.xaxis.set_major_formatter(dateFormatter)
     fig.autofmt_xdate()
     axis.grid()
+    axis.set_title('Consumption for '+str(dateStart.month)+'-'+str(dateStart.day))
     axis.set_xlabel('Time of Day')
     axis.set_ylabel('Power Consumption (Watts)')
     axis.legend(loc=(1.0,0.0), title='Circuit', numpoints=1)
@@ -46,8 +47,8 @@ def formatFigure(fig, axis):
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 plotCircuitList = ['201','202','203','205','206','207','208','209','210','211','212']
 #plotCircuitList = ['201']
-dateStart = datetime.datetime(2010, 12, 26)
-dateEnd = datetime.datetime(2010, 12, 27)
+dateStart = datetime.datetime(2010, 12, 27)
+dateEnd = datetime.datetime(2010, 12, 28)
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
 
@@ -61,7 +62,7 @@ for i, plotCircuit in enumerate(plotCircuitList):
     
     dt = 10*60
     print 'resampling data for ' + plotCircuit
-    newSeconds, newPower = ssp.resampleData(data, dateStart, dateEnd, dt)
+    newSeconds, newPower = ssp.resampleData(data, 'Watts', dateStart, dateEnd, dt)
     
     #convert newSeconds to datetime objects and then mpl days
 
