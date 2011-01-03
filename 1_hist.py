@@ -27,7 +27,7 @@ import datetime
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 plotCircuitList = ['201','202','203','205','206','207','208','209','210','211','212']
 dateStart = datetime.datetime(2010, 12, 17)
-dateEnd = datetime.datetime(2010, 12, 27)
+dateEnd = datetime.datetime(2010, 12, 30)
 
 data = []
 
@@ -52,4 +52,4 @@ axis.set_title('Histogram')
 axis.set_xlabel('Power Consumed (W)')
 axis.set_ylabel('Frequency (arb)')
 #axis.set_ylim((0,6))
-fig.savefig('histogram_total.pdf')
+fig.savefig('1.pdf')
