@@ -36,7 +36,7 @@ def formatFigure(fig, axis):
 
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
-dateRangeStart = datetime.datetime(2010, 12, 17)
+dateRangeStart = datetime.datetime(2010, 12, 21)
 dateRangeEnd = datetime.datetime(2010, 12, 30)
 totalPower = []
 
@@ -45,13 +45,21 @@ totalPower = []
 days = (dateRangeEnd - dateRangeStart).days
 days = range(days)
 
+#print header
+print 'date,',
+for circuit in plotCircuitList:
+    print circuit+',',
+print
+
 dayRange = []
 totalWattHours = []
 scWattHours = []
+scDataList = []
 for day in days:
     dateStart = dateRangeStart + datetime.timedelta(days=day)
     dateEnd = dateStart + datetime.timedelta(days=1)
     totalWattHoursForDay = 0
+    print str(dateStart.year) + '/' + str(dateStart.month) + '/' + str(dateStart.day) + ',',
     for circuit in plotCircuitList:
         data = ssp.getFormattedData(circuit, dateStart, dateEnd, 1, dataDirectory)
         if data == []:
@@ -59,16 +67,18 @@ for day in days:
             integral = 0
             scwht = 0
         else:
-            dts = map(dateutil.parser.parse,data['Time Stamp'])
-            mpldays = matplotlib.dates.date2num(dts)
-            integral = scipy.integrate.trapz(data['Watts'],dx=3.0/60/60)
+            #dts = map(dateutil.parser.parse,data['Time Stamp'])
+            #mpldays = matplotlib.dates.date2num(dts)
+            #integral = scipy.integrate.trapz(data['Watts'],dx=3.0/60/60)
             scwht = data['Watt Hours Today'][-1]
 
-        totalWattHoursForDay += integral
-        print dateStart.month, dateStart.day, circuit, integral
-        print dateStart.month, dateStart.day, circuit, scwht
-
-    print totalWattHoursForDay
+        totalWattHoursForDay += scwht
+        #print dateStart.month, dateStart.day, circuit, integral
+        #print dateStart.month, dateStart.day, circuit, scwht
+        print str(scwht) + ',',
+    
+    print
+    #print totalWattHoursForDay
     dayRange.append(dateStart)
     totalWattHours.append(totalWattHoursForDay)
     
