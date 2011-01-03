@@ -42,12 +42,18 @@ for plotCircuit in plotCircuitList:
         data = np.append(data, newData, axis=0)
 
     print data.shape
-    
+
+# output csv
+f = open('histogramData.csv','w')
+
+for d in data:
+    f.write(str(d['Watts'])+'\n')
 
 pmax = 100
+bins = pmax
 fig = plt.figure()
 axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
-axis.hist(data['Watts'], bins=pmax, range=(0,pmax), normed=True)
+axis.hist(data['Watts'], bins=bins, range=(0,pmax), normed=True)
 axis.set_title('Histogram')
 axis.set_xlabel('Power Consumed (W)')
 axis.set_ylabel('Frequency (arb)')
