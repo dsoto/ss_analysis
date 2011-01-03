@@ -147,7 +147,8 @@ def getHeaderStrings():
 
 def resampleData(data, column, dateStart, dateEnd, dt):
     # parsedDates are datetime objects
-    print 'parsing dates'
+    if verbose == 1:
+        print 'parsing dates'
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
     # mplDates are days 
     mplDates = matplotlib.dates.date2num(parsedDates)
@@ -168,7 +169,8 @@ def resampleData(data, column, dateStart, dateEnd, dt):
     if column == 'Watts':
         findMethod = 1
         if findMethod == 0: 
-            print 'finding samples brute force'
+            if verbose == 1:
+                print 'finding samples brute force'
             for i, second in enumerate(newSeconds):
                 # find nearest oldSeconds sample
                 delta = min(abs(oldSeconds - second))
@@ -178,7 +180,8 @@ def resampleData(data, column, dateStart, dateEnd, dt):
                     
         if findMethod == 1:
             # this section does not work yet
-            print 'finding samples indexing'
+            if verbose == 1:
+                print 'finding samples indexing'
             ind = 0
             for i, sec in enumerate(newSeconds):
                 while 1:
@@ -213,6 +216,16 @@ def resampleData(data, column, dateStart, dateEnd, dt):
                             newPower[i] = newPower[i-1]
                     break
                 ind += 1
-            
-    print 'returning result'
-    return newSeconds, newPower
+    
+    # convert newSeconds to datetime objects
+    newTime = []
+    for second in newSeconds:
+        deltaDays = second / 86400
+        deltaSeconds = second % 86400
+        newTime.append(dateStart+ datetime.timedelta(days = int(deltaDays),
+                                                     seconds = int(deltaSeconds)))
+
+    
+    if verbose == 1:
+        print 'returning result'
+    return newTime, newPower
