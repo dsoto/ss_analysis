@@ -145,7 +145,7 @@ def getHeaderStrings():
         d[i]=h
     return d
 
-def resampleData(data, dateStart, dateEnd, dt):
+def resampleData(data, column, dateStart, dateEnd, dt):
     # parsedDates are datetime objects
     print 'parsing dates'
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
@@ -163,29 +163,49 @@ def resampleData(data, dateStart, dateEnd, dt):
     newSeconds = np.arange(0, totalSeconds+1, dt)
 
     newPower = np.zeros(len(newSeconds))
+    threshold = dt
     
-    findMethod = 0
-    threshold = 15
-    if findMethod == 0: 
-        print 'finding samples brute force'
-        for i, second in enumerate(newSeconds):
-            # find nearest oldSeconds sample
-            delta = min(abs(oldSeconds - second))
-            index = np.argmin(abs(oldSeconds - second))
-            if delta < 15:
-                newPower[i] = data['Watts'][index]
-                
-    if findMethod == 1:
-        # this section does not work yet
-        print 'finding samples indexing'
+    if column == 'Watts':
+        findMethod = 0
+        if findMethod == 0: 
+            print 'finding samples brute force'
+            for i, second in enumerate(newSeconds):
+                # find nearest oldSeconds sample
+                delta = min(abs(oldSeconds - second))
+                index = np.argmin(abs(oldSeconds - second))
+                if delta < 15:
+                    newPower[i] = data[column][index]
+                    
+        if findMethod == 1:
+            # this section does not work yet
+            print 'finding samples indexing'
+            ind = 0
+            for i, sec in enumerate(newSeconds):
+                while 1:
+                    dt1 = abs(oldSeconds[ind]-sec)
+                    dt2 = abs(oldSeconds[ind+1]-sec)
+                    if dt2 > dt1:
+                        if dt1 < threshold:
+                            newPower[i] = data[column][ind]
+                        break
+                    ind += 1
+    if column == 'Watt Hours Today':
         ind = 0
         for i, sec in enumerate(newSeconds):
             while 1:
+                if ind == len(oldSeconds) -1:
+                    newPower[i] = newPower[i-1]
+                    break
                 dt1 = abs(oldSeconds[ind]-sec)
                 dt2 = abs(oldSeconds[ind+1]-sec)
                 if dt2 > dt1:
                     if dt1 < threshold:
-                        newPower[i] = data['Watts'][ind]
+                        newPower[i] = data[column][ind]
+                    else:
+                        if i == 0:
+                            newPower[i] = 0
+                        else:
+                            newPower[i] = newPower[i-1]
                     break
                 ind += 1
             
