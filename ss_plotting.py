@@ -166,7 +166,7 @@ def resampleData(data, column, dateStart, dateEnd, dt):
     threshold = dt
     
     if column == 'Watts':
-        findMethod = 0
+        findMethod = 1
         if findMethod == 0: 
             print 'finding samples brute force'
             for i, second in enumerate(newSeconds):
@@ -182,14 +182,19 @@ def resampleData(data, column, dateStart, dateEnd, dt):
             ind = 0
             for i, sec in enumerate(newSeconds):
                 while 1:
+                    if ind == len(oldSeconds) -1:
+                        newPower[i] = 0
+                        break
                     dt1 = abs(oldSeconds[ind]-sec)
                     dt2 = abs(oldSeconds[ind+1]-sec)
                     if dt2 > dt1:
                         if dt1 < threshold:
                             newPower[i] = data[column][ind]
+                        else:
+                            newPower[i] = 0
                         break
                     ind += 1
-    if column == 'Watt Hours Today':
+    else:
         ind = 0
         for i, sec in enumerate(newSeconds):
             while 1:
