@@ -7,6 +7,7 @@ import dateutil.parser
 import matplotlib.dates
 import datetime
 
+
 def resampleData(data, dateStart, dateEnd, dt):
     # convert time string to seconds
     #time = map(int, data[:,0])
@@ -30,15 +31,29 @@ def resampleData(data, dateStart, dateEnd, dt):
 
     newPower = np.zeros(len(newSeconds))
     
+    '''
     print 'finding samples'
     for i, second in enumerate(newSeconds):
         # find nearest oldSeconds sample
         delta = min(abs(oldSeconds - second))
         index = np.argmin(abs(oldSeconds - second))
         if delta < 15:
-            newPower[i] = data['Watts'][index]        
+            newPower[i] = data['Watts'][index]
+    '''
+    print 'finding samples'
+    ind = 0
+    for i, sec in enumerate(newSeconds):
+        dt1 = abs(oldSeconds(ind)-sec)
+        dt2 = abs(oldSeconds(ind+1)-sec)
+        if dt2 > dt1:
+            if dt1 < threshold:
+                newPower[i] = data['Watts'][ind]
+            break
+        ind += 1
+    '''    
     print 'returning result'
     return newSeconds, newPower
+    '''
 
 def getFigure():
     fig = plt.figure()
@@ -57,8 +72,8 @@ plotCircuit = '211'
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 downsample = 1
 plotCircuitList = ['200','201','202','203','205','206','207','208','209','210','211','212']
-#plotCircuitList = ['201']
-dateStart = datetime.datetime(2010, 12, 17)
+plotCircuitList = ['201']
+dateStart = datetime.datetime(2010, 12, 26)
 dateEnd = datetime.datetime(2010, 12, 27)
 
 #totalPower = np.zeros(len(newSeconds))
@@ -70,7 +85,7 @@ for plotCircuit in plotCircuitList:
     
     dt = 60
     print 'resampling data for ' + plotCircuit
-    newSeconds, newPower = resampleData(data, dateStart, dateEnd, dt)
+    newSeconds, newPower = ssp.resampleData(data, dateStart, dateEnd, dt)
     
     #convert newSeconds to datetime objects and then mpl days
 
@@ -99,7 +114,7 @@ for plotCircuit in plotCircuitList:
     print 'plotting'
     fig, axis = getFigure()
     axis.plot_date(newTime,newPower,'-')
-    #axis.plot_date(mplDates,data['Watts'],'+')
+    axis.plot_date(mplDates,data['Watts'],'+')
     formatFigure(fig, axis)    
     plotFileName = 'rs_' + plotCircuit + '.pdf'
     print 'writing', plotFileName
