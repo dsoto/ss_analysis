@@ -280,3 +280,105 @@ def plotHistogram(individualWattHours):
     axis.set_title('Daily Consumption at Pelengana Site')
     fig.savefig('3_hist.pdf')
 
+def calculateDailyUsage():
+    '''
+    creates csv-like output to stdout with daily usage over a range of 
+    days.  also creates graph of usage.  and a histogram
+    TODO : make this compare against existing CSV of usage and grab data that isn't in file
+    '''
+    #import ss_plotting as ssp
+    
+    dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
+    plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
+    plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
+    totalPower = []
+    
+    # loop through days 
+    # for each day compute total use and store in array
+    days = (dateRangeEnd - dateRangeStart).days
+    days = range(days)
+    
+    #print header
+    print 'date,',
+    for circuit in plotCircuitList:
+        print circuit.rjust(5)+',',
+    print
+    
+    dayRange = []
+    individualWattHours = []
+    totalWattHours = []
+    scWattHours = []
+    scDataList = []
+    for day in days:
+        dateStart = dateRangeStart + datetime.timedelta(days=day)
+        dateEnd = dateStart + datetime.timedelta(days=1)
+        totalWattHoursForDay = 0
+        print str(dateStart.year) + '/' + str(dateStart.month) + '/' + str(dateStart.day) + ',',
+        for circuit in plotCircuitList:
+            data = getFormattedData(circuit, dateStart, dateEnd, 1, dataDirectory)
+            if data == []:
+                #print 'no data for', dateStart, circuit
+                integral = 0
+                scwht = 0
+            else:
+                #dts = map(dateutil.parser.parse,data['Time Stamp'])
+                #mpldays = matplotlib.dates.date2num(dts)
+                #integral = scipy.integrate.trapz(data['Watts'],dx=3.0/60/60)
+                scwht = data['Watt Hours Today'][-1]
+    
+            totalWattHoursForDay += scwht
+            #print dateStart.month, dateStart.day, circuit, integral
+            #print dateStart.month, dateStart.day, circuit, scwht
+            print str(scwht).rjust(5) + ',',
+            individualWattHours.append(scwht)
+        
+        print
+        #print totalWattHoursForDay
+        dayRange.append(dateStart)
+        totalWattHours.append(totalWattHoursForDay)
+        
+    # line plot of total system usage
+    mpldays = matplotlib.dates.date2num(dayRange)
+    fig, axis = getFigure()
+    axis.plot_date(dayRange, totalWattHours,'-')
+    formatFigure(fig, axis)
+    fig.savefig('3.pdf')
+    
+    
+    plotHistogram(individualWattHours)
+
+def stackedConsumption():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    # todo: load in dates as well and plot dates?
+    d = np.loadtxt('dailyUsagePelengana.csv',
+                    usecols=range(1,13),
+                    skiprows=1,
+                    dtype=np.float,
+                    delimiter=',')
+                 # remove days with 0 consumption by masking array
+    mask = d == 0.0
+    rowsNonZero = ~mask.any(1)
+    i = 0
+    for row in rowsNonZero:
+        if not row:
+            i+=1
+    print i, 'rows dropped'
+    d = d[rowsNonZero, :]
+
+    stackedData = d.cumsum(1)
+    x = range(d.shape[0])
+    color = [(0.9,0.9,0.9),
+             (0.7,0.7,0.7),
+             (0.5,0.5,0.5)]
+    for i in range(d.shape[1]):
+        
+        if i == 0:
+            plt.fill_between(x,np.zeros(len(stackedData[:,i])), stackedData[:,i],color = color[i % 3])
+        else:
+            plt.fill_between(x, stackedData[:,i-1], stackedData[:,i], color = color[i % 3])
+        '''
+        plt.plot(stackedData[:,i])
+        '''
+    plt.show()
+    
