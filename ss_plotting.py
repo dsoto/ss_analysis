@@ -5,6 +5,12 @@ import dateutil.parser
 import matplotlib.dates
 import datetime
 numColumns = 20
+import numpy as np
+import matplotlib.pyplot as plt
+import dateutil.parser
+import matplotlib.dates
+import datetime
+import scipy.integrate
 
 
 def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
