@@ -17,6 +17,10 @@ dateRangeStart = datetime.datetime(2011, 1, 01)
 dateRangeEnd = datetime.datetime(2011, 2, 2)
 
 def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
+    '''
+    read in data from directories from begin date to end date
+    and return numpy record array
+    '''
     list = [('Time Stamp',       'S14'),
             ('Watts',            'float'),
             ('Volts',            'float'),
@@ -81,6 +85,9 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
     return data
     
 def getData(plotCircuit, plotDate, downsample, dataDirectory):
+    '''
+    deprecated function to get data that used os.walk
+    '''
     if verbose == 1:
         print 'getting data for', plotCircuit, plotDate
     data = []
@@ -129,6 +136,7 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
     return data
 
 def getHeaderStrings():
+    '''deprecated function to get header strings for SC20 data'''
     d = {}
     headers = ['Time Stamp',
                'Watts',
@@ -155,6 +163,11 @@ def getHeaderStrings():
     return d
 
 def resampleData(data, column, dateStart, dateEnd, dt):
+    '''
+    given a numpy record array and dateStarts and ends and a timestep
+    this function will place samples of data on evenly spaced timesteps
+    and will attempt to do the right thing in areas with no data
+    '''
     # parsedDates are datetime objects
     if verbose == 1:
         print 'parsing dates'
