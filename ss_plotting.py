@@ -265,3 +265,18 @@ def formatFigure(fig, axis):
     axis.set_ylabel('Power Consumption (Watt-hours)')
     #axis.set_ylim((0, 1000))
     fig.autofmt_xdate()
+
+# plot histogram of all daily usage
+def plotHistogram(individualWattHours):
+    '''
+    histogram plotting function called by calculateDailyUsage
+    '''
+    bins = 50
+    range = (0,200)
+    fig, axis = getFigure()
+    axis.hist(individualWattHours, bins=bins, range=range)
+    axis.set_xlabel('Watt-Hours Consumed')
+    axis.set_ylabel('Days')
+    axis.set_title('Daily Consumption at Pelengana Site')
+    fig.savefig('3_hist.pdf')
+
