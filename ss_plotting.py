@@ -382,3 +382,46 @@ def stackedConsumption():
         '''
     plt.show()
     
+def usageBarGraph():
+    '''
+    using csv file created from calculateDailyUsage(), we look at statistics 
+    on usage among the residents
+    '''
+    import numpy as np
+
+    d = np.loadtxt('dailyUsagePelengana.csv',
+                    usecols=range(1,13),
+                    skiprows=1,
+                    dtype=np.float,
+                    delimiter=',')
+                    
+    # remove days with 0 consumption by masking array
+    mask = d == 0.0
+    rowsNonZero = ~mask.any(1)
+    i = 0
+    for row in rowsNonZero:
+        if not row:
+            i+=1
+    print i, 'rows dropped'
+    d = d[rowsNonZero, :]
+    
+    mean = d.mean(0)
+    std = d.std(0)
+    
+    mean = np.append(mean, d.mean())
+    std = np.append(std, d.std())
+    
+    locations = np.arange(13)
+    ticks = map(str, np.arange(12) + 1)
+    ticks.append('AVG')
+    tickLoc = locations + 0.4
+    # create bar chart with error bars
+    import matplotlib.pyplot as plt
+    plt.bar(locations, mean, yerr=std, color=(0.9,0.9,0.9), ecolor='k')
+    plt.xticks(tickLoc, ticks)
+    plt.xlim((-0.5,13.5))
+    plt.xlabel('Household')
+    plt.ylabel('Daily Average Energy Usage (Wh)')
+    plt.title('Pelengana January Power Consumption')
+    #plt.show()
+    plt.savefig('pelenganaConsumption.pdf')
