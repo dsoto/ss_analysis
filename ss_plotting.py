@@ -1,10 +1,8 @@
-verbose = 0
 import os
 import numpy as np
 import dateutil.parser
 import matplotlib.dates
 import datetime
-numColumns = 20
 import numpy as np
 import matplotlib.pyplot as plt
 import dateutil.parser
@@ -12,6 +10,11 @@ import matplotlib.dates
 import datetime
 import scipy.integrate
 
+verbose = 0
+numColumns = 20
+#dateRangeStart = datetime.datetime(2010, 12, 20)
+dateRangeStart = datetime.datetime(2011, 1, 01)
+dateRangeEnd = datetime.datetime(2011, 2, 2)
 
 def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
     list = [('Time Stamp',       'S14'),
