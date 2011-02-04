@@ -251,3 +251,17 @@ def resampleData(data, column, dateStart, dateEnd, dt):
     if verbose == 1:
         print 'returning result'
     return newTime, newPower
+
+def getFigure():
+    fig = plt.figure()
+    axis = fig.add_axes((0.1, 0.1, 0.7, 0.8))
+    return fig, axis
+
+def formatFigure(fig, axis):
+    #dateFormatter = matplotlib.dates.DateFormatter('%H:%M')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    axis.xaxis.set_major_formatter(dateFormatter)
+    axis.set_xlabel('Date')
+    axis.set_ylabel('Power Consumption (Watt-hours)')
+    #axis.set_ylim((0, 1000))
+    fig.autofmt_xdate()
