@@ -1,7 +1,6 @@
 import datetime
 import os
-
-dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
+import dateutil.parser
 
 def constructPath(currentDatetime):
     '''
@@ -48,28 +47,77 @@ def getNewFiles(timeStamp, fileCircuitList):
     '''
     helper function to open new log files 
     '''
-    print timeStamp
     path = constructPath(timeStamp)       
     fileDict = openFiles(path, fileCircuitList)
-    print fileDict
     return fileDict
 
-dateRangeStart = datetime.datetime(2011, 1, 01)
-dateRangeEnd = datetime.datetime(2011, 1, 02)
+def initializeLineDict():
+    lineDict = {}
+    # discard header line
+    for key in fileDict.keys():
+        line = fileDict[key].readline()
+        lineDict[key] = line
+    # keep first data line
+    for key in fileDict.keys():
+        line = fileDict[key].readline()
+        lineDict[key] = line
+    # print out dict
+    return lineDict
+
+def initializeTimeStampDict(lineDict):
+    timeStampDict = {}
+    for key in lineDict.keys():
+        timeStampDict[key] = getTimeStampFromLine(lineDict[key])
+    return timeStampDict
+
+def getTimeStampFromLine(line):
+    lineTimeStamp = dateutil.parser.parse(line[0:14])
+    return lineTimeStamp
+
+def getNextUniqueTimeStampFromFile(key, timeStamp, file):
+    while 1:
+        # read next line in file
+        lineDict[key] = fileDict[key].readline()
+        # read next time stamp
+        newTimeStamp = getTimeStampFromLine(lineDict[key])
+        if newTimeStamp > timeStamp:
+            timeStampDict[key] = newTimeStamp
+            break
+    return
+
+
+dateRangeStart = datetime.datetime(2011, 1, 01, 0)
+dateRangeEnd   = datetime.datetime(2011, 1, 01, 1)
+dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
+fileCircuitList = constructCircuitList()
+
+csv = open('big.csv','w')
 
 timeStamp = dateRangeStart
-
-fileCircuitList = constructCircuitList()
 fileDict = getNewFiles(timeStamp, fileCircuitList)
+lineDict = initializeLineDict()
+timeStampDict = initializeTimeStampDict(lineDict)
+    
 
 # iterate by second from dateRangeStart to dateRange end
 while timeStamp != dateRangeEnd:
+    print timeStamp
+    if timeStamp in timeStampDict.values():
+        csv.write(str(timeStamp)+',')
+    for key in timeStampDict.keys():
+        if timeStamp == timeStampDict[key]:
+            csv.write(key+',')
+            print key
+            getNextUniqueTimeStampFromFile(key, timeStamp, file)
+    csv.write('\n')
+    # increment timestamp and deal with hour change if necessary
     oldtimeStamp = timeStamp
     timeStamp = timeStamp + datetime.timedelta(seconds=1)
     if oldtimeStamp.hour != timeStamp.hour:
         fileDict = getNewFiles(timeStamp, fileCircuitList)
 
-        
+
+csv.close()       
 # open all files in fileList structure
 
 # when hour changes
