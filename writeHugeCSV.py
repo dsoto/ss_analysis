@@ -83,6 +83,7 @@ def getNextUniqueTimeStampFromFile(key, timeStamp, file):
         if newTimeStamp > timeStamp:
             timeStampDict[key] = newTimeStamp
             break
+        # if we encounter last file, remove dict entry
     return
 
 
@@ -101,15 +102,19 @@ timeStampDict = initializeTimeStampDict(lineDict)
 
 # iterate by second from dateRangeStart to dateRange end
 while timeStamp != dateRangeEnd:
-    print timeStamp
+    # if sample exists in any file, write out timestamp
     if timeStamp in timeStampDict.values():
+        csv.write('\n')
         csv.write(str(timeStamp)+',')
-    for key in timeStampDict.keys():
-        if timeStamp == timeStampDict[key]:
-            csv.write(key+',')
-            print key
-            getNextUniqueTimeStampFromFile(key, timeStamp, file)
-    csv.write('\n')
+        for circuit in fileCircuitList:
+            if circuit in timeStampDict.keys():
+                if timeStamp == timeStampDict[circuit]:
+                    csv.write(circuit+',')
+                    getNextUniqueTimeStampFromFile(circuit, timeStamp, file)
+                else:
+                    csv.write(circuit[10:13] + ',')
+            else:
+               csv.write(circuit[10:13] + ',')
     # increment timestamp and deal with hour change if necessary
     oldtimeStamp = timeStamp
     timeStamp = timeStamp + datetime.timedelta(seconds=1)
