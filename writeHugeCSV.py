@@ -88,17 +88,17 @@ def writeCircuitData(circuit):
     data = data.strip()
     data = data.split(',')
     if circuit == '192_168_1_200.log':
-        columnList = [1,2,3,4,5]
+        columnList = mainsColumnList
     else:
-        columnList = [1,2,3,4,5,20]
+        columnList = circuitsColumnList
     for col in columnList:
         csv.write(data[col]+',')
 
 def writeCircuitNoData(circuit):
     if circuit == '192_168_1_200.log':
-        csv.write(',' * 5)
+        csv.write(',' * len(mainsColumnList))
     else:
-        csv.write(',' * 6)
+        csv.write(',' * len(circuitsColumnList))
 
 def printHeader():
     csv.write('date,')
@@ -114,6 +114,9 @@ def printHeader():
 
 dateRangeStart = datetime.datetime(2011, 1, 01, 0)
 dateRangeEnd   = datetime.datetime(2011, 2, 01, 0)
+mainsColumnList = [1,2,3,4,5]
+circuitsColumnList = [1,2,3,4,5,20]
+
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 fileCircuitList = constructCircuitList()
 
