@@ -17,8 +17,8 @@ def constructPath(currentDatetime):
 
 def constructCircuitList():
     '''
-    returns a list of filenames from 192_168_1_200
-    through 192_168_1_212
+    returns a list of filenames from 192_168_1_200.log
+    through 192_168_1_212.log
     '''
     circuitList = range(200,213)
     circuitList = map(str, circuitList)
