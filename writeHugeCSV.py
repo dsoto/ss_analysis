@@ -8,10 +8,6 @@ def constructPath(currentDatetime):
     given a datetime object, this function creates a path name that 
     matches the sheeva file directory structure for data logs
     '''
-    path  = str(currentDatetime.year) + '/' 
-    path += str(currentDatetime.month) + '/'
-    path += str(currentDatetime.day) + '/'
-    path += str(currentDatetime.hour) 
     path = '%02d/%02d/%02d/%02d/' % (currentDatetime.year,
                                      currentDatetime.month,
                                      currentDatetime.day,
