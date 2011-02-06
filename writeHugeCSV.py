@@ -120,7 +120,9 @@ circuitsColumnList = [1,2,3,4,5,20]
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 fileCircuitList = constructCircuitList()
 
-csv = open('big.csv','w')
+csvTimeStamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+csvFileName = csvTimeStamp + '.csv'
+csv = open(csvFileName, 'w')
 printHeader()
             
 timeStamp = dateRangeStart
