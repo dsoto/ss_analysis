@@ -2,6 +2,7 @@ import datetime
 import os
 import dateutil.parser
 
+
 def constructPath(currentDatetime):
     '''
     given a datetime object, this function creates a path name that 
@@ -86,14 +87,43 @@ def getNextUniqueTimeStampFromFile(key, timeStamp, file):
         # if we encounter last file, remove dict entry
     return
 
+def writeCircuitData(circuit):
+    data = lineDict[circuit]
+    data = data.strip()
+    data = data.split(',')
+    if circuit == '192_168_1_200.log':
+        columnList = [1,2,3,4,5]
+    else:
+        columnList = [1,2,3,4,5,20]
+    for col in columnList:
+        csv.write(data[col]+',')
+
+def writeCircuitNoData(circuit):
+    if circuit == '192_168_1_200.log':
+        csv.write(',' * 5)
+    else:
+        csv.write(',' * 6)
+
+def printHeader():
+    csv.write('date,')
+    circuit = '200'
+    for col in ['watts','volts','amps','watt hours SC20','watt hours today']:
+        csv.write(circuit+'_'+col+',')
+    circuitList = range(201,213)
+    circuitList = map(str, circuitList)
+    for circuit in circuitList:
+        for col in ['watts','volts','amps','watt hours SC20','watt hours today','credit']:
+            csv.write(circuit+'_'+col+',')
+
 
 dateRangeStart = datetime.datetime(2011, 1, 01, 0)
-dateRangeEnd   = datetime.datetime(2011, 1, 01, 1)
+dateRangeEnd   = datetime.datetime(2011, 2, 01, 0)
 dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
 fileCircuitList = constructCircuitList()
 
 csv = open('big.csv','w')
-
+printHeader()
+            
 timeStamp = dateRangeStart
 fileDict = getNewFiles(timeStamp, fileCircuitList)
 lineDict = initializeLineDict()
@@ -106,32 +136,30 @@ while timeStamp != dateRangeEnd:
     if timeStamp in timeStampDict.values():
         csv.write('\n')
         csv.write(str(timeStamp)+',')
+        # loop through all circuits looking for data at this timestamp
         for circuit in fileCircuitList:
+            # does circuit have open file?
             if circuit in timeStampDict.keys():
+                # if circuit has open file and
+                # timestamp matches, write out circuit information
                 if timeStamp == timeStampDict[circuit]:
-                    csv.write(circuit+',')
+                    writeCircuitData(circuit)
                     getNextUniqueTimeStampFromFile(circuit, timeStamp, file)
+                # if circuit has open file and 
+                # if timestamp does not match, write out empty circuit
                 else:
-                    csv.write(circuit[10:13] + ',')
+                    writeCircuitNoData(circuit)
+            # if circuit has no open file, write out empty circuit
             else:
-               csv.write(circuit[10:13] + ',')
+                writeCircuitNoData(circuit)
+
     # increment timestamp and deal with hour change if necessary
     oldtimeStamp = timeStamp
     timeStamp = timeStamp + datetime.timedelta(seconds=1)
     if oldtimeStamp.hour != timeStamp.hour:
+        print timeStamp
         fileDict = getNewFiles(timeStamp, fileCircuitList)
+        lineDict = initializeLineDict()
+        timeStampDict = initializeTimeStampDict(lineDict)
 
-
-csv.close()       
-# open all files in fileList structure
-
-# when hour changes
-# make file path based on datetime hour
-#
-
-# open first line of each file
-# peel off date and convert to datetime object
-
-# compare timeCounter to each dateCircuit
-# if no matches: increment timeCounter
-# for each match, write out 
+csv.close()
