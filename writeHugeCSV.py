@@ -135,7 +135,6 @@ timeStampDict = initializeTimeStampDict(lineDict)
 while timeStamp != dateRangeEnd:
     # if sample exists in any file, write out timestamp
     if timeStamp in timeStampDict.values():
-        csv.write('\n')
         csv.write(str(timeStamp)+',')
         # loop through all circuits looking for data at this timestamp
         for circuit in fileCircuitList:
@@ -153,6 +152,7 @@ while timeStamp != dateRangeEnd:
             # if circuit has no open file, write out empty circuit
             else:
                 writeCircuitNoData(circuit)
+        csv.write('\n')
 
     # increment timestamp and deal with hour change if necessary
     oldtimeStamp = timeStamp
