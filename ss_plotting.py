@@ -16,6 +16,9 @@ numColumns = 20
 dateRangeStart = datetime.datetime(2011, 1, 01)
 dateRangeEnd = datetime.datetime(2011, 2, 2)
 
+# helper functions
+# ----------------
+
 def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
     '''
     read in data from directories from begin date to end date
@@ -266,19 +269,13 @@ def formatFigure(fig, axis):
     #axis.set_ylim((0, 1000))
     fig.autofmt_xdate()
 
-# plot histogram of all daily usage
-def plotHistogram(individualWattHours):
-    '''
-    histogram plotting function called by calculateDailyUsage
-    '''
-    bins = 50
-    range = (0,200)
-    fig, axis = getFigure()
-    axis.hist(individualWattHours, bins=bins, range=range)
-    axis.set_xlabel('Watt-Hours Consumed')
-    axis.set_ylabel('Days')
-    axis.set_title('Daily Consumption at Pelengana Site')
-    fig.savefig('3_hist.pdf')
+
+# output csv functions
+# --------------------
+
+def writeDailyUsageCSV():
+    data = calculateDailyUsage()
+    pass
 
 def calculateDailyUsage():
     '''
@@ -347,6 +344,30 @@ def calculateDailyUsage():
     
     plotHistogram(individualWattHours)
 
+def writeHourlyUsageCSV():
+    '''
+    write csv with hourly watt-hour consumption of all circuits
+    over a given date range
+    '''
+    pass
+
+# plotting functions
+# ------------------
+
+def plotHistogram(individualWattHours):
+    '''
+    plot histogram of all daily usage
+    histogram plotting function called by calculateDailyUsage
+    '''
+    bins = 50
+    range = (0,200)
+    fig, axis = getFigure()
+    axis.hist(individualWattHours, bins=bins, range=range)
+    axis.set_xlabel('Watt-Hours Consumed')
+    axis.set_ylabel('Days')
+    axis.set_title('Daily Consumption at Pelengana Site')
+    fig.savefig('3_hist.pdf')
+
 def stackedConsumption():
     import numpy as np
     import matplotlib.pyplot as plt
@@ -380,7 +401,12 @@ def stackedConsumption():
         '''
         plt.plot(stackedData[:,i])
         '''
-    plt.show()
+    #plt.show()
+    plt.title('Stacked Plot of Pelengana Consumption')
+    plt.xlabel('Day')
+    plt.ylabel('Energy Consumed')
+    plt.savefig('stackedConsumption.pdf')
+    plt.close()
     
 def usageBarGraph():
     '''
@@ -425,3 +451,14 @@ def usageBarGraph():
     plt.title('Pelengana January Power Consumption')
     #plt.show()
     plt.savefig('pelenganaConsumption.pdf')
+
+def plotLoadDurationCurve():
+    '''
+    takes data from start to end dates, tabulates power usage, and generates 
+    a load duration curve that orders hours vs power
+    '''
+    # open hourly usage csv file
+    # loop through and calculate overall system usage for each hour
+    # sort usage by magnitude
+    # plot
+    pass
