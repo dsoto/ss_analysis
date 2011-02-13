@@ -55,47 +55,6 @@ def getDataAsRecordArray(dateStart, dateEnd):
     
     return d
     
-def getDataAsDict(dataFileName, usecols, dateStart, dateEnd):
-    d = np.loadtxt(dataFileName, delimiter=',', 
-                                 dtype=str, 
-                                 skiprows=1,
-                                 usecols=usecols)
-    
-    # scrub data and remove 'None'
-    for i,a in enumerate(d[:,3]):
-        if a == 'None':
-            d[i,3] = 0
-    
-    # find the set of circuits from data and remove mains
-    circuits = set(d[:,1])
-    circuits.remove('25')        # remove mains
-    circuits.remove('28')        # remove independent
-    circuits.remove('29')        # remove independent
-    circuits.remove('30')        # remove independent
-
-    # mask off for desired date range
-    dates = map(dateutil.parser.parse, d[:,5])
-    dates = np.array(dates)
-    dateMask = (dates > dateStart) & (dates < dateEnd)
-    d = d[dateMask]
-
-    # create dictionary of lists
-    dataDict = {}
-    for c in circuits:
-        dataDict[c] = []
-        for a in d:
-            if a[1]==c:
-                dataDict[c].append(a)
-                
-    # convert to proper np.arrays
-    for c in circuits:
-        dataDict[c] = np.array(dataDict[c])
-    
-    circuitMask = (d[:,1]!='25') & (d[:,1]!='28') & (d[:,1]!='29') & (d[:,1]!='30')
-    d = d[circuitMask]
-    
-    return d, dataDict
-
 def plotCredit(dataDict):
     recharge = []
     
