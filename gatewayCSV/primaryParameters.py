@@ -55,49 +55,37 @@ def getDataAsRecordArray(dateStart, dateEnd):
     
     return d
     
-def plotCredit(dataDict):
-    recharge = []
+def plotCredit(d):
     
     fig = plt.figure()
-    ax = fig.add_subplot(111)
-    circuits = dataDict.keys()
-    for i,c in enumerate(circuits):
-        textDates = dataDict[c][:,5]
-        dates = map(dateutil.parser.parse, textDates)
-        dates = matplotlib.dates.date2num(dates)
-        credit = map(float, dataDict[c][:,3])
-        wh = map(float, dataDict[c][:,0])
-        
-        sortIndices = dates.argsort()
-        credit = np.take(credit, sortIndices)
-        wh = np.take(wh, sortIndices)
-        dates.sort()
-        
-        
-        # pull out recharge events
-        cd = np.diff(credit)
-        cmask = cd > 0
-        for element in zip(textDates[cmask],cd[cmask]):
-            recharge.append(element)
-        
-        # plot masked data to get date range
-        ax.plot_date(dates, credit, '-o', label=c,
-                                   color = plotColorList[i],
-                                   marker = plotSymbolList[i],
-                                   markeredgecolor = plotColorList[i],
-                                   markerfacecolor = 'None')
-        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(dateFormatter)
-        fig.autofmt_xdate()
+    ax = fig.add_axes((0.15,0.2,0.7,0.7))
+    circuits = set(d['circuit_id'])
     
-        #plt.plot_date(dates, wh, '-o', label=c)
-        ax.legend(loc=(1.0,0.0))
-        #plt.show()
-        ax.grid()
-        
-        fig.savefig('credit.pdf')
-        #plt.close()
-    return recharge
+    for i,c in enumerate(circuits):
+        # assemble data by circuit
+        circuitMask = d['circuit_id'] == c
+        dates = matplotlib.dates.date2num(d[circuitMask]['date'])
+        credit = d[circuitMask]['credit']
+
+        # plot individual circuit data
+        ax.plot_date(dates, credit, 
+                     '-o', 
+                     label = str(c),
+                     color = plotColorList[i],
+                     marker = plotSymbolList[i],
+                     markeredgecolor = plotColorList[i],
+                     markerfacecolor = 'None')
+
+    # format plot and save
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Credit in Account (FCFA)')
+    ax.set_title('Account Credit in Pelengana')
+    fig.autofmt_xdate()
+    ax.legend(loc=(1.0,0.0))
+    ax.grid()
+    fig.savefig('plotCredit.pdf')
 
 def plotRecharges(dataDict):
     recharge = []
