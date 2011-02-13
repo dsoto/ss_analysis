@@ -184,44 +184,6 @@ def plotRecharges(dataDict):
     ax.grid()
     fig.savefig('recharges.pdf')
 
-def plotWattHoursPerDayOld(dataDict, dateStart, dateEnd):
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    circuits = dataDict.keys()
-    consumption = {}
-    
-    # loop through dates
-    for i,c in enumerate(circuits):
-        consumption[c] = []
-        # get last watt hour reading for each day and store in array
-        # make datetime objects
-        # mask = dates < dateEnd
-        # pull last value in array
-
-        textDates = dataDict[c][:,5]
-        dates = map(dateutil.parser.parse, textDates)
-        dates = np.array(dates)
-        wh = map(float, dataDict[c][:,0])
-        wh = np.array(wh)
-        sortIndices = dates.argsort()
-        wh = np.take(wh, sortIndices)
-        dates.sort()
-
-        dateCurrent = dateStart
-        while dateCurrent <= dateEnd:
-            dateLast = dateCurrent
-            dateCurrent = dateCurrent + datetime.timedelta(days=1)
-            mask = (dates > dateLast) & (dates < dateCurrent)
-            print dateCurrent
-            print 'increment'
-            if dates[mask].shape != (0,):
-                print dates[mask][-1]        
-                consumption[c] += wh[mask][-1]
-            else:
-                pass
-                # this value of watt hours = 0
-
 def plotWattHours(d):
 
     fig = plt.figure()
