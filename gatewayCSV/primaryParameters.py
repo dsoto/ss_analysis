@@ -87,39 +87,27 @@ def plotCredit(d):
     ax.grid()
     fig.savefig('plotCredit.pdf')
 
-def plotRecharges(dataDict):
+def plotRecharges(d):
     recharge = []
     
-    circuits = dataDict.keys()
+    circuits = set(d['circuit_id'])
     for i,c in enumerate(circuits):
-        textDates = dataDict[c][:,5]
-        dates = map(dateutil.parser.parse, textDates)
+        circuitMask = d['circuit_id'] == c
+        dates = d[circuitMask]['date']
         dates = matplotlib.dates.date2num(dates)
-        credit = map(float, dataDict[c][:,3])
-        
-        sortIndices = dates.argsort()
-        credit = np.take(credit, sortIndices)
-        dates.sort()
+        credit = d[circuitMask]['credit']
         
         # pull out recharge events
         cd = np.diff(credit)
         cmask = cd > 0
-        for element in zip(textDates[cmask],cd[cmask]):
+        for element in zip(dates[cmask],cd[cmask]):
             recharge.append(element)    
 
     recharge = np.array(recharge)
     
-    rechargeFCFA = map(float, recharge[:,1])
-    rechargeDate = map(dateutil.parser.parse, recharge[:,0])
-    rechargeDate = matplotlib.dates.date2num(rechargeDate)
-    
-    sortIndices = rechargeDate.argsort()
-    rechargeFCFA = np.take(rechargeFCFA, sortIndices)
-    rechargeDate.sort()
-    
-    for element in zip(rechargeDate, rechargeFCFA):
-        print element
-    
+    rechargeFCFA = recharge[:,1]
+    rechargeDate = recharge[:,0]
+        
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
@@ -127,9 +115,11 @@ def plotRecharges(dataDict):
     dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
     ax.xaxis.set_major_formatter(dateFormatter)
     fig.autofmt_xdate()
-    
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Amount of Purchase (FCFA)')
+    ax.set_title('Credit Purchases in Pelengana')
     ax.grid()
-    fig.savefig('recharges.pdf')
+    fig.savefig('plotRecharges.pdf')
 
 def plotWattHours(d):
 
