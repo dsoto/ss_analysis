@@ -124,8 +124,14 @@ def plotRecharges(d):
     print 'number of recharges',
     print len(rechargeFCFA)
 
+    sortIndex = rechargeDate.argsort()
+    rechargeFCFA = np.take(rechargeFCFA, sortIndex)
+    rechargeDate = np.take(rechargeDate, sortIndex)
+
     for pair in zip(rechargeDate, rechargeFCFA):
-        print pair
+        print pair[0].strftime('%m/%d %H:%M'),
+        print str(pair[1]).rjust(10),
+        print 'FCFA'
 
     avgHour = 0
     for date in rechargeDate:
