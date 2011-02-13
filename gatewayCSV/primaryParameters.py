@@ -56,7 +56,9 @@ def getDataAsRecordArray(dateStart, dateEnd):
     return d
     
 def plotCredit(d):
-    
+    '''
+    plots the credit in each circuit account
+    '''
     fig = plt.figure()
     ax = fig.add_axes((0.15,0.2,0.7,0.7))
     circuits = set(d['circuit_id'])
@@ -94,7 +96,6 @@ def plotRecharges(d):
     for i,c in enumerate(circuits):
         circuitMask = d['circuit_id'] == c
         dates = d[circuitMask]['date']
-        dates = matplotlib.dates.date2num(dates)
         credit = d[circuitMask]['credit']
         
         # pull out recharge events
@@ -107,17 +108,47 @@ def plotRecharges(d):
     
     rechargeFCFA = recharge[:,1]
     rechargeDate = recharge[:,0]
+    
+    masklow = (rechargeFCFA > 400)
+    rechargeFCFA = rechargeFCFA[masklow]
+    rechargeDate = rechargeDate[masklow]
+    
+    mask500 = (rechargeFCFA > 400) & (rechargeFCFA < 600)
+    rechargeFCFA[mask500] = 500
+    print 'number of 500 recharges =', len(rechargeFCFA[mask500])
+
+    mask1000 = (rechargeFCFA > 800) & (rechargeFCFA < 1200)
+    rechargeFCFA[mask1000] = 1000
+    print 'number of 1000 recharges =', len(rechargeFCFA[mask1000])
+    
+    print 'number of recharges',
+    print len(rechargeFCFA)
+    
+    for pair in zip(rechargeDate, rechargeFCFA):
+        print pair
+        
+    avgHour = 0
+    for date in rechargeDate:
+        avgHour += date.hour / float(len(rechargeDate))
+    
+    print 'average time of recharge', avgHour
+    
+    rechargeDate = matplotlib.dates.date2num(rechargeDate)
         
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
-    plt.plot_date(rechargeDate, rechargeFCFA)
+    plt.plot_date(rechargeDate, rechargeFCFA,
+                  marker = 'o',
+                  markeredgecolor = 'k',
+                  markerfacecolor = 'None')
     dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
     ax.xaxis.set_major_formatter(dateFormatter)
     fig.autofmt_xdate()
     ax.set_xlabel('Date')
     ax.set_ylabel('Amount of Purchase (FCFA)')
     ax.set_title('Credit Purchases in Pelengana')
+    ax.set_ylim((0,1050))
     ax.grid()
     fig.savefig('plotRecharges.pdf')
 
