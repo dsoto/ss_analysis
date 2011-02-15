@@ -11,10 +11,11 @@ dataFileName = 'primaryParameters.csv'
 usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
-dateStart = datetime.datetime(2011, 2, 05)
-dateEnd = datetime.datetime.now()
+dateStart = datetime.datetime(2011, 02, 05)
+dateEnd   = datetime.datetime(2011, 03, 01)
 
 def creditScrub(val):
+    ''' take out values of None from the data on import '''
     if val=='None':
         return 0.0
     else:
@@ -24,12 +25,18 @@ def creditScrub(val):
         return val
 
 def getDataAsRecordArray(dateStart, dateEnd):
-    dtype = [('watthours',   'float'),
-             ('circuit_id',  'int'),
-             ('use_time',    'float'),
-             ('credit',      'float'),
-             ('circuit',     'S30'),
-             ('date',        'object')]
+    '''
+    load csv from shared solar gateway and create
+    numpy record array
+    also, remove MAINS and independence circuits
+    only return data for date range between dateStart and dateEnd
+    '''
+    dtype = [('watthours',   'float'),      # column 0
+             ('circuit_id',  'int'),        # column 5
+             ('use_time',    'float'),      # column 6
+             ('credit',      'float'),      # column 7
+             ('circuit',     'S30'),        # column 8
+             ('date',        'object')]     # column 9
     dtype = np.dtype(dtype)
 
     # load file
@@ -90,9 +97,14 @@ def plotCredit(d):
     fig.savefig('plotCredit.pdf')
 
 def plotRecharges(d):
+    '''
+    plots recharge events and outputs statistics on recharges
+    '''
     recharge = []
+    rechargedCircuits = []
 
     circuits = set(d['circuit_id'])
+    print 'all circuits', circuits
     for i,c in enumerate(circuits):
         circuitMask = d['circuit_id'] == c
         dates = d[circuitMask]['date']
@@ -102,7 +114,10 @@ def plotRecharges(d):
         cd = np.diff(credit)
         cmask = cd > 0
         for element in zip(dates[cmask],cd[cmask]):
+            rechargedCircuits.append(c)
             recharge.append(element)
+
+    print 'circuits that have recharged', set(rechargedCircuits)
 
     recharge = np.array(recharge)
 
@@ -318,9 +333,9 @@ def plotTotalEnergyPerDay(d):
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
 print('End Load Data')
-#plotHouseholdEnergyPerHour(d)
-#plotHouseholdEnergyPerDay(d)
-#plotTotalEnergyPerDay(d)
-#plotAllWattHours(d)
-#plotCredit(d)
+plotHouseholdEnergyPerHour(d)
+plotHouseholdEnergyPerDay(d)
+plotTotalEnergyPerDay(d)
+plotAllWattHours(d)
+plotCredit(d)
 plotRecharges(d)
