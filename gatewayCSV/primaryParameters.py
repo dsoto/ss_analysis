@@ -96,6 +96,43 @@ def plotCredit(d):
     ax.grid()
     fig.savefig('plotCredit.pdf')
 
+def plotCreditSeparateAxes(d):
+    '''
+    plots the credit in each circuit account on a separate axis
+    '''
+    fig = plt.figure(figsize=(8,12))
+    circuits = set(d['circuit_id'])
+
+    for i,c in enumerate(circuits):
+        # assemble data by circuit
+        circuitMask = d['circuit_id'] == c
+        dates = matplotlib.dates.date2num(d[circuitMask]['date'])
+        credit = d[circuitMask]['credit']
+
+        # plot individual circuit data
+        if i == 0:
+            ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        else:
+            ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        ax.plot_date(dates, credit,
+                     '-o',
+                     label = str(c),
+                     color = plotColorList[i],
+                     marker = plotSymbolList[i],
+                     markeredgecolor = plotColorList[i],
+                     markerfacecolor = 'None')
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        ax.set_yticks((0,500,1000))
+        oldax = ax
+        ax.set_ylim((0,1000))
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+        if i!=0:
+            ax.set_xticklabels([])
+
+    fig.suptitle('Account Credit in Pelengana')
+    fig.savefig('plotCreditSeparateAxes.pdf')
+
 def plotRecharges(d):
     '''
     plots recharge events and outputs statistics on recharges
@@ -338,4 +375,5 @@ plotHouseholdEnergyPerDay(d)
 plotTotalEnergyPerDay(d)
 plotAllWattHours(d)
 plotCredit(d)
+plotCreditSeparateAxes(d)
 plotRecharges(d)
