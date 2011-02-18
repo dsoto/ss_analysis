@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import datetime
 
 
-dataFileName = 'primaryParameters.csv'
 usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
@@ -39,13 +38,22 @@ def getDataAsRecordArray(dateStart, dateEnd):
              ('date',        'object')]     # column 9
     dtype = np.dtype(dtype)
 
+    print 'opening url'
+    import urllib
+    dataString = urllib.urlopen('http://178.79.140.99/sys/export?model=PrimaryLog').read()
+
+    print 'converting to cStringIO'
+    import cStringIO
+    dataStream = cStringIO.StringIO(dataString)
+
+    print 'np.loadtxt'
     # load file
-    d = np.loadtxt(dataFileName, delimiter=',',
-                                 skiprows=1,
-                                 dtype = dtype,
-                                 converters = {7: creditScrub,
-                                               9: dateutil.parser.parse},
-                                 usecols=usecols)
+    d = np.loadtxt(dataStream, delimiter=',',
+                               skiprows=1,
+                               dtype = dtype,
+                               converters = {7: creditScrub,
+                                             9: dateutil.parser.parse},
+                               usecols=usecols)
 
     # yank irrelevant circuits
     d = d[d['circuit_id']!=25]
