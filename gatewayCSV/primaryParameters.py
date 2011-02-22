@@ -70,40 +70,6 @@ def getDataAsRecordArray(dateStart, dateEnd):
 
     return d
 
-def plotCredit(d):
-    '''
-    plots the credit in each circuit account
-    '''
-    fig = plt.figure()
-    ax = fig.add_axes((0.15,0.2,0.7,0.7))
-    circuits = set(d['circuit_id'])
-
-    for i,c in enumerate(circuits):
-        # assemble data by circuit
-        circuitMask = d['circuit_id'] == c
-        dates = matplotlib.dates.date2num(d[circuitMask]['date'])
-        credit = d[circuitMask]['credit']
-
-        # plot individual circuit data
-        ax.plot_date(dates, credit,
-                     '-o',
-                     label = str(c),
-                     color = plotColorList[i],
-                     marker = plotSymbolList[i],
-                     markeredgecolor = plotColorList[i],
-                     markerfacecolor = 'None')
-
-    # format plot and save
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Credit in Account (FCFA)')
-    ax.set_title('Account Credit in Pelengana')
-    fig.autofmt_xdate()
-    ax.legend(loc=(1.0,0.0))
-    ax.grid()
-    fig.savefig('plotCredit.pdf')
-
 def plotCreditSeparateAxes(d):
     '''
     plots the credit in each circuit account on a separate axis
