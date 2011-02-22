@@ -88,22 +88,19 @@ def plotCreditSeparateAxes(d):
             ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
         else:
             ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
-        ax.plot_date(dates, credit,
-                     '-o',
-                     label = str(c),
-                     color = plotColorList[i],
-                     marker = plotSymbolList[i],
-                     markeredgecolor = plotColorList[i],
-                     markerfacecolor = 'None')
+        ax.plot_date(dates, credit, '-x')
         ax.text(1.05, 0.4, c, transform = ax.transAxes)
         ax.set_yticks((0,500,1000))
         oldax = ax
         ax.set_ylim((0,1000))
         dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
         ax.xaxis.set_major_formatter(dateFormatter)
+        if i==0:
+            ax.set_xlabel('Date')
         if i!=0:
             ax.set_xticklabels([])
 
+    fig.text(0.05, 0.7, 'Account Credit (FCFA)', rotation='vertical')
     fig.suptitle('Account Credit in Pelengana')
     fig.savefig('plotCreditSeparateAxes.pdf')
 
