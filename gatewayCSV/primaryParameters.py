@@ -189,8 +189,8 @@ def plotHouseholdEnergyPerHour(d):
     plots a time series of accumulated watt hours
     for each circuit
     '''
-    fig = plt.figure()
-    ax = fig.add_axes((0.15,0.2,0.7,0.7))
+    fig = plt.figure(figsize=(8,12))
+    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
 
     circuits = set(d['circuit_id'])
 
@@ -200,22 +200,26 @@ def plotHouseholdEnergyPerHour(d):
         dates = matplotlib.dates.date2num(dates)
         wh = d[mask]['watthours']
 
+        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+
+
         # plot masked data to get date range
-        ax.plot_date(dates, wh, '-o', label=str(c),
-                                   color = plotColorList[i],
-                                   marker = plotSymbolList[i],
-                                   markeredgecolor = plotColorList[i],
-                                   markerfacecolor = 'None')
+        ax.plot_date(dates, wh, '-x')
+        if i==0:
+            ax.set_xlabel('Date')
+        if i!=0:
+            ax.set_xticklabels([])
+
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        ax.set_ylim((0,150))
+        ax.set_yticks((0,50,100,150))
         dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
         ax.xaxis.set_major_formatter(dateFormatter)
-        fig.autofmt_xdate()
-        ax.set_xlabel('Date')
-        ax.set_ylabel('Energy Consumption (Watt-Hours)')
-        ax.set_title('Hourly Accumulated Consumption Per Household')
-        ax.legend(loc=(1.0,0.0))
-        ax.grid()
 
-        fig.savefig('plotHouseholdEnergyPerHour.pdf')
+    #fig.autofmt_xdate()
+    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
+    fig.suptitle('Hourly Accumulated Consumption Per Household')
+    fig.savefig('plotHouseholdEnergyPerHour.pdf')
 
 def plotHouseholdEnergyPerDay(d):
 
