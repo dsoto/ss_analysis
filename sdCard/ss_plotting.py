@@ -13,8 +13,8 @@ import scipy.integrate
 verbose = 0
 numColumns = 20
 #dateRangeStart = datetime.datetime(2010, 12, 20)
-dateRangeStart = datetime.datetime(2011, 1, 01)
-dateRangeEnd = datetime.datetime(2011, 2, 2)
+dateRangeStart = datetime.datetime(2011, 1, 24)
+dateRangeEnd = datetime.datetime(2011, 2, 17)
 
 # helper functions
 # ----------------
@@ -44,7 +44,7 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
             ('Send Rate',        'float'),
             ('Machine ID',       'float'),
             ('Type',             'S8'),
-            ('Credit',           'float')]    
+            ('Credit',           'float')]
     typeCircuit = np.dtype(list)
     typeMains = np.dtype(list[0:-1])
 
@@ -52,15 +52,15 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
         type = typeMains
     else:
         type = typeCircuit
-    
+
     currentDatetime = beginDatetime
     data = []
     while currentDatetime != endDatetime:
         # construct path for certain hour of data
-        path  = str(currentDatetime.year) + '/' 
+        path  = str(currentDatetime.year) + '/'
         path += str(currentDatetime.month) + '/'
         path += str(currentDatetime.day) + '/'
-        path += str(currentDatetime.hour) 
+        path += str(currentDatetime.hour)
         path = '%02d/%02d/%02d/%02d/' % (currentDatetime.year,
                                          currentDatetime.month,
                                          currentDatetime.day,
@@ -71,7 +71,7 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
         if verbose == 1:
             print 'reading ' + file
 
-        # read log file            
+        # read log file
         if os.path.isfile(file):
             newData = np.loadtxt(file, delimiter=',', dtype = type, skiprows = 1)
             # if newData is only one line it is a pita so discard it
@@ -81,12 +81,12 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
                     data = newData
                 else:
                     data = np.append(data, newData, axis=0)
-        
+
         # increment by one hour
         currentDatetime = currentDatetime + datetime.timedelta(hours=1)
-        
+
     return data
-    
+
 def getData(plotCircuit, plotDate, downsample, dataDirectory):
     '''
     deprecated function to get data that used os.walk
@@ -108,16 +108,16 @@ def getData(plotCircuit, plotDate, downsample, dataDirectory):
                 if verbose == 1:
                     print dirname + '/' + filename
                 if '200' in plotCircuit:
-                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                                11, 12, 13, 14, 15, 16, 17, 18]
                     numColumns = len(usecols)
-                else:                        
-                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 
+                else:
+                    usecols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                             11, 12, 13, 14, 15, 16, 17, 18, 20]
                     numColumns = len(usecols)
-                tempData = np.loadtxt(dirname + '/' + filename, 
+                tempData = np.loadtxt(dirname + '/' + filename,
                                       usecols = usecols,
-                                      delimiter = ',', 
+                                      delimiter = ',',
                                       skiprows = 1)
 
                 # deal with case of one line file
@@ -175,13 +175,13 @@ def resampleData(data, column, dateStart, dateEnd, dt):
     if verbose == 1:
         print 'parsing dates'
     parsedDates = [dateutil.parser.parse(t) for t in data['Time Stamp']]
-    # mplDates are days 
+    # mplDates are days
     mplDates = matplotlib.dates.date2num(parsedDates)
-    
-    
-    oldSeconds = [(date - dateStart).days * 86400 + 
+
+
+    oldSeconds = [(date - dateStart).days * 86400 +
                   (date - dateStart).seconds for date in parsedDates]
-        
+
     # loop through newSeconds and find new values
     # for power, if no neighboring value, power = 0
     # make newSeconds deal with dateStart and dateEnd
@@ -190,10 +190,10 @@ def resampleData(data, column, dateStart, dateEnd, dt):
 
     newPower = np.zeros(len(newSeconds))
     threshold = dt
-    
+
     if column == 'Watts':
         findMethod = 1
-        if findMethod == 0: 
+        if findMethod == 0:
             if verbose == 1:
                 print 'finding samples brute force'
             for i, second in enumerate(newSeconds):
@@ -202,7 +202,7 @@ def resampleData(data, column, dateStart, dateEnd, dt):
                 index = np.argmin(abs(oldSeconds - second))
                 if delta < 15:
                     newPower[i] = data[column][index]
-                    
+
         if findMethod == 1:
             # this section does not work yet
             if verbose == 1:
@@ -241,7 +241,7 @@ def resampleData(data, column, dateStart, dateEnd, dt):
                             newPower[i] = newPower[i-1]
                     break
                 ind += 1
-    
+
     # convert newSeconds to datetime objects
     newTime = []
     for second in newSeconds:
@@ -250,7 +250,7 @@ def resampleData(data, column, dateStart, dateEnd, dt):
         newTime.append(dateStart+ datetime.timedelta(days = int(deltaDays),
                                                      seconds = int(deltaSeconds)))
 
-    
+
     if verbose == 1:
         print 'returning result'
     return newTime, newPower
@@ -279,28 +279,28 @@ def writeDailyUsageCSV():
 
 def calculateDailyUsage():
     '''
-    creates csv-like output to stdout with daily usage over a range of 
+    creates csv-like output to stdout with daily usage over a range of
     days.  also creates graph of usage.  and a histogram
     TODO : make this compare against existing CSV of usage and grab data that isn't in file
     '''
     #import ss_plotting as ssp
-    
-    dataDirectory = '/Users/dsoto/Dropbox/metering_-_Berkley-CU/Mali/Shake down/SD Card logs/logs/'
+
+    dataDirectory = './data/'
     plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
-    plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
+    #plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
     totalPower = []
-    
-    # loop through days 
+
+    # loop through days
     # for each day compute total use and store in array
     days = (dateRangeEnd - dateRangeStart).days
     days = range(days)
-    
+
     #print header
     print 'date,',
     for circuit in plotCircuitList:
         print circuit.rjust(5)+',',
     print
-    
+
     dayRange = []
     individualWattHours = []
     totalWattHours = []
@@ -322,26 +322,26 @@ def calculateDailyUsage():
                 #mpldays = matplotlib.dates.date2num(dts)
                 #integral = scipy.integrate.trapz(data['Watts'],dx=3.0/60/60)
                 scwht = data['Watt Hours Today'][-1]
-    
+
             totalWattHoursForDay += scwht
             #print dateStart.month, dateStart.day, circuit, integral
             #print dateStart.month, dateStart.day, circuit, scwht
             print str(scwht).rjust(5) + ',',
             individualWattHours.append(scwht)
-        
+
         print
         #print totalWattHoursForDay
         dayRange.append(dateStart)
         totalWattHours.append(totalWattHoursForDay)
-        
+
     # line plot of total system usage
     mpldays = matplotlib.dates.date2num(dayRange)
     fig, axis = getFigure()
     axis.plot_date(dayRange, totalWattHours,'-')
     formatFigure(fig, axis)
     fig.savefig('3.pdf')
-    
-    
+
+
     plotHistogram(individualWattHours)
 
 def writeHourlyUsageCSV():
@@ -393,7 +393,7 @@ def stackedConsumption():
              (0.7,0.7,0.7),
              (0.5,0.5,0.5)]
     for i in range(d.shape[1]):
-        
+
         if i == 0:
             plt.fill_between(x,np.zeros(len(stackedData[:,i])), stackedData[:,i],color = color[i % 3])
         else:
@@ -407,10 +407,10 @@ def stackedConsumption():
     plt.ylabel('Energy Consumed')
     plt.savefig('stackedConsumption.pdf')
     plt.close()
-    
+
 def usageBarGraph():
     '''
-    using csv file created from calculateDailyUsage(), we look at statistics 
+    using csv file created from calculateDailyUsage(), we look at statistics
     on usage among the residents
     '''
     import numpy as np
@@ -420,7 +420,7 @@ def usageBarGraph():
                     skiprows=1,
                     dtype=np.float,
                     delimiter=',')
-                    
+
     # remove days with 0 consumption by masking array
     mask = d == 0.0
     rowsNonZero = ~mask.any(1)
@@ -430,13 +430,13 @@ def usageBarGraph():
             i+=1
     print i, 'rows dropped'
     d = d[rowsNonZero, :]
-    
+
     mean = d.mean(0)
     std = d.std(0)
-    
+
     mean = np.append(mean, d.mean())
     std = np.append(std, d.std())
-    
+
     locations = np.arange(13)
     ticks = map(str, np.arange(12) + 1)
     ticks.append('AVG')
@@ -454,7 +454,7 @@ def usageBarGraph():
 
 def plotLoadDurationCurve():
     '''
-    takes data from start to end dates, tabulates power usage, and generates 
+    takes data from start to end dates, tabulates power usage, and generates
     a load duration curve that orders hours vs power
     '''
     # open hourly usage csv file
