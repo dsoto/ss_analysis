@@ -38,13 +38,28 @@ def getDataAsRecordArray(dateStart, dateEnd):
              ('date',        'object')]     # column 9
     dtype = np.dtype(dtype)
 
-    print 'opening url'
-    import urllib
-    dataString = urllib.urlopen('http://178.79.140.99/sys/export?model=PrimaryLog').read()
+    # either get file from web or use existing file on computer
+    fileName = 'dataFile.csv'
+    if os.path.isfile(fileName):
+        # file exists so loadtxt uses csv file
+        print 'loading', fileName
+        print 'new data is _NOT_ being downloaded'
+        print 'remove dataFile.csv to download fresh data'
+        dataStream = open(fileName, 'r')
+    else:
+        # file does not exist so we must download it
+        print 'opening url'
+        import urllib
+        dataString = urllib.urlopen('http://178.79.140.99/sys/export?model=PrimaryLog').read()
 
-    print 'converting to cStringIO'
-    import cStringIO
-    dataStream = cStringIO.StringIO(dataString)
+        print 'converting to cStringIO'
+        import cStringIO
+        dataStream = cStringIO.StringIO(dataString)
+
+        # dump csv data to file
+        f = open('dataFile.csv','w')
+        f.write(dataString)
+        f.close()
 
     print 'np.loadtxt'
     # load file
@@ -56,7 +71,7 @@ def getDataAsRecordArray(dateStart, dateEnd):
                                usecols=usecols)
 
     # yank irrelevant circuits
-    d = d[d['circuit_id']!=25]
+    # d = d[d['circuit_id']!=25]     #MAINS pelengana
     d = d[d['circuit_id']!=28]
     d = d[d['circuit_id']!=29]
     d = d[d['circuit_id']!=30]
