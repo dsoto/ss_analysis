@@ -340,7 +340,21 @@ def plotTotalEnergyPerDay(d):
 
     fig.savefig('plotTotalWattHoursPerDay.pdf')
 
-
+def printDataCompleteness(d):
+    dates = list(set(d['date']))
+    dates.sort()
+    for date in dates:
+        dataPoints = d[d['date']==date]
+        if len(dataPoints) != 0:
+            print date, '-', str(len(dataPoints)).rjust(2), '-',
+            circuits = dataPoints['circuit_id']
+            circuits.sort()
+            for i in range(13,26):
+                if i in circuits:
+                    print i,
+                else:
+                    print '  ',
+            print
 
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
