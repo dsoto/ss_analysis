@@ -68,11 +68,13 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
         filename = '192_168_1_' + circuit + '.log'
         file = dataDirectory + path + filename
 
-        if verbose == 1:
+        if verbose >= 1:
             print 'reading ' + file
 
         # read log file
         if os.path.isfile(file):
+            if verbose >= 1:
+                print 'found ' + file
             newData = np.loadtxt(file, delimiter=',', dtype = type, skiprows = 1)
             # if newData is only one line it is a pita so discard it
             # fixme: figure out how to append these one line logs
