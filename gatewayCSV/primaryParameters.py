@@ -5,6 +5,7 @@ import dateutil.parser
 import matplotlib.dates
 import matplotlib.pyplot as plt
 import datetime
+import os.path
 
 
 usecols = [0,5,6,7,8,9]
