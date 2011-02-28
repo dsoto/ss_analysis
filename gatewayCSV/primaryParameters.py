@@ -78,7 +78,7 @@ def getDataAsRecordArray(dateStart, dateEnd):
     d = d[d['circuit_id']!=30]
 
     # take out relevant date range
-    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+    #d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
     # sort by date
     sortIndex = d['date'].argsort()
