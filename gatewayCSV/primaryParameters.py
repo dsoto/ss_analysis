@@ -11,7 +11,7 @@ import os.path
 usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
-dateStart = datetime.datetime(2011,  2,  23)
+dateStart = datetime.datetime(2011,  1,  1)
 dateEnd   = datetime.datetime(2011,  2,  28)
 
 def creditScrub(val):
@@ -420,100 +420,55 @@ def printDataCompleteness(d):
                     print '  ',
             print
 
-def plotAveragedHourlyEnergy(d, dateStart, dateEnd):
-    circuit = 23
+def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
+    numCircuits = energy.shape[0]
+    numDays     = energy.shape[1]
+    numHours    = energy.shape[2]
 
-    date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
-    date = np.array(date)
-
-    rows = (dateEnd - dateStart).days
-    print rows
-    cols = 24
-    energy = np.zeros((rows,cols))
-
-    circuits = range(13,25)
     fig = plt.figure(figsize=(8,12))
 
-    for i,c in enumerate(circuits):
-        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
-        # looks for date corresponding to time sample
-        # if no date found, sample missing and previous sample used
-        dateCurrent = dateStart
-        lastWH = 0
-        lastcredit = 0
-        row = 0
-        while dateCurrent != dateEnd:
-            print dateCurrent
-            data = d[date==dateCurrent]
-            data = data[data['circuit_id']==c]
-            #print data
-            if data.shape == (0,):
-                energy[row,dateCurrent.hour] = lastWH
-            elif data.shape[0] > 1:
-                energy[row,dateCurrent.hour]= lastWH
-            else:
-                lastWH = data['watthours']
-                lastcredit = data['credit']
-                energy[row,dateCurrent.hour] = data['watthours']
-            dateCurrent += datetime.timedelta(hours=1)
-            if dateCurrent.hour == 0:
-                row += 1
-        henergy = np.diff(energy, axis=1)
-        henergy = np.hstack((energy[:,0].reshape(rows,1),henergy))
-        for row in range(rows):
-            ax.plot(henergy[row,:],color='#dddddd')
+    for i,c in enumerate(range(numCircuits)):
+        ax = fig.add_axes((0.15,0.05+i*0.072,0.7,0.05))
 
-        ax.plot(sum(henergy,0)/rows,'k')
-        ax.set_ylim((-10,25))
-        ax.set_yticks((0,25))
+        henergy = np.diff(energy[c], axis=1)
+        henergy = np.hstack((energy[c, :, 0].reshape(numDays,1),henergy))
+
+        for day in range(numDays):
+            ax.plot(henergy[day],color='#dddddd')
+
+        ax.plot(sum(henergy,0)/numDays,'k')
+        ax.set_ylim((-5,50))
+        ax.set_yticks((0,25,50))
+        ax.set_xlim((0,23))
+        ax.set_xticks((0,4,8,12,16,20,23))
+        ax.text(1.05, 0.4, str(c+13), transform = ax.transAxes)
         ax.grid(True)
+    fig.text(0.05, 0.7, 'Power Usage (W)', rotation='vertical')
+    fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
     fig.savefig('plotAveragedHourlyEnergy.pdf')
 
-def plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd):
-    circuit = 23
+def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
+    numCircuits = energy.shape[0]
+    numDays     = energy.shape[1]
+    numHours    = energy.shape[2]
 
-    date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
-    date = np.array(date)
-
-    rows = (dateEnd - dateStart).days
-    print rows
-    cols = 24
-    energy = np.zeros((rows,cols))
-
-    circuits = range(13,25)
     fig = plt.figure(figsize=(8,12))
 
-    for i,c in enumerate(circuits):
-        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
-        # looks for date corresponding to time sample
-        # if no date found, sample missing and previous sample used
-        dateCurrent = dateStart
-        lastWH = 0
-        lastcredit = 0
-        row = 0
-        while dateCurrent != dateEnd:
-            print dateCurrent
-            data = d[date==dateCurrent]
-            data = data[data['circuit_id']==c]
-            #print data
-            if data.shape == (0,):
-                energy[row,dateCurrent.hour] = lastWH
-            elif data.shape[0] > 1:
-                energy[row,dateCurrent.hour]= lastWH
-            else:
-                lastWH = data['watthours']
-                lastcredit = data['credit']
-                energy[row,dateCurrent.hour] = data['watthours']
-            dateCurrent += datetime.timedelta(hours=1)
-            if dateCurrent.hour == 0:
-                row += 1
-        for row in range(rows):
-            ax.plot(energy[row,:],color='#dddddd')
+    for i,c in enumerate(range(numCircuits)):
+        ax = fig.add_axes((0.15,0.05+i*0.072,0.7,0.05))
 
-        ax.plot(sum(energy,0)/rows,'k')
+        for day in range(numDays):
+            ax.plot(energy[c, day, :],color='#dddddd')
+
+        ax.plot(sum(energy[c],0)/numDays,'k')
         ax.set_ylim((0,150))
         ax.set_yticks((0,50,100,150))
+        ax.set_xlim((0,23))
+        ax.set_xticks((0,4,8,12,16,20,23))
+        ax.text(1.05, 0.4, str(c+13), transform = ax.transAxes)
         ax.grid(True)
+    fig.text(0.05, 0.7, 'Accumulated Energy Use (Wh)', rotation='vertical')
+    fig.suptitle('averaged accumulated usage\n'+str(dateStart)+'\n'+str(dateEnd))
     fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
 
 def sampleHourlyWatthours(d, dateStart, dateEnd):
@@ -545,6 +500,9 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
             if data.shape == (0,):
                 print 'no data', dateCurrent, c
                 energy[circuitIndex, dateIndex, hourIndex] = lastWH
+            elif data.shape[0] > 1:
+                print 'too much data', dateCurrent, c
+                energy[circuitIndex, dateIndex, hourIndex] = lastWH
             else:
                 lastWH = data['watthours']
                 lastcredit = data['credit']
@@ -565,6 +523,8 @@ print('End Load Data')
 # plotCreditSeparateAxes(d)
 # plotRecharges(d)
 # plotColloquium(d)
-#plotAveragedHourlyEnergy(d, dateStart, dateEnd)
-#plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd)
-watthours = sampleHourlyWatthours(d, dateStart, dateEnd)
+
+
+energy = sampleHourlyWatthours(d, dateStart, dateEnd)
+plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
+plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
