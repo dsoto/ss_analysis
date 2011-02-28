@@ -383,45 +383,90 @@ def plotAveragedHourlyEnergy(d, dateStart, dateEnd):
     cols = 24
     energy = np.zeros((rows,cols))
 
-    # looks for date corresponding to time sample
-    # if no date found, sample missing and previous sample used
-    dateCurrent = dateStart
-    lastWH = 0
-    lastcredit = 0
-    row = 0
-    while dateCurrent != dateEnd:
-        print dateCurrent,
-        data = d[date==dateCurrent]
-        data = data[data['circuit_id']==circuit]
-        #print data
-        if data.shape == (0,):
-            print 'no data',
-            energy[row,dateCurrent.hour] = lastWH
-            print lastWH, lastcredit
-        else:
-            print data['watthours'], data['credit']
-            lastWH = data['watthours']
-            lastcredit = data['credit']
-            energy[row,dateCurrent.hour] = data['watthours']
-        dateCurrent += datetime.timedelta(hours=1)
-        if dateCurrent.hour == 0:
-            row += 1
+    circuits = range(13,25)
+    fig = plt.figure(figsize=(8,12))
 
-    print energy
+    for i,c in enumerate(circuits):
+        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        # looks for date corresponding to time sample
+        # if no date found, sample missing and previous sample used
+        dateCurrent = dateStart
+        lastWH = 0
+        lastcredit = 0
+        row = 0
+        while dateCurrent != dateEnd:
+            print dateCurrent
+            data = d[date==dateCurrent]
+            data = data[data['circuit_id']==c]
+            #print data
+            if data.shape == (0,):
+                energy[row,dateCurrent.hour] = lastWH
+            elif data.shape[0] > 1:
+                energy[row,dateCurrent.hour]= lastWH
+            else:
+                lastWH = data['watthours']
+                lastcredit = data['credit']
+                energy[row,dateCurrent.hour] = data['watthours']
+            dateCurrent += datetime.timedelta(hours=1)
+            if dateCurrent.hour == 0:
+                row += 1
+        henergy = np.diff(energy, axis=1)
+        henergy = np.hstack((energy[:,0].reshape(rows,1),henergy))
+        for row in range(rows):
+            ax.plot(henergy[row,:],color='#dddddd')
 
+        ax.plot(sum(henergy,0)/rows,'k')
+        ax.set_ylim((-10,25))
+        ax.set_yticks((0,25))
+        ax.grid(True)
+    fig.savefig('plotAveragedHourlyEnergy.pdf')
 
+def plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd):
+    circuit = 23
 
-    henergy = np.diff(energy, axis=1)
+    date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
+    date = np.array(date)
 
-    henergy = np.hstack((energy[:,0].reshape(rows,1),henergy))
+    rows = (dateEnd - dateStart).days
+    print rows
+    cols = 24
+    energy = np.zeros((rows,cols))
 
-    #return energy
+    circuits = range(13,25)
+    fig = plt.figure(figsize=(8,12))
 
-    for row in range(rows):
-        plt.plot(henergy[row,:],'k')
+    for i,c in enumerate(circuits):
+        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        # looks for date corresponding to time sample
+        # if no date found, sample missing and previous sample used
+        dateCurrent = dateStart
+        lastWH = 0
+        lastcredit = 0
+        row = 0
+        while dateCurrent != dateEnd:
+            print dateCurrent
+            data = d[date==dateCurrent]
+            data = data[data['circuit_id']==c]
+            #print data
+            if data.shape == (0,):
+                energy[row,dateCurrent.hour] = lastWH
+            elif data.shape[0] > 1:
+                energy[row,dateCurrent.hour]= lastWH
+            else:
+                lastWH = data['watthours']
+                lastcredit = data['credit']
+                energy[row,dateCurrent.hour] = data['watthours']
+            dateCurrent += datetime.timedelta(hours=1)
+            if dateCurrent.hour == 0:
+                row += 1
+        for row in range(rows):
+            ax.plot(energy[row,:],color='#dddddd')
 
-    plt.plot(sum(henergy,0)/rows)
-    plt.show()
+        ax.plot(sum(energy,0)/rows,'k')
+        ax.set_ylim((0,150))
+        ax.set_yticks((0,50,100,150))
+        ax.grid(True)
+    fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
 
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
