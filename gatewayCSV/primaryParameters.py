@@ -518,11 +518,41 @@ def plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd):
 
 def sampleHourlyWatthours(d, dateStart, dateEnd):
     # returns a 3rd rank tensor of data
-    numCircuits = 12
-    numDays = 4
+
+    # initialize array
+    circuits = range(13,25)
+    numCircuits = len(circuits)
+    numDays = (dateEnd - dateStart).days
     numHours = 24
-    watthours = np.zeros(circuits, days, hours)
-    return watthours
+    energy = np.zeros((numCircuits, numDays, numHours))
+
+    # roundoff dates
+    date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
+    date = np.array(date)
+
+    for i,c in enumerate(circuits):
+        # looks for date corresponding to time sample
+        # if no date found, sample missing and previous sample used
+        dateCurrent = dateStart
+        lastWH = 0
+        lastcredit = 0
+        circuitIndex = c - circuits[0]
+        dateIndex = 0
+        while dateCurrent != dateEnd:
+            data = d[date==dateCurrent]
+            data = data[data['circuit_id']==c]
+            hourIndex = dateCurrent.hour
+            if data.shape == (0,):
+                print 'no data', dateCurrent, c
+                energy[circuitIndex, dateIndex, hourIndex] = lastWH
+            else:
+                lastWH = data['watthours']
+                lastcredit = data['credit']
+                energy[circuitIndex, dateIndex, hourIndex] = data['watthours']
+            dateCurrent += datetime.timedelta(hours=1)
+            if dateCurrent.hour == 0:
+                dateIndex += 1
+    return energy
 
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
@@ -535,5 +565,6 @@ print('End Load Data')
 # plotCreditSeparateAxes(d)
 # plotRecharges(d)
 # plotColloquium(d)
-plotAveragedHourlyEnergy(d, dateStart, dateEnd)
-plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd)
+#plotAveragedHourlyEnergy(d, dateStart, dateEnd)
+#plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd)
+watthours = sampleHourlyWatthours(d, dateStart, dateEnd)
