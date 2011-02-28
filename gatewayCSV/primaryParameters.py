@@ -378,15 +378,50 @@ def plotAveragedHourlyEnergy(d, dateStart, dateEnd):
     date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
     date = np.array(date)
 
+    rows = (dateEnd - dateStart).days
+    print rows
+    cols = 24
+    energy = np.zeros((rows,cols))
+
+    # looks for date corresponding to time sample
+    # if no date found, sample missing and previous sample used
     dateCurrent = dateStart
+    lastWH = 0
+    lastcredit = 0
+    row = 0
     while dateCurrent != dateEnd:
         print dateCurrent,
         data = d[date==dateCurrent]
         data = data[data['circuit_id']==circuit]
         #print data
-        print data['watthours'], data['credit']
+        if data.shape == (0,):
+            print 'no data',
+            energy[row,dateCurrent.hour] = lastWH
+            print lastWH, lastcredit
+        else:
+            print data['watthours'], data['credit']
+            lastWH = data['watthours']
+            lastcredit = data['credit']
+            energy[row,dateCurrent.hour] = data['watthours']
         dateCurrent += datetime.timedelta(hours=1)
+        if dateCurrent.hour == 0:
+            row += 1
 
+    print energy
+
+
+
+    henergy = np.diff(energy, axis=1)
+
+    henergy = np.hstack((energy[:,0].reshape(rows,1),henergy))
+
+    #return energy
+
+    for row in range(rows):
+        plt.plot(henergy[row,:],'k')
+
+    plt.plot(sum(henergy,0)/rows)
+    plt.show()
 
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
