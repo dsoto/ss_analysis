@@ -506,6 +506,14 @@ def plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd):
         ax.grid(True)
     fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
 
+def sampleHourlyWatthours(d, dateStart, dateEnd):
+    # returns a 3rd rank tensor of data
+    numCircuits = 12
+    numDays = 4
+    numHours = 24
+    watthours = np.zeros(circuits, days, hours)
+    return watthours
+
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
 print('End Load Data')
