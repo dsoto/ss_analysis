@@ -372,13 +372,31 @@ def printDataCompleteness(d):
                     print '  ',
             print
 
+def plotAveragedHourlyEnergy(d, dateStart, dateEnd):
+    circuit = 13
+
+    date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
+    date = np.array(date)
+
+    dateCurrent = dateStart
+    while dateCurrent != dateEnd:
+        print dateCurrent,
+        data = d[date==dateCurrent]
+        data = data[data['circuit_id']==circuit]
+        #print data
+        print data['watthours'], data['credit']
+        dateCurrent += datetime.timedelta(hours=1)
+
+
 print('Begin Load Data')
 d = getDataAsRecordArray(dateStart, dateEnd)
 print('End Load Data')
-plotHouseholdEnergyPerHour(d)
-plotHouseholdEnergyPerDay(d)
-plotTotalEnergyPerDay(d)
-plotAllWattHours(d)
-plotCredit(d)
-plotCreditSeparateAxes(d)
-plotRecharges(d)
+# printDataCompleteness(d)
+# plotHouseholdEnergyPerHour(d)
+# plotHouseholdEnergyPerDay(d)
+# plotTotalEnergyPerDay(d)
+# plotAllWattHours(d)
+# plotCreditSeparateAxes(d)
+# plotRecharges(d)
+# plotColloquium(d)
+plotAveragedHourlyEnergy(d, dateStart, dateEnd)
