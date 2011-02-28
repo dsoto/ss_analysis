@@ -234,6 +234,44 @@ def plotHouseholdEnergyPerHour(d):
     fig.suptitle('Hourly Accumulated Consumption Per Household')
     fig.savefig('plotHouseholdEnergyPerHour.pdf')
 
+def plotColloquium(d):
+    '''
+    plots a time series of accumulated watt hours
+    for each circuit
+    '''
+    fig = plt.figure()
+    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
+
+    circuits = set(d['circuit_id'])
+    circuits = [17,23]
+    for i,c in enumerate(circuits):
+        mask = d['circuit_id']==c
+        dates = d[mask]['date']
+        dates = matplotlib.dates.date2num(dates)
+        wh = d[mask]['watthours']
+
+        plotHeight = 0.7 / len(circuits)
+        ax = fig.add_axes((0.15, 0.1+i*(plotHeight+0.05), 0.7, plotHeight))
+
+
+        # plot masked data to get date range
+        ax.plot_date(dates, wh, '-x')
+        if i==0:
+            ax.set_xlabel('Date')
+        if i!=0:
+            ax.set_xticklabels([])
+
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        ax.set_ylim((0,150))
+        ax.set_yticks((0,50,100,150))
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+
+    #fig.autofmt_xdate()
+    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
+    fig.suptitle('Hourly Accumulated Consumption Per Household')
+    fig.savefig('plotColloquium.pdf')
+
 def plotHouseholdEnergyPerDay(d):
 
     mask = []
