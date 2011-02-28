@@ -11,8 +11,8 @@ import os.path
 usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
-dateStart = datetime.datetime(2011, 02, 05)
-dateEnd   = datetime.datetime(2011, 03, 01)
+dateStart = datetime.datetime(2011,  2,  23)
+dateEnd   = datetime.datetime(2011,  2,  28)
 
 def creditScrub(val):
     ''' take out values of None from the data on import '''
@@ -72,7 +72,7 @@ def getDataAsRecordArray(dateStart, dateEnd):
                                usecols=usecols)
 
     # yank irrelevant circuits
-    # d = d[d['circuit_id']!=25]     #MAINS pelengana
+    d = d[d['circuit_id']!=25]     #MAINS pelengana
     d = d[d['circuit_id']!=28]
     d = d[d['circuit_id']!=29]
     d = d[d['circuit_id']!=30]
@@ -273,7 +273,13 @@ def plotColloquium(d):
     fig.savefig('plotColloquium.pdf')
 
 def plotHouseholdEnergyPerDay(d):
+    '''
+    plan:
 
+    change to stacked plot
+    place watt-hour data in numpy array
+
+    '''
     mask = []
     for date in d['date']:
         if date.hour==23:
@@ -288,11 +294,15 @@ def plotHouseholdEnergyPerDay(d):
     fig = plt.figure()
     ax = fig.add_axes((0.15,0.2,0.7,0.7))
 
+
     for i,c in enumerate(circuits):
         mask = d['circuit_id']==c
         dates = d[mask]['date']
+        print dates
+        print 'date length', len(dates)
         dates = matplotlib.dates.date2num(dates)
         wh = d[mask]['watthours']
+        print 'wh length', len(wh)
 
         # plot masked data to get date range
         ax.plot_date(dates, wh, '-o', label=str(c),
@@ -301,15 +311,15 @@ def plotHouseholdEnergyPerDay(d):
                                    markeredgecolor = plotColorList[i],
                                    markerfacecolor = 'None')
 
-        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(dateFormatter)
-        fig.autofmt_xdate()
-        ax.legend(loc=(1.0,0.0))
-        ax.grid(True)
-        ax.set_xlabel('Date')
-        ax.set_ylabel('Energy Consumed (Watt-Hours)')
-        ax.set_title('Daily Consumption Per Household')
-        fig.savefig('plotHouseholdEnergyPerDay.pdf')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+    ax.legend(loc=(1.0,0.0))
+    ax.grid(True)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy Consumed (Watt-Hours)')
+    ax.set_title('Daily Consumption Per Household')
+    fig.savefig('plotHouseholdEnergyPerDay.pdf')
 
 def plotAllWattHours(d):
     '''
@@ -411,7 +421,7 @@ def printDataCompleteness(d):
             print
 
 def plotAveragedHourlyEnergy(d, dateStart, dateEnd):
-    circuit = 13
+    circuit = 23
 
     date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
     date = np.array(date)
@@ -526,3 +536,4 @@ print('End Load Data')
 # plotRecharges(d)
 # plotColloquium(d)
 plotAveragedHourlyEnergy(d, dateStart, dateEnd)
+plotAveragedAccumulatedHourlyEnergy(d, dateStart, dateEnd)
