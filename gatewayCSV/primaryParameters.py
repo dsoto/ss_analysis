@@ -460,21 +460,23 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
     return energy
 
-print('Begin Load Data')
-d = getDataAsRecordArray()
-print('End Load Data')
-#plotHouseholdEnergyPerDay(d)
-#plotTotalEnergyPerDay(d)
-#plotRecharges(d)
-#plotColloquium(d)
 
-dateStart = datetime.datetime(2011,  1,  1)
-dateEnd   = datetime.datetime(2011,  4,  1)
-plotCreditSeparateAxes(d, dateStart, dateEnd)
-plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
+if __name__ == '__main__':
+    print('Begin Load Data')
+    d = getDataAsRecordArray()
+    print('End Load Data\n')
 
-dateStart = datetime.datetime(2011,  2,  23)
-dateEnd   = datetime.datetime(2011,  3,  1)
-energy = sampleHourlyWatthours(d, dateStart, dateEnd)
-plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
-plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
+    dateStart = datetime.datetime(2011,  2,  1)
+    dateEnd   = datetime.datetime(2011,  3,  1)
+    plotRecharges(d, dateStart, dateEnd)
+
+    dateStart = datetime.datetime(2011,  2,  1)
+    dateEnd   = datetime.datetime(2011,  3,  1)
+    plotCreditSeparateAxes(d, dateStart, dateEnd)
+    plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
+
+    dateStart = datetime.datetime(2011,  1,  1)
+    dateEnd   = datetime.datetime(2011,  3,  1)
+    energy = sampleHourlyWatthours(d, dateStart, dateEnd)
+    plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
+    plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
