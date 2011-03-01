@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import datetime
 import os.path
 
-
 usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
@@ -408,22 +407,6 @@ def plotTotalEnergyPerDay(d):
 
     fig.savefig('plotTotalWattHoursPerDay.pdf')
 
-def printDataCompleteness(d):
-    dates = list(set(d['date']))
-    dates.sort()
-    for date in dates:
-        dataPoints = d[d['date']==date]
-        if len(dataPoints) != 0:
-            print date, '-', str(len(dataPoints)).rjust(2), '-',
-            circuits = dataPoints['circuit_id']
-            circuits.sort()
-            for i in range(13,26):
-                if i in circuits:
-                    print i,
-                else:
-                    print '  ',
-            print
-
 def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
     numCircuits = energy.shape[0]
     numDays     = energy.shape[1]
@@ -517,7 +500,6 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 print('Begin Load Data')
 d = getDataAsRecordArray()
 print('End Load Data')
-#printDataCompleteness(d)
 #plotHouseholdEnergyPerDay(d)
 #plotTotalEnergyPerDay(d)
 #plotAllWattHours(d)
