@@ -24,7 +24,7 @@ def creditScrub(val):
             val = 0
         return val
 
-def getDataAsRecordArray(dateStart, dateEnd):
+def getDataAsRecordArray():
     '''
     load csv from shared solar gateway and create
     numpy record array
@@ -72,10 +72,10 @@ def getDataAsRecordArray(dateStart, dateEnd):
                                usecols=usecols)
 
     # yank irrelevant circuits
-    d = d[d['circuit_id']!=25]     #MAINS pelengana
-    d = d[d['circuit_id']!=28]
-    d = d[d['circuit_id']!=29]
-    d = d[d['circuit_id']!=30]
+    #d = d[d['circuit_id']!=25]     #MAINS pelengana
+    #d = d[d['circuit_id']!=28]
+    #d = d[d['circuit_id']!=29]
+    #d = d[d['circuit_id']!=30]
 
     # take out relevant date range
     #d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
@@ -86,13 +86,14 @@ def getDataAsRecordArray(dateStart, dateEnd):
 
     return d
 
-def plotCreditSeparateAxes(d):
+def plotCreditSeparateAxes(d, dateStart, dateEnd):
     '''
     plots the credit in each circuit account on a separate axis
     '''
     fig = plt.figure(figsize=(8,12))
     circuits = set(d['circuit_id'])
-
+    circuits = range(13,25)
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
     for i,c in enumerate(circuits):
         # assemble data by circuit
         circuitMask = d['circuit_id'] == c
@@ -197,7 +198,7 @@ def plotRecharges(d):
     ax.grid()
     fig.savefig('plotRecharges.pdf')
 
-def plotHouseholdEnergyPerHour(d):
+def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
     '''
     plots a time series of accumulated watt hours
     for each circuit
@@ -206,6 +207,9 @@ def plotHouseholdEnergyPerHour(d):
     #ax = fig.add_axes((0.15,0.2,0.7,0.7))
 
     circuits = set(d['circuit_id'])
+    circuits = range(13,25)
+
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
     for i,c in enumerate(circuits):
         mask = d['circuit_id']==c
@@ -485,7 +489,12 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
     date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
     date = np.array(date)
 
+    # if i switch the order of the loops, it makes output of a table
+    # of sample reporting easier
+
     for i,c in enumerate(circuits):
+        droppedSamples = 0
+        redundantSamples = 0
         # looks for date corresponding to time sample
         # if no date found, sample missing and previous sample used
         dateCurrent = dateStart
@@ -493,15 +502,18 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
         lastcredit = 0
         circuitIndex = c - circuits[0]
         dateIndex = 0
+
         while dateCurrent != dateEnd:
             data = d[date==dateCurrent]
             data = data[data['circuit_id']==c]
             hourIndex = dateCurrent.hour
             if data.shape == (0,):
-                print 'no data', dateCurrent, c
+                droppedSamples += 1
+                #print 'no data', dateCurrent, c
                 energy[circuitIndex, dateIndex, hourIndex] = lastWH
             elif data.shape[0] > 1:
-                print 'too much data', dateCurrent, c
+                redundantSamples += 1
+                #print 'too much data', dateCurrent, c
                 energy[circuitIndex, dateIndex, hourIndex] = lastWH
             else:
                 lastWH = data['watthours']
@@ -510,21 +522,29 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
             dateCurrent += datetime.timedelta(hours=1)
             if dateCurrent.hour == 0:
                 dateIndex += 1
+
+        print 'for circuit', c
+        print 'dropped samples', droppedSamples
+        print 'redundant samples', redundantSamples
     return energy
 
 print('Begin Load Data')
-d = getDataAsRecordArray(dateStart, dateEnd)
+d = getDataAsRecordArray()
 print('End Load Data')
-printDataCompleteness(d)
-plotHouseholdEnergyPerHour(d)
-plotHouseholdEnergyPerDay(d)
-plotTotalEnergyPerDay(d)
-plotAllWattHours(d)
-plotCreditSeparateAxes(d)
-plotRecharges(d)
-plotColloquium(d)
+#printDataCompleteness(d)
+#plotHouseholdEnergyPerDay(d)
+#plotTotalEnergyPerDay(d)
+#plotAllWattHours(d)
+#plotRecharges(d)
+#plotColloquium(d)
 
+dateStart = datetime.datetime(2011,  1,  1)
+dateEnd   = datetime.datetime(2011,  4,  1)
+plotCreditSeparateAxes(d, dateStart, dateEnd)
+plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
 
+dateStart = datetime.datetime(2011,  2,  23)
+dateEnd   = datetime.datetime(2011,  3,  1)
 energy = sampleHourlyWatthours(d, dateStart, dateEnd)
 plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
 plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
