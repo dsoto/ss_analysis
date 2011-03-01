@@ -27,8 +27,6 @@ def getDataAsRecordArray():
     '''
     load csv from shared solar gateway and create
     numpy record array
-    also, remove MAINS and independence circuits
-    only return data for date range between dateStart and dateEnd
     '''
     dtype = [('watthours',   'float'),      # column 0
              ('circuit_id',  'int'),        # column 5
@@ -69,15 +67,6 @@ def getDataAsRecordArray():
                                converters = {7: creditScrub,
                                              9: dateutil.parser.parse},
                                usecols=usecols)
-
-    # yank irrelevant circuits
-    #d = d[d['circuit_id']!=25]     #MAINS pelengana
-    #d = d[d['circuit_id']!=28]
-    #d = d[d['circuit_id']!=29]
-    #d = d[d['circuit_id']!=30]
-
-    # take out relevant date range
-    #d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
     # sort by date
     sortIndex = d['date'].argsort()
