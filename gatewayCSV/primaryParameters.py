@@ -325,9 +325,15 @@ def plotHouseholdEnergyPerDay(d):
     fig.savefig('plotHouseholdEnergyPerDay.pdf')
 
 def plotAllWattHours(d):
+    # fixme: this function has plot points that don't make sense
     '''
     for each date in d, sum watt hours and report
     '''
+    # yank non-pelengana customer circuits
+    d = d[d['circuit_id']!=25]     #MAINS pelengana
+    d = d[d['circuit_id']!=28]
+    d = d[d['circuit_id']!=29]
+    d = d[d['circuit_id']!=30]
 
     dates = set(d['date'])
 
@@ -502,7 +508,6 @@ d = getDataAsRecordArray()
 print('End Load Data')
 #plotHouseholdEnergyPerDay(d)
 #plotTotalEnergyPerDay(d)
-#plotAllWattHours(d)
 #plotRecharges(d)
 #plotColloquium(d)
 
