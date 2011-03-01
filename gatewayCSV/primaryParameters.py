@@ -120,15 +120,15 @@ def plotCreditSeparateAxes(d, dateStart, dateEnd):
     fig.suptitle('Account Credit in Pelengana')
     fig.savefig('plotCreditSeparateAxes.pdf')
 
-def plotRecharges(d):
+def plotRecharges(d, dateStart, dateEnd):
     '''
     plots recharge events and outputs statistics on recharges
     '''
-    recharge = []
-    rechargedCircuits = []
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
-    circuits = set(d['circuit_id'])
-    print 'all circuits', circuits
+    recharge = []
+    circuits = range(13,25)
+
     for i,c in enumerate(circuits):
         circuitMask = d['circuit_id'] == c
         dates = d[circuitMask]['date']
@@ -137,64 +137,32 @@ def plotRecharges(d):
         # pull out recharge events
         cd = np.diff(credit)
         cmask = cd > 0
-        for element in zip(dates[cmask],cd[cmask]):
-            rechargedCircuits.append(c)
-            recharge.append(element)
+        circuitRecharges = zip(dates[cmask],cd[cmask])
 
-    print 'circuits that have recharged', set(rechargedCircuits)
+        for element in circuitRecharges:
+            if (element[0] != datetime.datetime(2011, 2, 22, 19, 45, 31) and
+                element[1] > 100):
+                recharge.append((matplotlib.dates.date2num(element[0]), element[1], c, element[0]))
 
     recharge = np.array(recharge)
 
-    rechargeFCFA = recharge[:,1]
-    rechargeDate = recharge[:,0]
-
-    masklow = (rechargeFCFA > 400)
-    rechargeFCFA = rechargeFCFA[masklow]
-    rechargeDate = rechargeDate[masklow]
-
-    mask500 = (rechargeFCFA > 400) & (rechargeFCFA < 600)
-    rechargeFCFA[mask500] = 500
-    print 'number of 500 recharges =', len(rechargeFCFA[mask500])
-
-    mask1000 = (rechargeFCFA > 800) & (rechargeFCFA < 1200)
-    rechargeFCFA[mask1000] = 1000
-    print 'number of 1000 recharges =', len(rechargeFCFA[mask1000])
-
-    print 'number of recharges',
-    print len(rechargeFCFA)
-
-    sortIndex = rechargeDate.argsort()
-    rechargeFCFA = np.take(rechargeFCFA, sortIndex)
-    rechargeDate = np.take(rechargeDate, sortIndex)
-
-    for pair in zip(rechargeDate, rechargeFCFA):
-        print pair[0].strftime('%m/%d %H:%M'),
-        print str(pair[1]).rjust(10),
-        print 'FCFA'
-
-    avgHour = 0
-    for date in rechargeDate:
-        avgHour += date.hour / float(len(rechargeDate))
-
-    print 'average time of recharge', avgHour
-
-    rechargeDate = matplotlib.dates.date2num(rechargeDate)
+    # print to console the recharge events
+    for event in recharge:
+        print event[3], str(event[1]).rjust(8), str(event[2]).rjust(4)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-
-    plt.plot_date(rechargeDate, rechargeFCFA,
-                  marker = 'o',
-                  markeredgecolor = 'k',
-                  markerfacecolor = 'None')
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    fig.autofmt_xdate()
+    ax.scatter(recharge[:,0], recharge[:,2]-12, s=recharge[:,1]/10,
+                                                edgecolor = 'b',
+                                                facecolor = 'None',
+                                                color = 'None')
+    ax.grid(True)
+    ax.xaxis_date()
     ax.set_xlabel('Date')
-    ax.set_ylabel('Amount of Purchase (FCFA)')
-    ax.set_title('Credit Purchases in Pelengana')
-    ax.set_ylim((0,1050))
-    ax.grid()
+    ax.set_ylabel('Circuit')
+    ax.set_ylim((0,13))
+    ax.set_yticks(range(1,13))
+    ax.set_title('Recharge Purchases in Pelengana')
     fig.savefig('plotRecharges.pdf')
 
 def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
