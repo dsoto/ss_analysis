@@ -411,7 +411,7 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
             ax.plot(energy[c, day, :],color='#dddddd')
 
         ax.plot(sum(energy[c],0)/numDays,'k')
-        ax.set_ylim((0,150))
+        ax.set_ylim((0,160))
         ax.set_yticks((0,50,100,150))
         ax.set_xlim((0,23))
         ax.set_xticks((0,4,8,12,16,20,23))
