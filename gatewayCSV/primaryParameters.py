@@ -489,43 +489,29 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
     date = [datetime.datetime(dt.year, dt.month, dt.day, dt.hour) for dt in d['date']]
     date = np.array(date)
 
-    # if i switch the order of the loops, it makes output of a table
-    # of sample reporting easier
-
-    for i,c in enumerate(circuits):
-        droppedSamples = 0
-        redundantSamples = 0
-        # looks for date corresponding to time sample
-        # if no date found, sample missing and previous sample used
-        dateCurrent = dateStart
-        lastWH = 0
-        lastcredit = 0
-        circuitIndex = c - circuits[0]
-        dateIndex = 0
-
-        while dateCurrent != dateEnd:
-            data = d[date==dateCurrent]
-            data = data[data['circuit_id']==c]
-            hourIndex = dateCurrent.hour
-            if data.shape == (0,):
-                droppedSamples += 1
-                #print 'no data', dateCurrent, c
-                energy[circuitIndex, dateIndex, hourIndex] = lastWH
-            elif data.shape[0] > 1:
-                redundantSamples += 1
-                #print 'too much data', dateCurrent, c
-                energy[circuitIndex, dateIndex, hourIndex] = lastWH
+    dateCurrent = dateStart
+    dateIndex = 0
+    while dateCurrent != dateEnd:
+        data = d[date==dateCurrent]
+        hourIndex = dateCurrent.hour
+        print dateCurrent,
+        for i,c in enumerate(circuits):
+            circuitIndex = c - circuits[0]
+            loopData = data[data['circuit_id']==c]
+            if loopData.shape == (0,):
+                energy[circuitIndex, dateIndex, hourIndex] = energy[circuitIndex, dateIndex, hourIndex-1]
+                print ' -',
+            elif loopData.shape[0] > 1:
+                energy[circuitIndex, dateIndex, hourIndex] = energy[circuitIndex, dateIndex, hourIndex-1]
+                print ' +',
             else:
-                lastWH = data['watthours']
-                lastcredit = data['credit']
-                energy[circuitIndex, dateIndex, hourIndex] = data['watthours']
-            dateCurrent += datetime.timedelta(hours=1)
-            if dateCurrent.hour == 0:
-                dateIndex += 1
+                energy[circuitIndex, dateIndex, hourIndex] = loopData['watthours']
+                print c,
+        print
+        dateCurrent += datetime.timedelta(hours=1)
+        if dateCurrent.hour == 0:
+            dateIndex += 1
 
-        print 'for circuit', c
-        print 'dropped samples', droppedSamples
-        print 'redundant samples', redundantSamples
     return energy
 
 print('Begin Load Data')
