@@ -145,8 +145,11 @@ def plotRecharges(d, dateStart, dateEnd):
                                                 edgecolor = 'b',
                                                 facecolor = 'None',
                                                 color = 'None')
-    ax.grid(True)
+    ax.grid(True, linestyle='-', color = '#bbbbbb')
     ax.xaxis_date()
+    ax.fmt_xdata = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter( matplotlib.dates.DateFormatter('%m-%d'))
+    #fig.autofmt_xdate()
     ax.set_xlabel('Date')
     ax.set_ylabel('Circuit')
     ax.set_ylim((0,13))
@@ -375,10 +378,16 @@ def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
     numDays     = energy.shape[1]
     numHours    = energy.shape[2]
 
-    fig = plt.figure(figsize=(8,12))
+    fig = plt.figure(figsize=(12,8))
 
+    sy = 0.22
+    sx = 0.15
+    dx = sx * 1.4
+    dy = sy * 1.3
     for i,c in enumerate(range(numCircuits)):
-        ax = fig.add_axes((0.15,0.05+i*0.072,0.7,0.05))
+        x = (i % 4)
+        y = 2 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
 
         henergy = np.diff(energy[c], axis=1)
         henergy = np.hstack((energy[c, :, 0].reshape(numDays,1),henergy))
@@ -391,7 +400,7 @@ def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
         ax.set_yticks((0,25,50))
         ax.set_xlim((0,23))
         ax.set_xticks((0,4,8,12,16,20,23))
-        ax.text(1.05, 0.4, str(c+13), transform = ax.transAxes)
+        ax.text(0.4, 0.7, str(c+13), transform = ax.transAxes)
         ax.grid(True)
     fig.text(0.05, 0.7, 'Power Usage (W)', rotation='vertical')
     fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
@@ -402,10 +411,15 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
     numDays     = energy.shape[1]
     numHours    = energy.shape[2]
 
-    fig = plt.figure(figsize=(8,12))
-
+    fig = plt.figure(figsize=(12,8))
+    sy = 0.22
+    sx = 0.15
+    dx = sx * 1.4
+    dy = sy * 1.3
     for i,c in enumerate(range(numCircuits)):
-        ax = fig.add_axes((0.15,0.05+i*0.072,0.7,0.05))
+        x = (i % 4)
+        y = 2 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
 
         for day in range(numDays):
             ax.plot(energy[c, day, :],color='#dddddd')
