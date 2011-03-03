@@ -37,7 +37,7 @@ def getDataAsRecordArray():
     dtype = np.dtype(dtype)
 
     # either get file from web or use existing file on computer
-    fileName = 'dataFile.csv'
+    fileName = 'PrimaryLog-data.csv'
     if os.path.isfile(fileName):
         # file exists so loadtxt uses csv file
         print 'loading', fileName
@@ -48,14 +48,14 @@ def getDataAsRecordArray():
         # file does not exist so we must download it
         print 'opening url'
         import urllib
-        dataString = urllib.urlopen('http://178.79.140.99/sys/export?model=PrimaryLog').read()
+        dataString = urllib.urlopen('http://178.79.140.99/system/export?model=PrimaryLog').read()
 
         print 'converting to cStringIO'
         import cStringIO
         dataStream = cStringIO.StringIO(dataString)
 
         # dump csv data to file
-        f = open('dataFile.csv','w')
+        f = open('PrimaryLog-data.csv','w')
         f.write(dataString)
         f.close()
 
@@ -481,11 +481,11 @@ if __name__ == '__main__':
     print('End Load Data\n')
 
     dateStart = datetime.datetime(2011,  2,  1)
-    dateEnd   = datetime.datetime(2011,  3,  1)
+    dateEnd   = datetime.datetime(2011,  4,  1)
     plotRecharges(d, dateStart, dateEnd)
 
     dateStart = datetime.datetime(2011,  2,  1)
-    dateEnd   = datetime.datetime(2011,  3,  1)
+    dateEnd   = datetime.datetime(2011,  4,  1)
     plotCreditSeparateAxes(d, dateStart, dateEnd)
     plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
 
