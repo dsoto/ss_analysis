@@ -138,11 +138,13 @@ def printRecharges(dateStart, dateEnd):
     # report table of recharges
     print
     print 'recharges since', dateStart.strftime('%Y-%m-%d')
-    print
+    widths = (8,20,8)
+    printTableRow(('circuit', 'date', 'amount'), widths)
     for d in data:
-        print d['cid'],
-        print d['date'].strftime('%Y-%m-%d %H:%M'),
-        print d['amount']
+        printTableRow((d['cid'],
+                       d['date'].strftime('%Y-%m-%d %H:%M'),
+                       d['amount']),
+                       widths)
 
     # system average daily income
     print
@@ -154,10 +156,11 @@ def printRecharges(dateStart, dateEnd):
     # print out table by user/household
     circuits = list(set(data['cid']))
     circuits.sort()
-
+    widths = (8, 8)
+    print 'total spent per circuit since', dateStart.strftime('%Y-%m-%d')
+    printTableRow(('circuit','amount'), widths)
     for cir in circuits:
-        print cir,
-        print sum(data[data['cid']==cir]['amount'])
+        printTableRow((cir,sum(data[data['cid']==cir]['amount'])), widths)
 
     return data
 
@@ -459,6 +462,11 @@ def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
     fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
     fig.savefig('plotAveragedHourlyEnergy.pdf')
 
+def printTableRow(strings, widths):
+    for s,w in zip(strings, widths):
+        print str(s).center(w),
+    print
+
 def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
     numCircuits = energy.shape[0]
     numDays     = energy.shape[1]
@@ -529,7 +537,7 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
 
 if __name__ == '__main__':
-
+    '''
     print('Begin Load Data')
     d = getDataAsRecordArray()
     print('End Load Data\n')
@@ -544,10 +552,11 @@ if __name__ == '__main__':
     plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
 
     dateStart = datetime.datetime(2011,  3,  1)
-    dateEnd   = datetime.datetime(2011,  4,  1)
+    dateEnd   = datetime.datetime(2011,  3,  8)
+    #dateEnd   = datetime.datetime.now()
     energy = sampleHourlyWatthours(d, dateStart, dateEnd)
     plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
     plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
-
+    '''
     dateStart = datetime.datetime(2011, 3, 3)
     d = printRecharges(dateStart, dateStart)
