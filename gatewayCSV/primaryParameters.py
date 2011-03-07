@@ -537,26 +537,26 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
 
 if __name__ == '__main__':
-    '''
+
     print('Begin Load Data')
     d = getDataAsRecordArray()
     print('End Load Data\n')
 
-    dateStart = datetime.datetime(2011,  2,  1)
+    dateStart = datetime.datetime(2011,  3,  3)
     dateEnd   = datetime.datetime(2011,  4,  1)
     plotRecharges(d, dateStart, dateEnd)
 
-    dateStart = datetime.datetime(2011,  2,  1)
+    dateStart = datetime.datetime(2011,  3,  3)
     dateEnd   = datetime.datetime(2011,  4,  1)
     plotCreditSeparateAxes(d, dateStart, dateEnd)
     plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
 
-    dateStart = datetime.datetime(2011,  3,  1)
+    dateStart = datetime.datetime(2011,  3,  3)
     dateEnd   = datetime.datetime(2011,  3,  8)
     #dateEnd   = datetime.datetime.now()
     energy = sampleHourlyWatthours(d, dateStart, dateEnd)
     plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
     plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
-    '''
+
     dateStart = datetime.datetime(2011, 3, 3)
     d = printRecharges(dateStart, dateStart)
