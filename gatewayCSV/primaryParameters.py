@@ -109,6 +109,59 @@ def plotCreditSeparateAxes(d, dateStart, dateEnd):
     fig.suptitle('Account Credit in Pelengana')
     fig.savefig('plotCreditSeparateAxes.pdf')
 
+def printRecharges(dateStart, dateEnd):
+    # define data headers for record array
+    dtype = [('amount',      'float'),
+             ('c1',          'S9'),
+             ('c2',          'S4'),
+             ('c3',          'S36'),
+             ('c4',          'S30'),
+             ('date',        'object'),
+             ('cid',         'int'),
+             ('active',      'S5'),
+             ('c8',          'int')]
+    dtype = np.dtype(dtype)
+
+    # open url, download, convert to file-like object, and load into numpy record array
+    import urllib
+    dataString = urllib.urlopen('http://178.79.140.99/system/export?model=AddCredit').read()
+    import cStringIO
+    dataStream = cStringIO.StringIO(dataString)
+    d = np.loadtxt(dataStream, delimiter=',',
+                               skiprows=1,
+                               dtype=dtype,
+                               converters = {5: dateutil.parser.parse})
+
+    # filter on dateStart
+    data = d[d['date']>dateStart]
+
+    # report table of recharges
+    print
+    print 'recharges since', dateStart.strftime('%Y-%m-%d')
+    print
+    for d in data:
+        print d['cid'],
+        print d['date'].strftime('%Y-%m-%d %H:%M'),
+        print d['amount']
+
+    # system average daily income
+    print
+    print 'system average daily income'
+    days = (datetime.datetime.now() - dateStart).days
+    print sum(data['amount'])/days
+    print
+
+    # print out table by user/household
+    circuits = list(set(data['cid']))
+    circuits.sort()
+
+    for cir in circuits:
+        print cir,
+        print sum(data[data['cid']==cir]['amount'])
+
+    return data
+
+
 def plotRecharges(d, dateStart, dateEnd):
     '''
     plots recharge events and outputs statistics on recharges
@@ -476,6 +529,7 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
 
 if __name__ == '__main__':
+
     print('Begin Load Data')
     d = getDataAsRecordArray()
     print('End Load Data\n')
@@ -489,8 +543,11 @@ if __name__ == '__main__':
     plotCreditSeparateAxes(d, dateStart, dateEnd)
     plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
 
-    dateStart = datetime.datetime(2011,  1,  1)
-    dateEnd   = datetime.datetime(2011,  3,  1)
+    dateStart = datetime.datetime(2011,  3,  1)
+    dateEnd   = datetime.datetime(2011,  4,  1)
     energy = sampleHourlyWatthours(d, dateStart, dateEnd)
     plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
     plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
+
+    dateStart = datetime.datetime(2011, 3, 3)
+    d = printRecharges(dateStart, dateStart)
