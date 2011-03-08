@@ -36,9 +36,11 @@ def getDataAsRecordArray():
              ('date',        'object')]     # column 9
     dtype = np.dtype(dtype)
 
+    downloadFile = True
+
     # either get file from web or use existing file on computer
     fileName = 'PrimaryLog-data.csv'
-    if os.path.isfile(fileName):
+    if os.path.isfile(fileName) and not downloadFile:
         # file exists so loadtxt uses csv file
         print 'loading', fileName
         print 'new data is _NOT_ being downloaded'
@@ -109,7 +111,7 @@ def plotCreditSeparateAxes(d, dateStart, dateEnd):
     fig.suptitle('Account Credit in Pelengana')
     fig.savefig('plotCreditSeparateAxes.pdf')
 
-def printRecharges(dateStart, dateEnd):
+def printRecharges(dateStart):
     # define data headers for record array
     dtype = [('amount',      'float'),
              ('c1',          'S9'),
@@ -155,15 +157,26 @@ def printRecharges(dateStart, dateEnd):
 
     # print out table by user/household
     circuits = list(set(data['cid']))
+    circuits = range(13,25)
     circuits.sort()
-    widths = (8, 8)
+    widths = (8, 8, 20)
     print 'total spent per circuit since', dateStart.strftime('%Y-%m-%d')
-    printTableRow(('circuit','amount'), widths)
+    printTableRow(('circuit','amount','recharge time interval (days)'), widths)
     for cir in circuits:
-        printTableRow((cir,sum(data[data['cid']==cir]['amount'])), widths)
+        recharges = data[data['cid']==cir]
+        if recharges.shape == (0,):
+            printTableRow((cir, '-', '-'), widths)
+        else:
+            timeBetweenRecharges = np.diff(recharges['date'])
+            if timeBetweenRecharges.shape == (0,):
+                avgTime = '-'
+            else:
+                timeBetweenRecharges = np.array([tbr.total_seconds() for tbr in timeBetweenRecharges])
+                timeBetweenRecharges = timeBetweenRecharges / (24 * 60 * 60)
+                avgTime = np.mean(timeBetweenRecharges)
+                avgTime = '%0.1f' % avgTime
 
-    return data
-
+            printTableRow((cir,sum(recharges['amount']), avgTime), widths)
 
 def plotRecharges(d, dateStart, dateEnd):
     '''
@@ -537,26 +550,27 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
 
 if __name__ == '__main__':
-
+    '''
     print('Begin Load Data')
     d = getDataAsRecordArray()
     print('End Load Data\n')
 
     dateStart = datetime.datetime(2011,  3,  3)
     dateEnd   = datetime.datetime(2011,  4,  1)
-    plotRecharges(d, dateStart, dateEnd)
+    #plotRecharges(d, dateStart, dateEnd)
 
     dateStart = datetime.datetime(2011,  3,  3)
     dateEnd   = datetime.datetime(2011,  4,  1)
     plotCreditSeparateAxes(d, dateStart, dateEnd)
     plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
+    #plotHouseholdEnergyPerDay(d)
 
     dateStart = datetime.datetime(2011,  3,  3)
-    dateEnd   = datetime.datetime(2011,  3,  8)
+    dateEnd   = datetime.datetime(2011,  3,  9)
     #dateEnd   = datetime.datetime.now()
     energy = sampleHourlyWatthours(d, dateStart, dateEnd)
     plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
     plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
-
+    '''
     dateStart = datetime.datetime(2011, 3, 3)
-    d = printRecharges(dateStart, dateStart)
+    printRecharges(dateStart)
