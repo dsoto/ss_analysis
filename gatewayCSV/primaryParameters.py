@@ -143,7 +143,7 @@ def printRecharges(dateStart):
     widths = (8,20,8)
     printTableRow(('circuit', 'date', 'amount'), widths)
     for d in data:
-        printTableRow((d['cid'],
+        printTableRow((d['cid']-12,
                        d['date'].strftime('%Y-%m-%d %H:%M'),
                        d['amount']),
                        widths)
@@ -165,7 +165,7 @@ def printRecharges(dateStart):
     for cir in circuits:
         recharges = data[data['cid']==cir]
         if recharges.shape == (0,):
-            printTableRow((cir, '-', '-'), widths)
+            printTableRow((cir-12, '-', '-'), widths)
         else:
             timeBetweenRecharges = np.diff(recharges['date'])
             if timeBetweenRecharges.shape == (0,):
@@ -176,41 +176,48 @@ def printRecharges(dateStart):
                 avgTime = np.mean(timeBetweenRecharges)
                 avgTime = '%0.1f' % avgTime
 
-            printTableRow((cir,sum(recharges['amount']), avgTime), widths)
+            printTableRow((cir-12,sum(recharges['amount']), avgTime), widths)
 
-def plotRecharges(d, dateStart, dateEnd):
+def plotRecharges(dateStart):
     '''
     plots recharge events and outputs statistics on recharges
     '''
-    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+    # define data headers for record array
+    dtype = [('amount',      'float'),
+             ('c1',          'S9'),
+             ('c2',          'S4'),
+             ('c3',          'S36'),
+             ('c4',          'S30'),
+             ('date',        'object'),
+             ('cid',         'int'),
+             ('active',      'S5'),
+             ('c8',          'int')]
+    dtype = np.dtype(dtype)
+
+    # open url, download, convert to file-like object, and load into numpy record array
+    import urllib
+    dataString = urllib.urlopen('http://178.79.140.99/system/export?model=AddCredit').read()
+    import cStringIO
+    dataStream = cStringIO.StringIO(dataString)
+    d = np.loadtxt(dataStream, delimiter=',',
+                               skiprows=1,
+                               dtype=dtype,
+                               converters = {5: dateutil.parser.parse})
+
+    # filter on dateStart
+    data = d[d['date']>dateStart]
 
     recharge = []
     circuits = range(13,25)
 
-    for i,c in enumerate(circuits):
-        circuitMask = d['circuit_id'] == c
-        dates = d[circuitMask]['date']
-        credit = d[circuitMask]['credit']
-
-        # pull out recharge events
-        cd = np.diff(credit)
-        cmask = cd > 0
-        circuitRecharges = zip(dates[cmask],cd[cmask])
-
-        for element in circuitRecharges:
-            if (element[0] != datetime.datetime(2011, 2, 22, 19, 45, 31) and
-                element[1] > 100):
-                recharge.append((matplotlib.dates.date2num(element[0]), element[1], c, element[0]))
-
-    recharge = np.array(recharge)
-
-    # print to console the recharge events
-    for event in recharge:
-        print event[3], str(event[1]).rjust(8), str(event[2]).rjust(4)
-
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.scatter(recharge[:,0], recharge[:,2]-12, s=recharge[:,1]/10,
+
+    dates = matplotlib.dates.date2num(data['date'])
+    circuit = data['cid']
+    credit = data['amount']
+
+    ax.scatter(dates, circuit-12, s=credit/10,
                                                 edgecolor = 'b',
                                                 facecolor = 'None',
                                                 color = 'None')
@@ -571,6 +578,7 @@ if __name__ == '__main__':
     energy = sampleHourlyWatthours(d, dateStart, dateEnd)
     plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
     plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
-    '''
+'''
     dateStart = datetime.datetime(2011, 3, 3)
     printRecharges(dateStart)
+    plotRecharges(dateStart)
