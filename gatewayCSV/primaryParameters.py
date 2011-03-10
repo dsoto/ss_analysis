@@ -112,6 +112,11 @@ def plotCreditSeparateAxes(d, dateStart, dateEnd):
     fig.savefig('plotCreditSeparateAxes.pdf')
 
 def printRecharges(dateStart):
+    '''
+    reads in csv AddCredit data from gateway.
+    outputs readable table of all credit purchases.
+    outputs a second table of each household, total purchases, and purchase frequency.
+    '''
     # define data headers for record array
     dtype = [('amount',      'float'),
              ('c1',          'S9'),
@@ -184,7 +189,9 @@ def printRecharges(dateStart):
 
 def plotRecharges(dateStart):
     '''
-    plots recharge events and outputs statistics on recharges
+    plots recharge events and outputs statistics on recharges.
+    inputs a CSV from the gateway AddCredit output, reads them into a numpy record array
+    and then outputs on a plot.
     '''
     # define data headers for record array
     dtype = [('amount',      'float'),
