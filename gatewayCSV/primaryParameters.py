@@ -178,6 +178,10 @@ def printRecharges(dateStart):
 
             printTableRow((cir-12,sum(recharges['amount']), avgTime), widths)
 
+    print
+    print 'data generated at',
+    print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
 def plotRecharges(dateStart):
     '''
     plots recharge events and outputs statistics on recharges
@@ -211,7 +215,7 @@ def plotRecharges(dateStart):
     circuits = range(13,25)
 
     fig = plt.figure()
-    ax = fig.add_subplot(111)
+    ax = fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
     dates = matplotlib.dates.date2num(data['date'])
     circuit = data['cid']
@@ -221,16 +225,19 @@ def plotRecharges(dateStart):
                                                 edgecolor = 'b',
                                                 facecolor = 'None',
                                                 color = 'None')
-    ax.grid(True, linestyle='-', color = '#bbbbbb')
+    ax.grid(True, linestyle='-', color = '#e0e0e0')
     ax.xaxis_date()
     ax.fmt_xdata = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter( matplotlib.dates.DateFormatter('%m-%d'))
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
     #fig.autofmt_xdate()
     ax.set_xlabel('Date')
     ax.set_ylabel('Circuit')
     ax.set_ylim((0,13))
     ax.set_yticks(range(1,13))
     ax.set_title('Recharge Purchases in Pelengana')
+    annotation = 'plot generated - '
+    annotation += datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    fig.text(0.02, 0.02, annotation)
     fig.savefig('plotRecharges.pdf')
 
 def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
