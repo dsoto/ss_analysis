@@ -227,10 +227,13 @@ def plotRecharges(dateStart):
     ax = fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
     dates = matplotlib.dates.date2num(data['date'])
-    circuit = data['cid']
+    circuit = np.array(map(float, data['cid'])) - 12
+    # adding random number to see overlapping data points
+    import random
+    circuit = [c + (random.random() - 0.5) * .25 for c in circuit]
     credit = data['amount']
 
-    ax.scatter(dates, circuit-12, s=credit/10,
+    ax.scatter(dates, circuit, s=credit/10,
                                                 edgecolor = 'b',
                                                 facecolor = 'None',
                                                 color = 'None')
