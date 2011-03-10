@@ -155,18 +155,18 @@ def printRecharges(dateStart):
 
     # system average daily income
     print
-    print 'system average daily income'
+    print 'system average daily income (USD)'
     days = (datetime.datetime.now() - dateStart).days
-    print sum(data['amount'])/days
+    print '%.2f' % (sum(data['amount'])/days/500)
     print
 
     # print out table by user/household
     circuits = list(set(data['cid']))
     circuits = range(13,25)
     circuits.sort()
-    widths = (8, 8, 20)
+    widths = (8, 8, 30, 20)
     print 'total spent per circuit since', dateStart.strftime('%Y-%m-%d')
-    printTableRow(('circuit','amount','recharge time interval (days)'), widths)
+    printTableRow(('circuit','amount','recharge time interval (days)','monthly (USD)'), widths)
     for cir in circuits:
         recharges = data[data['cid']==cir]
         if recharges.shape == (0,):
@@ -180,8 +180,10 @@ def printRecharges(dateStart):
                 timeBetweenRecharges = timeBetweenRecharges / (24 * 60 * 60)
                 avgTime = np.mean(timeBetweenRecharges)
                 avgTime = '%0.1f' % avgTime
-
-            printTableRow((cir-12,sum(recharges['amount']), avgTime), widths)
+            total = sum(recharges['amount'])
+            monthly = total / days * 30 / 500
+            monthly = '%.2f' % monthly
+            printTableRow((cir-12, total, avgTime, monthly), widths)
 
     print
     print 'data generated at',
