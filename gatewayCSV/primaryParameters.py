@@ -605,28 +605,38 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
 
 if __name__ == '__main__':
-    '''
+
     print('Begin Load Data')
     d = getDataAsRecordArray()
     print('End Load Data\n')
 
-    dateStart = datetime.datetime(2011,  3,  3)
-    dateEnd   = datetime.datetime(2011,  4,  1)
-    #plotRecharges(d, dateStart, dateEnd)
+    flag = False
+    if flag:
+        dateStart = datetime.datetime(2011,  3,  3)
+        dateEnd   = datetime.datetime(2011,  4,  1)
+        #plotRecharges(d, dateStart, dateEnd)
 
-    dateStart = datetime.datetime(2011,  3,  3)
-    dateEnd   = datetime.datetime(2011,  4,  1)
-    plotCreditSeparateAxes(d, dateStart, dateEnd)
-    plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
-    #plotHouseholdEnergyPerDay(d)
+    flag = True
+    if flag:
+        dateStart = datetime.datetime(2011,  2,  14)
+        dateEnd   = datetime.datetime(2011,  3,  12)
+        #plotCreditSeparateAxes(d, dateStart, dateEnd)
+        plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
+        plotHouseholdEnergyPerDay(d, dateStart, dateEnd)
+        plotTotalEnergyPerDay(d, dateStart)
+        printPrimaryLogReports(d, dateStart, dateEnd)
 
-    dateStart = datetime.datetime(2011,  3,  3)
-    dateEnd   = datetime.datetime(2011,  3,  9)
-    #dateEnd   = datetime.datetime.now()
-    energy = sampleHourlyWatthours(d, dateStart, dateEnd)
-    plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
-    plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
-'''
-    dateStart = datetime.datetime(2011, 3, 3)
-    printRecharges(dateStart)
-    plotRecharges(dateStart)
+    flag = False
+    if flag:
+        dateStart = datetime.datetime(2011,  3,  3)
+        dateEnd   = datetime.datetime(2011,  3,  12)
+        #dateEnd   = datetime.datetime.now()
+        energy = sampleHourlyWatthours(d, dateStart, dateEnd)
+        plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
+        plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
+
+    flag = False
+    if flag:
+        dateStart = datetime.datetime(2011, 3, 3)
+        printRecharges(dateStart)
+        plotRecharges(dateStart)
