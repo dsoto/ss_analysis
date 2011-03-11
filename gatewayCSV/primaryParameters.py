@@ -292,6 +292,35 @@ def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
     fig.suptitle('Hourly Accumulated Consumption Per Household')
     fig.savefig('plotHouseholdEnergyPerHour.pdf')
 
+def printPrimaryLogReports(d, dateStart, dateEnd):
+    '''
+    this will loop through the report dates and print which circuits are reporting
+    at which times.
+    '''
+    print
+    print 'printPrimaryLogReports - start'
+    f = open('printPrimaryLogReports.txt','w')
+    # get set of dates
+    # filter on dateStart and dateEnd
+    # loop through set of dates
+    # print out circuits reporting
+    dates = list(set(d['date']))
+    dates.sort()
+    dates = np.array(dates)
+    dates = dates[(dates>dateStart)]
+    for date in dates:
+        f.write(str(date) + '   ')
+        circuitsReporting = list(d[d['date']==date]['circuit_id'])
+        circuitsReporting.sort()
+        for circuit in range(13,31):
+            if circuit in circuitsReporting:
+                f.write(' ' + str(circuit))
+            else:
+                f.write('  -')
+        f.write('\n')
+    print 'printPrimaryLogReports - end'
+    print
+
 def plotColloquium(d):
     '''
     plots a time series of accumulated watt hours
