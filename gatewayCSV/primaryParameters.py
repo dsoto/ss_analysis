@@ -14,7 +14,7 @@ dateStart = datetime.datetime(2011,  1,  1)
 dateEnd   = datetime.datetime(2011,  2,  28)
 
 def creditScrub(val):
-    ''' take out values of None from the data on import '''
+    ''' take out values of None from the data on import.  used by getDataAsRecordArray.'''
     if val=='None':
         return 0.0
     else:
@@ -23,10 +23,12 @@ def creditScrub(val):
             val = 0
         return val
 
-def getDataAsRecordArray():
+def getDataAsRecordArray(downloadFile = True):
     '''
     load csv from shared solar gateway and create
-    numpy record array
+    numpy record array.
+    if downloadFile==True, new data is downloaded from gateway.
+    this function returns a numpy record array of data.
     '''
     dtype = [('watthours',   'float'),      # column 0
              ('circuit_id',  'int'),        # column 5
@@ -35,8 +37,6 @@ def getDataAsRecordArray():
              ('circuit',     'S30'),        # column 8
              ('date',        'object')]     # column 9
     dtype = np.dtype(dtype)
-
-    downloadFile = True
 
     # either get file from web or use existing file on computer
     fileName = 'PrimaryLog-data.csv'
@@ -170,7 +170,7 @@ def printRecharges(dateStart):
     for cir in circuits:
         recharges = data[data['cid']==cir]
         if recharges.shape == (0,):
-            printTableRow((cir-12, '-', '-'), widths)
+            printTableRow((cir-12, '-', '-', '-'), widths)
         else:
             timeBetweenRecharges = np.diff(recharges['date'])
             if timeBetweenRecharges.shape == (0,):
@@ -255,7 +255,9 @@ def plotRecharges(dateStart):
 def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
     '''
     plots a time series of accumulated watt hours
-    for each circuit
+    for each circuit.
+    displays plots in a 1x12 grid.
+    output: plotHouseholdEnergyPerHour.pdf
     '''
     fig = plt.figure(figsize=(8,12))
     #ax = fig.add_axes((0.15,0.2,0.7,0.7))
@@ -298,8 +300,18 @@ def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
 
 def printPrimaryLogReports(d, dateStart, dateEnd):
     '''
-    this will loop through the report dates and print which circuits are reporting
-    at which times.
+    input:
+    d - data array from getDataAsRecordArray,
+    dateStart,
+    dateEnd
+
+    output:
+    printPrimaryLogReports.txt
+
+    this will loop through the report dates between dateStart and
+    dateEnd and print which circuits are reporting at which times. the
+    output is in tabular form to highlight missing SMS reports in the
+    primary logs.
     '''
     print
     print 'printPrimaryLogReports - start'
@@ -365,8 +377,14 @@ def plotColloquium(d):
 
 def plotHouseholdEnergyPerDay(d, dateStart, dateEnd):
     '''
-    uses 23:59:59 timestamps to calculate energy consumed by all households
-    each day
+    uses 23:59:59 timestamps to calculate and report sum of all energy
+    consumed by all households each day.  checks to see if all circuits
+    are reporting.  if circuit is not reporting, its share of the energy
+    is replaced by the average of all households.
+
+    output -
+    plotHouseholdEnergyPerDay.pdf
+
     '''
     dateStart = datetime.datetime(dateStart.year,
                                   dateStart.month,
@@ -447,6 +465,8 @@ def plotAllWattHours(d):
 
 def plotTotalEnergyPerDay(d, dateStart):
     '''
+    this is very similar to plotHouseholdEnergyPerDay but uses any 23 timestamped
+    data to get the day end.  this leads to duplicate data points for many dates.
     plot energy consumed by all circuits for each day
     not including mains
     '''
@@ -498,7 +518,15 @@ def plotTotalEnergyPerDay(d, dateStart):
 
     fig.savefig('plotTotalEnergyPerDay.pdf')
 
-def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
+def plotAveragedHourlyPower(energy, dateStart, dateEnd):
+    '''
+    by sampling the watt hour reporting from the gateway to a common time base,
+    this function can report the average hourly energy use over a series of days
+    ranging from dateStart to dateEnd.
+    in this case the energy curve is differentiated to provide a power curve.
+    average energy is reported on a separate axes for each household with the
+    average depicted in black and each daily curve in grey.
+    '''
     numCircuits = energy.shape[0]
     numDays     = energy.shape[1]
     numHours    = energy.shape[2]
@@ -529,14 +557,22 @@ def plotAveragedHourlyEnergy(energy, dateStart, dateEnd):
         ax.grid(True)
     fig.text(0.05, 0.7, 'Power Usage (W)', rotation='vertical')
     fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
-    fig.savefig('plotAveragedHourlyEnergy.pdf')
+    fig.savefig('plotAveragedHourlyPower.pdf')
 
 def printTableRow(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
     for s,w in zip(strings, widths):
         print str(s).center(w),
     print
 
 def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
+    '''
+    uses hourly sampled watt hour reporting from the gateway, this function charts the
+    averaged accumulated energy profile.
+    average energy shown in black, individual plots are shown in grey.
+    '''
     numCircuits = energy.shape[0]
     numDays     = energy.shape[1]
     numHours    = energy.shape[2]
@@ -566,7 +602,12 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
     fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
 
 def sampleHourlyWatthours(d, dateStart, dateEnd):
-    # returns a 3rd rank tensor of data
+    '''
+    attempts to create a common time base of watthour data from csv file.
+    watt hour data that is not present is replaced by the previous sample.
+    fixme - i don't know what happens when we send two reports at 23:xx.
+    returns a 3rd rank tensor of data.
+    '''
 
     # initialize array
     circuits = range(13,25)
@@ -589,6 +630,7 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
             circuitIndex = c - circuits[0]
             loopData = data[data['circuit_id']==c]
             if loopData.shape == (0,):
+                # if sample not present, replace with previous sample
                 energy[circuitIndex, dateIndex, hourIndex] = energy[circuitIndex, dateIndex, hourIndex-1]
                 print ' -',
             elif loopData.shape[0] > 1:
