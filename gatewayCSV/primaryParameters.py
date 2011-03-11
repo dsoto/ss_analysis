@@ -261,7 +261,7 @@ def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
     #ax = fig.add_axes((0.15,0.2,0.7,0.7))
 
     circuits = set(d['circuit_id'])
-    circuits = range(13,25)
+    circuits = range(13,26)
 
     d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
@@ -271,21 +271,25 @@ def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
         dates = matplotlib.dates.date2num(dates)
         wh = d[mask]['watthours']
 
-        ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
-
+        ax = fig.add_axes((0.15,0.1+i*0.065,0.7,0.05))
 
         # plot masked data to get date range
         ax.plot_date(dates, wh, '-x')
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+
         if i==0:
             ax.set_xlabel('Date')
         if i!=0:
             ax.set_xticklabels([])
 
-        ax.text(1.05, 0.4, c, transform = ax.transAxes)
-        ax.set_ylim((0,150))
-        ax.set_yticks((0,50,100,150))
-        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(dateFormatter)
+        if i==12:
+            ax.set_ylim((0,2000))
+            ax.set_yticks((0,1000,2000))
+        else:
+            ax.set_ylim((0,150))
+            ax.set_yticks((0,50,100,150))
 
     #fig.autofmt_xdate()
     fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
