@@ -559,6 +559,40 @@ def parseTotalEnergyPerDay(d, dateStart, dateEnd):
         todayStart = todayEnd
         dateIndex += 1
     return energy
+def plotTotalEnergyPerDay(d, dateStart, dateEnd):
+    '''
+    '''
+
+    energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
+
+    # make date range from dateStart and dateEnd
+    plotDates = matplotlib.dates.drange(dateStart,
+                                        dateEnd+datetime.timedelta(days=1),
+                                        datetime.timedelta(days=1))
+
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    householdsTotal = energy[:,:11].sum(1)
+    system = energy[:,12] - householdsTotal
+    mains = energy[:,12]
+
+    ax.plot_date(plotDates, householdsTotal, 'x-k', label='Household')
+    ax.plot_date(plotDates, system, 'x-b', label='Meter consumption')
+    ax.plot_date(plotDates, mains, 'x-g', label='Mains')
+    ax.legend(loc='best')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+    ax.grid()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy (Watt-Hours)')
+    ax.set_ylim(bottom=0)
+    ax.set_title('Total Household Energy Consumed Per Day')
+
     fig.savefig('plotTotalEnergyPerDay.pdf')
 
 def plotAveragedHourlyPower(energy, dateStart, dateEnd):
