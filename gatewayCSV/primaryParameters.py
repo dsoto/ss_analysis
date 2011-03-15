@@ -78,7 +78,8 @@ def getDataAsRecordArray(downloadFile = True):
 
 def plotCreditSeparateAxes(d, dateStart, dateEnd):
     '''
-    plots the credit in each circuit account on a separate axis
+    plots the credit in each circuit account on a separate axis.
+    currently in a 1x12 array.
     '''
     fig = plt.figure(figsize=(8,12))
     circuits = set(d['circuit_id'])
@@ -241,7 +242,7 @@ def plotRecharges(dateStart):
     ax.xaxis_date()
     ax.fmt_xdata = matplotlib.dates.DateFormatter('%m-%d')
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
-    #fig.autofmt_xdate()
+    fig.autofmt_xdate()
     ax.set_xlabel('Date')
     ax.set_ylabel('Circuit')
     ax.set_ylim((0,13))
@@ -375,53 +376,6 @@ def plotColloquium(d):
     fig.suptitle('Hourly Accumulated Consumption Per Household')
     fig.savefig('plotColloquium.pdf')
 
-def plotHouseholdEnergyPerDay(d, dateStart, dateEnd):
-    '''
-    uses 23:59:59 timestamps to calculate and report sum of all energy
-    consumed by all households each day.  checks to see if all circuits
-    are reporting.  if circuit is not reporting, its share of the energy
-    is replaced by the average of all households.
-
-    output -
-    plotHouseholdEnergyPerDay.pdf
-
-    '''
-    dateStart = datetime.datetime(dateStart.year,
-                                  dateStart.month,
-                                  dateStart.day,
-                                  23,
-                                  59,
-                                  59)
-    dateCurrent = dateStart
-    dailyEnergy = []
-    # drop circuits 25, 28, 29, 30
-    dropCircuits = [25, 28, 29, 30]
-    for dropCircuit in dropCircuits:
-        d = d[d['circuit_id']!=dropCircuit]
-
-    while dateCurrent <= dateEnd:
-        print dateCurrent,
-        dateCurrent += datetime.timedelta(days=1)
-        dataCurrent = d[d['date']==dateCurrent]
-        #print dataCurrent.shape
-        circuits = dataCurrent['circuit_id']
-        circuits.sort()
-        if len(circuits) < 12:
-            print 'not all reporting',
-        #print circuits
-        currentEnergy = np.mean(dataCurrent['watthours'])*12
-        dailyEnergy.append(currentEnergy)
-        print currentEnergy
-        #print sum(dataCurrent['watthours'])
-
-    print dailyEnergy
-
-    fig = plt.figure()
-    ax = fig.add_axes((0.15,0.2,0.7,0.7))
-
-    ax.plot(dailyEnergy, '-x')
-    fig.savefig('plotHouseholdEnergyPerDay.pdf')
-
 def plotAllWattHours(d):
     # fixme: this function has plot points that don't make sense
     '''
@@ -463,7 +417,91 @@ def plotAllWattHours(d):
     ax.set_title('Cumulative Energy Consumed (Reset Daily)')
     fig.savefig('plotAllWattHours.pdf')
 
-def plotTotalEnergyPerDay(d, dateStart):
+def printTableRow(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
+    for s,w in zip(strings, widths):
+        print str(s).center(w),
+    print
+
+def plotWindowAveragedWatthours(d, dateStart, dateEnd):
+    '''
+    unfinished.
+    this function plots an averaged daily load curve based on a range of
+    data between dateStart and dateEnd.
+    Data is published for each household and for the mains.
+    '''
+    circuits = range(13,14)
+    data = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+
+    for c in circuits:
+        pass
+
+
+# aggregated by day
+
+def plotTotalEnergyPerDay235959(d, dateStart, dateEnd):
+    '''
+    uses 23:59:59 timestamps to calculate and report sum of all energy
+    consumed by all households each day.  checks to see if all circuits
+    are reporting.  if circuit is not reporting, its share of the energy
+    is replaced by the average of all households.
+    this method can only be used for data on or after feb 28, 2011 when we
+    started reporting a day-end report of watthours.
+    output -
+    plotHouseholdEnergyPerDay.pdf
+
+    '''
+    dateStart = datetime.datetime(dateStart.year,
+                                  dateStart.month,
+                                  dateStart.day,
+                                  23,
+                                  59,
+                                  59)
+    dateCurrent = dateStart
+    dailyEnergy = []
+    dateList = []
+    # drop circuits 25, 28, 29, 30
+    dropCircuits = [25, 28, 29, 30]
+    for dropCircuit in dropCircuits:
+        d = d[d['circuit_id']!=dropCircuit]
+
+    while dateCurrent <= dateEnd:
+        print dateCurrent,
+        dataCurrent = d[d['date']==dateCurrent]
+        #print dataCurrent.shape
+        circuits = dataCurrent['circuit_id']
+        circuits.sort()
+        if len(circuits) < 12:
+            print 'not all reporting',
+        #print circuits
+        currentEnergy = np.mean(dataCurrent['watthours'])*12
+        dailyEnergy.append(currentEnergy)
+        reportDate = datetime.datetime(dateCurrent.year,
+                                       dateCurrent.month,
+                                       dateCurrent.day)
+        dateList.append(reportDate)
+        print currentEnergy
+        #print sum(dataCurrent['watthours'])
+        dateCurrent += datetime.timedelta(days=1)
+
+    print dailyEnergy
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.15,0.2,0.7,0.7))
+
+    dateList = matplotlib.dates.date2num(dateList)
+
+    ax.plot_date(dateList, dailyEnergy, '-x')
+    fig.autofmt_xdate()
+    ax.set_ylim(bottom=0)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy Consumption (Wh)')
+    ax.set_title('Household Energy Consumption Per Day')
+    fig.savefig('plotTotalEnergyPerDay235959.pdf')
+
+def plotTotalEnergyPerDay23xxxx(d, dateStart):
     '''
     this is very similar to plotHouseholdEnergyPerDay but uses any 23 timestamped
     data to get the day end.  this leads to duplicate data points for many dates.
@@ -516,6 +554,8 @@ def plotTotalEnergyPerDay(d, dateStart):
     ax.set_ylim(bottom=0)
     ax.set_title('Total Household Energy Consumed Per Day')
 
+    fig.savefig('plotTotalEnergyPerDay23xxxx.pdf')
+
 def parseTotalEnergyPerDay(d, dateStart, dateEnd):
     '''
     create array of energy use per circuit for a group of circuits.
@@ -559,6 +599,7 @@ def parseTotalEnergyPerDay(d, dateStart, dateEnd):
         todayStart = todayEnd
         dateIndex += 1
     return energy
+
 def plotTotalEnergyPerDay(d, dateStart, dateEnd):
     '''
     '''
@@ -595,88 +636,7 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
 
     fig.savefig('plotTotalEnergyPerDay.pdf')
 
-def plotAveragedHourlyPower(energy, dateStart, dateEnd):
-    '''
-    by sampling the watt hour reporting from the gateway to a common time base,
-    this function can report the average hourly energy use over a series of days
-    ranging from dateStart to dateEnd.
-    in this case the energy curve is differentiated to provide a power curve.
-    average energy is reported on a separate axes for each household with the
-    average depicted in black and each daily curve in grey.
-    '''
-    numCircuits = energy.shape[0]
-    numDays     = energy.shape[1]
-    numHours    = energy.shape[2]
-
-    fig = plt.figure(figsize=(12,8))
-
-    sy = 0.22
-    sx = 0.15
-    dx = sx * 1.4
-    dy = sy * 1.3
-    for i,c in enumerate(range(numCircuits)):
-        x = (i % 4)
-        y = 2 - (i / 4)
-        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
-
-        henergy = np.diff(energy[c], axis=1)
-        henergy = np.hstack((energy[c, :, 0].reshape(numDays,1),henergy))
-
-        for day in range(numDays):
-            ax.plot(henergy[day],color='#dddddd')
-
-        ax.plot(sum(henergy,0)/numDays,'k')
-        ax.set_ylim((-5,50))
-        ax.set_yticks((0,25,50))
-        ax.set_xlim((0,23))
-        ax.set_xticks((0,4,8,12,16,20,23))
-        ax.text(0.4, 0.7, str(c+13), transform = ax.transAxes)
-        ax.grid(True)
-    fig.text(0.05, 0.7, 'Power Usage (W)', rotation='vertical')
-    fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
-    fig.savefig('plotAveragedHourlyPower.pdf')
-
-def printTableRow(strings, widths):
-    '''
-    this is a short helper function to write out a formatted row of a table.
-    '''
-    for s,w in zip(strings, widths):
-        print str(s).center(w),
-    print
-
-def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
-    '''
-    uses hourly sampled watt hour reporting from the gateway, this function charts the
-    averaged accumulated energy profile.
-    average energy shown in black, individual plots are shown in grey.
-    '''
-    numCircuits = energy.shape[0]
-    numDays     = energy.shape[1]
-    numHours    = energy.shape[2]
-
-    fig = plt.figure(figsize=(12,8))
-    sy = 0.22
-    sx = 0.15
-    dx = sx * 1.4
-    dy = sy * 1.3
-    for i,c in enumerate(range(numCircuits)):
-        x = (i % 4)
-        y = 2 - (i / 4)
-        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
-
-        for day in range(numDays):
-            ax.plot(energy[c, day, :],color='#dddddd')
-
-        ax.plot(sum(energy[c],0)/numDays,'k')
-        ax.set_ylim((0,160))
-        ax.set_yticks((0,50,100,150))
-        ax.set_xlim((0,23))
-        ax.set_xticks((0,4,8,12,16,20,23))
-        ax.text(1.05, 0.4, str(c+13), transform = ax.transAxes)
-        ax.grid(True)
-    fig.text(0.05, 0.7, 'Accumulated Energy Use (Wh)', rotation='vertical')
-    fig.suptitle('averaged accumulated usage\n'+str(dateStart)+'\n'+str(dateEnd))
-    fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
+# averaging functions
 
 def sampleHourlyWatthours(d, dateStart, dateEnd):
     '''
@@ -723,6 +683,81 @@ def sampleHourlyWatthours(d, dateStart, dateEnd):
 
     return energy
 
+def plotAveragedHourlyPower(energy, dateStart, dateEnd):
+    '''
+    by sampling the watt hour reporting from the gateway to a common time base,
+    this function can report the average hourly energy use over a series of days
+    ranging from dateStart to dateEnd.
+    in this case the energy curve is differentiated to provide a power curve.
+    average energy is reported on a separate axes for each household with the
+    average depicted in black and each daily curve in grey.
+    '''
+    numCircuits = energy.shape[0]
+    numDays     = energy.shape[1]
+    numHours    = energy.shape[2]
+
+    fig = plt.figure(figsize=(12,8))
+
+    sy = 0.22
+    sx = 0.15
+    dx = sx * 1.4
+    dy = sy * 1.3
+    for i,c in enumerate(range(numCircuits)):
+        x = (i % 4)
+        y = 2 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+
+        henergy = np.diff(energy[c], axis=1)
+        henergy = np.hstack((energy[c, :, 0].reshape(numDays,1),henergy))
+
+        for day in range(numDays):
+            ax.plot(henergy[day],color='#dddddd')
+
+        ax.plot(sum(henergy,0)/numDays,'k')
+        ax.set_ylim((-5,50))
+        ax.set_yticks((0,25,50))
+        ax.set_xlim((0,23))
+        ax.set_xticks((0,4,8,12,16,20,23))
+        ax.text(0.4, 0.7, str(c+13), transform = ax.transAxes)
+        ax.grid(True)
+    fig.text(0.05, 0.7, 'Power Usage (W)', rotation='vertical')
+    fig.suptitle('averaged power usage\n'+str(dateStart)+'\n'+str(dateEnd))
+    fig.savefig('plotAveragedHourlyPower.pdf')
+
+def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
+    '''
+    uses hourly sampled watt hour reporting from the gateway, this function charts the
+    averaged accumulated energy profile.
+    average energy shown in black, individual plots are shown in grey.
+    '''
+    numCircuits = energy.shape[0]
+    numDays     = energy.shape[1]
+    numHours    = energy.shape[2]
+
+    fig = plt.figure(figsize=(12,8))
+    sy = 0.22
+    sx = 0.15
+    dx = sx * 1.4
+    dy = sy * 1.3
+    for i,c in enumerate(range(numCircuits)):
+        x = (i % 4)
+        y = 2 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+
+        for day in range(numDays):
+            ax.plot(energy[c, day, :],color='#dddddd')
+
+        ax.plot(sum(energy[c],0)/numDays,'k')
+        ax.set_ylim((0,160))
+        ax.set_yticks((0,50,100,150))
+        ax.set_xlim((0,23))
+        ax.set_xticks((0,4,8,12,16,20,23))
+        ax.text(1.05, 0.4, str(c+13), transform = ax.transAxes)
+        ax.grid(True)
+    fig.text(0.05, 0.7, 'Accumulated Energy Use (Wh)', rotation='vertical')
+    fig.suptitle('averaged accumulated usage\n'+str(dateStart)+'\n'+str(dateEnd))
+    fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
+
 
 if __name__ == '__main__':
 
@@ -736,7 +771,7 @@ if __name__ == '__main__':
         dateEnd   = datetime.datetime(2011,  4,  1)
         #plotRecharges(d, dateStart, dateEnd)
 
-    flag = True
+    flag = False
     if flag:
         dateStart = datetime.datetime(2011,  2,  14)
         dateEnd   = datetime.datetime(2011,  3,  12)
@@ -760,3 +795,7 @@ if __name__ == '__main__':
         dateStart = datetime.datetime(2011, 3, 3)
         printRecharges(dateStart)
         plotRecharges(dateStart)
+
+    dateStart = datetime.datetime(2011,2,1)
+    dateEnd = datetime.datetime(2011,3,14)
+    energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
