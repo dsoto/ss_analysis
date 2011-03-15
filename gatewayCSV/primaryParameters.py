@@ -516,6 +516,49 @@ def plotTotalEnergyPerDay(d, dateStart):
     ax.set_ylim(bottom=0)
     ax.set_title('Total Household Energy Consumed Per Day')
 
+def parseTotalEnergyPerDay(d, dateStart, dateEnd):
+    '''
+    create array of energy use per circuit for a group of circuits.
+    returns a numpy array with
+    axis 0 - date
+    axis 1 - circuit
+    and each value is the daily energy used by each circuit for that date.
+    the daily usage is determined by taking the last valid watthours report for
+    each date in the range dateStart, dateEnd
+    '''
+
+    # initialize array
+    circuits = range(13,26)
+    numCircuits = len(circuits)
+    numDays = (dateEnd - dateStart).days + 1
+    energy = np.zeros((numDays, numCircuits))
+
+    # loop through and populate array with energy values
+    todayStart = dateStart
+    dateIndex = 0
+    while todayStart <= dateEnd:
+        todayEnd = todayStart + datetime.timedelta(days=1)
+        for circuit in range(13,26):
+            circuitIndex = circuit - 13
+            # filter data down to a single day and circuit and then
+            # find the last of these samples for the day's energy
+            data = d
+            data = data[data['circuit_id']==circuit]
+            if data.shape == (0,):
+                print 'no circuit data for ', todayStart
+            else:
+                data = data[(data['date']>todayStart) & (data['date']<todayEnd)]
+            if data.shape == (0,):
+                print 'no date data for', todayStart
+            else:
+                lastSampleDate = data['date'].max()
+                print lastSampleDate,
+                thisSample = data[data['date']==lastSampleDate]['watthours']
+                print dateIndex, circuitIndex
+                energy[dateIndex, circuitIndex] = thisSample
+        todayStart = todayEnd
+        dateIndex += 1
+    return energy
     fig.savefig('plotTotalEnergyPerDay.pdf')
 
 def plotAveragedHourlyPower(energy, dateStart, dateEnd):
