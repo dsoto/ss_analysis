@@ -429,47 +429,40 @@ def parseTotalEnergyPerDay(d, dateStart, dateEnd):
                 print 'no date data for', todayStart
             else:
                 lastSampleDate = data['date'].max()
-                print lastSampleDate,
+                #print lastSampleDate,
                 thisSample = data[data['date']==lastSampleDate]['watthours']
-                print dateIndex, circuitIndex
+                #print dateIndex, circuitIndex
                 energy[dateIndex, circuitIndex] = thisSample
         todayStart = todayEnd
         dateIndex += 1
     return energy
 
-def plotTotalEnergyPerDay(d, dateStart, dateEnd):
-    '''
-    '''
-
+def printTotalEnergyPerDay(d, dateStart, dateEnd):
     energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
 
     # make date range from dateStart and dateEnd
     plotDates = matplotlib.dates.drange(dateStart,
                                         dateEnd+datetime.timedelta(days=1),
                                         datetime.timedelta(days=1))
+    print
+    print 'Date'.center(12),
+    for i in range(1,13):
+        print str(i).center(8),
+    print 'Mains'.center(8)
+    for i,e in enumerate(energy):
+        print matplotlib.dates.num2date(plotDates[i]).strftime('%Y-%m-%d').center(12),
+        for entry in e:
+            print str(entry).center(8),
+        print
+    print
+    print 'mean'.center(12),
+    for i in range(0,13):
+        print ('%.1f' % energy[:,i].mean()).center(8),
+    print
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    householdsTotal = energy[:,:11].sum(1)
-    mains = energy[:,12]
-    system = mains - householdsTotal
-
-    ax.plot_date(plotDates, householdsTotal, 'x-k', label='Household')
-    ax.plot_date(plotDates, system, 'x-b', label='Meter consumption')
-    ax.plot_date(plotDates, mains, 'x-g', label='Mains')
-    ax.legend(loc='best')
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    fig.autofmt_xdate()
-
-    ax.grid()
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy (Watt-Hours)')
-    ax.set_ylim(bottom=0)
-    ax.set_title('Total Household Energy Consumed Per Day')
-
-    fig.savefig('plotTotalEnergyPerDay.pdf')
+    print 'std'.center(12),
+    for i in range(0,13):
+        print ('%.1f' % energy[:,i].std()).center(8),
 
 def plotTotalEnergyPerDayByCircuit(d, dateStart, dateEnd):
     energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
@@ -820,6 +813,40 @@ def plotTotalEnergyPerDay23xxxx(d, dateStart):
     ax.set_title('Total Household Energy Consumed Per Day')
 
     fig.savefig('plotTotalEnergyPerDay23xxxx.pdf')
+
+def plotTotalEnergyPerDay(d, dateStart, dateEnd):
+    '''
+    '''
+
+    energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
+
+    # make date range from dateStart and dateEnd
+    plotDates = matplotlib.dates.drange(dateStart,
+                                        dateEnd+datetime.timedelta(days=1),
+                                        datetime.timedelta(days=1))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    householdsTotal = energy[:,:11].sum(1)
+    mains = energy[:,12]
+    system = mains - householdsTotal
+
+    ax.plot_date(plotDates, householdsTotal, 'x-k', label='Household')
+    ax.plot_date(plotDates, system, 'x-b', label='Meter consumption')
+    ax.plot_date(plotDates, mains, 'x-g', label='Mains')
+    ax.legend(loc='best')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+    ax.grid()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy (Watt-Hours)')
+    ax.set_ylim(bottom=0)
+    ax.set_title('Total Household Energy Consumed Per Day')
+
+    fig.savefig('plotTotalEnergyPerDay.pdf')
 
 
 if __name__ == '__main__':
