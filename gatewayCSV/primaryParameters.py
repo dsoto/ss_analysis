@@ -473,6 +473,64 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
 
     fig.savefig('plotTotalEnergyPerDay.pdf')
 
+def plotTotalEnergyPerDayByCircuit(d, dateStart, dateEnd):
+    energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
+
+    # make date range from dateStart and dateEnd
+    plotDates = matplotlib.dates.drange(dateStart,
+                                        dateEnd+datetime.timedelta(days=1),
+                                        datetime.timedelta(days=1))
+
+    fig = plt.figure(figsize=(12,8))
+
+    # size y and size x of plot
+    sy = 0.15
+    sx = 0.15
+    # spacing for x and y
+    dx = sx * 1.4
+    dy = sy * 1.5
+    numCircuits = 13
+    for i,c in enumerate(range(numCircuits)):
+        x = (i % 4)
+        y = 3 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+        ax.plot_date(plotDates, energy[:,i],'x-k')
+        # set the plot to have 3 major ticks with month-day format
+        ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
+        ax.xaxis.set_minor_locator(matplotlib.dates.DayLocator())
+        ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
+        if i == 12:
+            ax.set_ylim((0,2000))
+            ax.set_title('Total Consumption')
+        else:
+            ax.set_title('Household ' + str(c + 1))
+            ax.set_ylim((0,150))
+            ax.set_yticks((0,50,100,150))
+
+    x = 1
+    y = 0
+    ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+    ax.plot_date(plotDates, energy[:,:11].sum(1),'x-k')
+    ax.set_title('All Households')
+    ax.set_ylim((0,2000))
+    ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
+    ax.xaxis.set_minor_locator(matplotlib.dates.DayLocator())
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
+
+    x = 2
+    y = 0
+    ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+    ax.plot_date(plotDates, energy[:,12]-energy[:,:11].sum(1),'x-k')
+    ax.set_title('Meter Consumption')
+    ax.set_ylim((0,2000))
+    ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
+    ax.xaxis.set_minor_locator(matplotlib.dates.DayLocator())
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
+
+    fig.suptitle('Pelengana Energy Consumption')
+    fig.autofmt_xdate()
+    fig.savefig('plotTotalEnergyPerDayByCircuit.pdf')
+
 
 # averaging functions
 
