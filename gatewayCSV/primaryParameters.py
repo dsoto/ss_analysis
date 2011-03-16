@@ -448,14 +448,12 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
                                         dateEnd+datetime.timedelta(days=1),
                                         datetime.timedelta(days=1))
 
-
-
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
     householdsTotal = energy[:,:11].sum(1)
-    system = energy[:,12] - householdsTotal
     mains = energy[:,12]
+    system = mains - householdsTotal
 
     ax.plot_date(plotDates, householdsTotal, 'x-k', label='Household')
     ax.plot_date(plotDates, system, 'x-b', label='Meter consumption')
