@@ -76,6 +76,143 @@ def getDataAsRecordArray(downloadFile = True):
 
     return d
 
+def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
+    '''
+    plots a time series of accumulated watt hours
+    for each circuit.
+    displays plots in a 1x12 grid.
+    output: plotHouseholdEnergyPerHour.pdf
+    '''
+    fig = plt.figure(figsize=(8,12))
+    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
+
+    circuits = set(d['circuit_id'])
+    circuits = range(13,26)
+
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+
+    for i,c in enumerate(circuits):
+        mask = d['circuit_id']==c
+        dates = d[mask]['date']
+        dates = matplotlib.dates.date2num(dates)
+        wh = d[mask]['watthours']
+
+        ax = fig.add_axes((0.15,0.1+i*0.065,0.7,0.05))
+
+        # plot masked data to get date range
+        ax.plot_date(dates, wh, '-x')
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+
+        if i==0:
+            ax.set_xlabel('Date')
+        if i!=0:
+            ax.set_xticklabels([])
+
+        if i==12:
+            ax.set_ylim((0,2000))
+            ax.set_yticks((0,1000,2000))
+        else:
+            ax.set_ylim((0,150))
+            ax.set_yticks((0,50,100,150))
+
+    #fig.autofmt_xdate()
+    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
+    fig.suptitle('Hourly Accumulated Consumption Per Household')
+    fig.savefig('plotHouseholdEnergyPerHour.pdf')
+
+def printPrimaryLogReports(d, dateStart, dateEnd):
+    '''
+    input:
+    d - data array from getDataAsRecordArray,
+    dateStart,
+    dateEnd
+
+    output:
+    printPrimaryLogReports.txt
+
+    this will loop through the report dates between dateStart and
+    dateEnd and print which circuits are reporting at which times. the
+    output is in tabular form to highlight missing SMS reports in the
+    primary logs.
+    '''
+    print
+    print 'printPrimaryLogReports - start'
+    f = open('printPrimaryLogReports.txt','w')
+    # get set of dates
+    # filter on dateStart and dateEnd
+    # loop through set of dates
+    # print out circuits reporting
+    dates = list(set(d['date']))
+    dates.sort()
+    dates = np.array(dates)
+    dates = dates[(dates>dateStart)]
+    for date in dates:
+        f.write(str(date) + '   ')
+        circuitsReporting = list(d[d['date']==date]['circuit_id'])
+        circuitsReporting.sort()
+        for circuit in range(13,31):
+            if circuit in circuitsReporting:
+                f.write(' ' + str(circuit))
+            else:
+                f.write('  -')
+        f.write('\n')
+    print 'printPrimaryLogReports - end'
+    print
+
+def plotAllWattHours(d):
+    # fixme: this function has plot points that don't make sense
+    '''
+    for each date in d, sum watt hours and report
+    '''
+    # yank non-pelengana customer circuits
+    d = d[d['circuit_id']!=25]     #MAINS pelengana
+    d = d[d['circuit_id']!=28]
+    d = d[d['circuit_id']!=29]
+    d = d[d['circuit_id']!=30]
+
+    dates = set(d['date'])
+
+    plotDates = np.array([])
+    plotWattHours = np.array([])
+
+    for date in dates:
+        sum = d[d['date']==date]['watthours'].sum()
+        plotDates = np.append(plotDates, date)
+        plotWattHours = np.append(plotWattHours, sum)
+
+    plotDates = matplotlib.dates.date2num(plotDates)
+
+    sortIndices = plotDates.argsort()
+    wh = np.take(plotWattHours, sortIndices)
+    plotDates.sort()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    plt.plot_date(plotDates, wh, '-')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+    ax.grid()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy (Watt-Hours)')
+    ax.set_title('Cumulative Energy Consumed (Reset Daily)')
+    fig.savefig('plotAllWattHours.pdf')
+
+def printTableRow(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
+    for s,w in zip(strings, widths):
+        print str(s).center(w),
+    print
+
+
+# recharging and credit
+
 def plotCreditSeparateAxes(d, dateStart, dateEnd):
     '''
     plots the credit in each circuit account on a separate axis.
@@ -253,308 +390,8 @@ def plotRecharges(dateStart):
     fig.text(0.02, 0.02, annotation)
     fig.savefig('plotRecharges.pdf')
 
-def plotHouseholdEnergyPerHour(d, dateStart, dateEnd):
-    '''
-    plots a time series of accumulated watt hours
-    for each circuit.
-    displays plots in a 1x12 grid.
-    output: plotHouseholdEnergyPerHour.pdf
-    '''
-    fig = plt.figure(figsize=(8,12))
-    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
-
-    circuits = set(d['circuit_id'])
-    circuits = range(13,26)
-
-    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
-
-    for i,c in enumerate(circuits):
-        mask = d['circuit_id']==c
-        dates = d[mask]['date']
-        dates = matplotlib.dates.date2num(dates)
-        wh = d[mask]['watthours']
-
-        ax = fig.add_axes((0.15,0.1+i*0.065,0.7,0.05))
-
-        # plot masked data to get date range
-        ax.plot_date(dates, wh, '-x')
-        ax.text(1.05, 0.4, c, transform = ax.transAxes)
-        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(dateFormatter)
-
-        if i==0:
-            ax.set_xlabel('Date')
-        if i!=0:
-            ax.set_xticklabels([])
-
-        if i==12:
-            ax.set_ylim((0,2000))
-            ax.set_yticks((0,1000,2000))
-        else:
-            ax.set_ylim((0,150))
-            ax.set_yticks((0,50,100,150))
-
-    #fig.autofmt_xdate()
-    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
-    fig.suptitle('Hourly Accumulated Consumption Per Household')
-    fig.savefig('plotHouseholdEnergyPerHour.pdf')
-
-def printPrimaryLogReports(d, dateStart, dateEnd):
-    '''
-    input:
-    d - data array from getDataAsRecordArray,
-    dateStart,
-    dateEnd
-
-    output:
-    printPrimaryLogReports.txt
-
-    this will loop through the report dates between dateStart and
-    dateEnd and print which circuits are reporting at which times. the
-    output is in tabular form to highlight missing SMS reports in the
-    primary logs.
-    '''
-    print
-    print 'printPrimaryLogReports - start'
-    f = open('printPrimaryLogReports.txt','w')
-    # get set of dates
-    # filter on dateStart and dateEnd
-    # loop through set of dates
-    # print out circuits reporting
-    dates = list(set(d['date']))
-    dates.sort()
-    dates = np.array(dates)
-    dates = dates[(dates>dateStart)]
-    for date in dates:
-        f.write(str(date) + '   ')
-        circuitsReporting = list(d[d['date']==date]['circuit_id'])
-        circuitsReporting.sort()
-        for circuit in range(13,31):
-            if circuit in circuitsReporting:
-                f.write(' ' + str(circuit))
-            else:
-                f.write('  -')
-        f.write('\n')
-    print 'printPrimaryLogReports - end'
-    print
-
-def plotColloquium(d):
-    '''
-    plots a time series of accumulated watt hours
-    for each circuit
-    '''
-    fig = plt.figure()
-    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
-
-    circuits = set(d['circuit_id'])
-    circuits = [17,23]
-    for i,c in enumerate(circuits):
-        mask = d['circuit_id']==c
-        dates = d[mask]['date']
-        dates = matplotlib.dates.date2num(dates)
-        wh = d[mask]['watthours']
-
-        plotHeight = 0.7 / len(circuits)
-        ax = fig.add_axes((0.15, 0.1+i*(plotHeight+0.05), 0.7, plotHeight))
-
-
-        # plot masked data to get date range
-        ax.plot_date(dates, wh, '-x')
-        if i==0:
-            ax.set_xlabel('Date')
-        if i!=0:
-            ax.set_xticklabels([])
-
-        ax.text(1.05, 0.4, c, transform = ax.transAxes)
-        ax.set_ylim((0,150))
-        ax.set_yticks((0,50,100,150))
-        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-        ax.xaxis.set_major_formatter(dateFormatter)
-
-    #fig.autofmt_xdate()
-    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
-    fig.suptitle('Hourly Accumulated Consumption Per Household')
-    fig.savefig('plotColloquium.pdf')
-
-def plotAllWattHours(d):
-    # fixme: this function has plot points that don't make sense
-    '''
-    for each date in d, sum watt hours and report
-    '''
-    # yank non-pelengana customer circuits
-    d = d[d['circuit_id']!=25]     #MAINS pelengana
-    d = d[d['circuit_id']!=28]
-    d = d[d['circuit_id']!=29]
-    d = d[d['circuit_id']!=30]
-
-    dates = set(d['date'])
-
-    plotDates = np.array([])
-    plotWattHours = np.array([])
-
-    for date in dates:
-        sum = d[d['date']==date]['watthours'].sum()
-        plotDates = np.append(plotDates, date)
-        plotWattHours = np.append(plotWattHours, sum)
-
-    plotDates = matplotlib.dates.date2num(plotDates)
-
-    sortIndices = plotDates.argsort()
-    wh = np.take(plotWattHours, sortIndices)
-    plotDates.sort()
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    plt.plot_date(plotDates, wh, '-')
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    fig.autofmt_xdate()
-
-    ax.grid()
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy (Watt-Hours)')
-    ax.set_title('Cumulative Energy Consumed (Reset Daily)')
-    fig.savefig('plotAllWattHours.pdf')
-
-def printTableRow(strings, widths):
-    '''
-    this is a short helper function to write out a formatted row of a table.
-    '''
-    for s,w in zip(strings, widths):
-        print str(s).center(w),
-    print
-
-def plotWindowAveragedWatthours(d, dateStart, dateEnd):
-    '''
-    unfinished.
-    this function plots an averaged daily load curve based on a range of
-    data between dateStart and dateEnd.
-    Data is published for each household and for the mains.
-    '''
-    circuits = range(13,14)
-    data = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
-
-    for c in circuits:
-        pass
-
 
 # aggregated by day
-
-def plotTotalEnergyPerDay235959(d, dateStart, dateEnd):
-    '''
-    uses 23:59:59 timestamps to calculate and report sum of all energy
-    consumed by all households each day.  checks to see if all circuits
-    are reporting.  if circuit is not reporting, its share of the energy
-    is replaced by the average of all households.
-    this method can only be used for data on or after feb 28, 2011 when we
-    started reporting a day-end report of watthours.
-    output -
-    plotHouseholdEnergyPerDay.pdf
-
-    '''
-    dateStart = datetime.datetime(dateStart.year,
-                                  dateStart.month,
-                                  dateStart.day,
-                                  23,
-                                  59,
-                                  59)
-    dateCurrent = dateStart
-    dailyEnergy = []
-    dateList = []
-    # drop circuits 25, 28, 29, 30
-    dropCircuits = [25, 28, 29, 30]
-    for dropCircuit in dropCircuits:
-        d = d[d['circuit_id']!=dropCircuit]
-
-    while dateCurrent <= dateEnd:
-        print dateCurrent,
-        dataCurrent = d[d['date']==dateCurrent]
-        #print dataCurrent.shape
-        circuits = dataCurrent['circuit_id']
-        circuits.sort()
-        if len(circuits) < 12:
-            print 'not all reporting',
-        #print circuits
-        currentEnergy = np.mean(dataCurrent['watthours'])*12
-        dailyEnergy.append(currentEnergy)
-        reportDate = datetime.datetime(dateCurrent.year,
-                                       dateCurrent.month,
-                                       dateCurrent.day)
-        dateList.append(reportDate)
-        print currentEnergy
-        #print sum(dataCurrent['watthours'])
-        dateCurrent += datetime.timedelta(days=1)
-
-    print dailyEnergy
-
-    fig = plt.figure()
-    ax = fig.add_axes((0.15,0.2,0.7,0.7))
-
-    dateList = matplotlib.dates.date2num(dateList)
-
-    ax.plot_date(dateList, dailyEnergy, '-x')
-    fig.autofmt_xdate()
-    ax.set_ylim(bottom=0)
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy Consumption (Wh)')
-    ax.set_title('Household Energy Consumption Per Day')
-    fig.savefig('plotTotalEnergyPerDay235959.pdf')
-
-def plotTotalEnergyPerDay23xxxx(d, dateStart):
-    '''
-    this is very similar to plotHouseholdEnergyPerDay but uses any 23 timestamped
-    data to get the day end.  this leads to duplicate data points for many dates.
-    plot energy consumed by all circuits for each day
-    not including mains
-    '''
-    dropCircuits = [25, 28, 29, 30]
-    for dropCircuit in dropCircuits:
-        d = d[d['circuit_id']!=dropCircuit]
-
-    d = d[d['date']>dateStart]
-    mask = []
-    for date in d['date']:
-        if date.hour==23:
-            mask.append(True)
-        else:
-            mask.append(False)
-
-    mask = np.array(mask)
-    d = d[mask]
-
-    dates = set(d['date'])
-
-    plotDates = np.array([])
-    plotWattHours = np.array([])
-
-    for date in dates:
-        sum = d[d['date']==date]['watthours'].sum()
-        plotDates = np.append(plotDates, date)
-        plotWattHours = np.append(plotWattHours, sum)
-
-    sortIndices = plotDates.argsort()
-    plotWattHours = np.take(plotWattHours, sortIndices)
-    plotDates.sort()
-
-    plotDates = matplotlib.dates.date2num(plotDates)
-
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    plt.plot_date(plotDates, plotWattHours, 'ok')
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    fig.autofmt_xdate()
-
-    ax.grid()
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy (Watt-Hours)')
-    ax.set_ylim(bottom=0)
-    ax.set_title('Total Household Energy Consumed Per Day')
-
-    fig.savefig('plotTotalEnergyPerDay23xxxx.pdf')
 
 def parseTotalEnergyPerDay(d, dateStart, dateEnd):
     '''
@@ -635,6 +472,7 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
     ax.set_title('Total Household Energy Consumed Per Day')
 
     fig.savefig('plotTotalEnergyPerDay.pdf')
+
 
 # averaging functions
 
@@ -757,6 +595,175 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
     fig.text(0.05, 0.7, 'Accumulated Energy Use (Wh)', rotation='vertical')
     fig.suptitle('averaged accumulated usage\n'+str(dateStart)+'\n'+str(dateEnd))
     fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
+
+def plotWindowAveragedWatthours(d, dateStart, dateEnd):
+    '''
+    unfinished.
+    this function plots an averaged daily load curve based on a range of
+    data between dateStart and dateEnd.
+    Data is published for each household and for the mains.
+    '''
+    circuits = range(13,14)
+    data = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+
+    for c in circuits:
+        pass
+
+
+# deprecated
+
+def plotColloquium(d):
+    '''
+    plots a time series of accumulated watt hours
+    for each circuit
+    '''
+    fig = plt.figure()
+    #ax = fig.add_axes((0.15,0.2,0.7,0.7))
+
+    circuits = set(d['circuit_id'])
+    circuits = [17,23]
+    for i,c in enumerate(circuits):
+        mask = d['circuit_id']==c
+        dates = d[mask]['date']
+        dates = matplotlib.dates.date2num(dates)
+        wh = d[mask]['watthours']
+
+        plotHeight = 0.7 / len(circuits)
+        ax = fig.add_axes((0.15, 0.1+i*(plotHeight+0.05), 0.7, plotHeight))
+
+
+        # plot masked data to get date range
+        ax.plot_date(dates, wh, '-x')
+        if i==0:
+            ax.set_xlabel('Date')
+        if i!=0:
+            ax.set_xticklabels([])
+
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        ax.set_ylim((0,150))
+        ax.set_yticks((0,50,100,150))
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+
+    #fig.autofmt_xdate()
+    fig.text(0.05,0.7, 'Energy Consumption (Watt-Hours)', rotation='vertical')
+    fig.suptitle('Hourly Accumulated Consumption Per Household')
+    fig.savefig('plotColloquium.pdf')
+
+def plotTotalEnergyPerDay235959(d, dateStart, dateEnd):
+    '''
+    uses 23:59:59 timestamps to calculate and report sum of all energy
+    consumed by all households each day.  checks to see if all circuits
+    are reporting.  if circuit is not reporting, its share of the energy
+    is replaced by the average of all households.
+    this method can only be used for data on or after feb 28, 2011 when we
+    started reporting a day-end report of watthours.
+    output -
+    plotHouseholdEnergyPerDay.pdf
+
+    '''
+    dateStart = datetime.datetime(dateStart.year,
+                                  dateStart.month,
+                                  dateStart.day,
+                                  23,
+                                  59,
+                                  59)
+    dateCurrent = dateStart
+    dailyEnergy = []
+    dateList = []
+    # drop circuits 25, 28, 29, 30
+    dropCircuits = [25, 28, 29, 30]
+    for dropCircuit in dropCircuits:
+        d = d[d['circuit_id']!=dropCircuit]
+
+    while dateCurrent <= dateEnd:
+        print dateCurrent,
+        dataCurrent = d[d['date']==dateCurrent]
+        #print dataCurrent.shape
+        circuits = dataCurrent['circuit_id']
+        circuits.sort()
+        if len(circuits) < 12:
+            print 'not all reporting',
+        #print circuits
+        currentEnergy = np.mean(dataCurrent['watthours'])*12
+        dailyEnergy.append(currentEnergy)
+        reportDate = datetime.datetime(dateCurrent.year,
+                                       dateCurrent.month,
+                                       dateCurrent.day)
+        dateList.append(reportDate)
+        print currentEnergy
+        #print sum(dataCurrent['watthours'])
+        dateCurrent += datetime.timedelta(days=1)
+
+    print dailyEnergy
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.15,0.2,0.7,0.7))
+
+    dateList = matplotlib.dates.date2num(dateList)
+
+    ax.plot_date(dateList, dailyEnergy, '-x')
+    fig.autofmt_xdate()
+    ax.set_ylim(bottom=0)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy Consumption (Wh)')
+    ax.set_title('Household Energy Consumption Per Day')
+    fig.savefig('plotTotalEnergyPerDay235959.pdf')
+
+def plotTotalEnergyPerDay23xxxx(d, dateStart):
+    '''
+    this is very similar to plotHouseholdEnergyPerDay but uses any 23 timestamped
+    data to get the day end.  this leads to duplicate data points for many dates.
+    plot energy consumed by all circuits for each day
+    not including mains
+    '''
+    dropCircuits = [25, 28, 29, 30]
+    for dropCircuit in dropCircuits:
+        d = d[d['circuit_id']!=dropCircuit]
+
+    d = d[d['date']>dateStart]
+    mask = []
+    for date in d['date']:
+        if date.hour==23:
+            mask.append(True)
+        else:
+            mask.append(False)
+
+    mask = np.array(mask)
+    d = d[mask]
+
+    dates = set(d['date'])
+
+    plotDates = np.array([])
+    plotWattHours = np.array([])
+
+    for date in dates:
+        sum = d[d['date']==date]['watthours'].sum()
+        plotDates = np.append(plotDates, date)
+        plotWattHours = np.append(plotWattHours, sum)
+
+    sortIndices = plotDates.argsort()
+    plotWattHours = np.take(plotWattHours, sortIndices)
+    plotDates.sort()
+
+    plotDates = matplotlib.dates.date2num(plotDates)
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    plt.plot_date(plotDates, plotWattHours, 'ok')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+    ax.grid()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy (Watt-Hours)')
+    ax.set_ylim(bottom=0)
+    ax.set_title('Total Household Energy Consumed Per Day')
+
+    fig.savefig('plotTotalEnergyPerDay23xxxx.pdf')
 
 
 if __name__ == '__main__':
