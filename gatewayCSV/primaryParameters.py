@@ -645,31 +645,66 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
     fig.suptitle('averaged accumulated usage\n'+str(dateStart)+'\n'+str(dateEnd))
     fig.savefig('plotAveragedAccumulatedHourlyEnergy.pdf')
 
-def plotWindowAveragedWatthours(d, dateStart, dateEnd):
+def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
     '''
     unfinished.
     this function plots an averaged daily load curve based on a range of
     data between dateStart and dateEnd.
     Data is published for each household and for the mains.
     '''
-    circuits = range(13,14)
-    thisData = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
-    circuit = 13
-    thisData = thisData[thisData['circuit_id']==circuit]
-    thisTime = np.array([tt.hour + tt.minute/60. for tt in thisData['date']])
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
-    print set(thisTime)
-    averagedEnergy = np.zeros(25)
-    for i in range(1,25):
-        timeMask = (thisTime < i) & (thisTime > i-1)
-        averagedEnergy[i] = thisData[timeMask]['watthours'].mean()
+    fig = plt.figure(figsize=(12,8))
 
-    plt.plot(thisTime, thisData['watthours'],'xk')
-    plt.plot(range(0,25), averagedEnergy, 'x-b')
+    # spacing for x and y
+    dx = 0.20
+    dy = 0.22
+    # size y and size x of plot
+    sx = dx * 0.8
+    sy = dy * 0.75
 
-    plt.savefig('plotWindowAveragedWatthours.pdf')
-    plt.close()
+    numCircuits = 13
+    totalAveragedEnergy = np.zeros(25)
+    for i,c in enumerate(range(numCircuits)):
+        x = (i % 4)
+        y = 3 - (i / 4)
+        ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
 
+        thisData = d[d['circuit_id']==c+13]
+        thisTime = np.array([tt.hour + tt.minute/60. for tt in thisData['date']])
+
+        averagedEnergy = np.zeros(25)
+        for i in range(1,25):
+            timeMask = (thisTime < i) & (thisTime > i-1)
+            averagedEnergy[i] = thisData[timeMask]['watthours'].mean()
+
+        ax.plot(thisTime, thisData['watthours'],'x', color = '#d0d0d0')
+        ax.plot(range(0,25), averagedEnergy, 'x-k')
+        if c == 12:
+            ax.set_ylim((0,2000))
+            ax.set_title('Total Consumption')
+        else:
+            totalAveragedEnergy += averagedEnergy
+            ax.set_title('Household ' + str(c + 1))
+            ax.set_ylim((0,150))
+            ax.set_yticks((0,50,100,150))
+        ax.set_xlim(0,24)
+        ax.set_xticks((0,6,12,18,24))
+
+    i = 13
+    x = (i % 4)
+    y = 3 - (i / 4)
+    ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+    ax.plot(range(0,25), totalAveragedEnergy, 'x-k')
+    ax.set_ylim((0,1000))
+    ax.set_title('Household Consumption')
+    ax.set_xlim(0,24)
+    ax.set_xticks((0,6,12,18,24))
+
+    fig.suptitle('Averaged Accumulated Energy Consumption\n' +
+                  dateStart.strftime('%Y-%m-%d') + ' to ' + dateEnd.strftime('%Y-%m-%d') +
+                  '\nWatthours vs. Time of Day')
+    fig.savefig('plotWindowAveragedWatthours.pdf')
 
 # deprecated
 
