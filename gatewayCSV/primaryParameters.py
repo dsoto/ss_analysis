@@ -653,10 +653,22 @@ def plotWindowAveragedWatthours(d, dateStart, dateEnd):
     Data is published for each household and for the mains.
     '''
     circuits = range(13,14)
-    data = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+    thisData = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+    circuit = 13
+    thisData = thisData[thisData['circuit_id']==circuit]
+    thisTime = np.array([tt.hour + tt.minute/60. for tt in thisData['date']])
 
-    for c in circuits:
-        pass
+    print set(thisTime)
+    averagedEnergy = np.zeros(25)
+    for i in range(1,25):
+        timeMask = (thisTime < i) & (thisTime > i-1)
+        averagedEnergy[i] = thisData[timeMask]['watthours'].mean()
+
+    plt.plot(thisTime, thisData['watthours'],'xk')
+    plt.plot(range(0,25), averagedEnergy, 'x-b')
+
+    plt.savefig('plotWindowAveragedWatthours.pdf')
+    plt.close()
 
 
 # deprecated
