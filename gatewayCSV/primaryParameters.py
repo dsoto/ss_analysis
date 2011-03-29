@@ -30,7 +30,9 @@ def getDataAsRecordArray(downloadFile = True):
     if downloadFile==True, new data is downloaded from gateway.
     this function returns a numpy record array of data.
     '''
+    usecols = [0,1,5,6,7,8,9]
     dtype = [('watthours',   'float'),      # column 0
+             ('status',      'int'),        # column 1
              ('circuit_id',  'int'),        # column 5
              ('use_time',    'float'),      # column 6
              ('credit',      'float'),      # column 7
