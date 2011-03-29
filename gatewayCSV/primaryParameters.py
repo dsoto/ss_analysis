@@ -210,6 +210,19 @@ def printTableRow(strings, widths):
         print str(s).center(w),
     print
 
+def printTableRowLatex(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
+    numColumns = len(zip(strings, widths))
+    i = 0
+    for s,w in zip(strings, widths):
+        print str(s).center(w),
+        if i <= numColumns - 2:
+            print '&',
+        i += 1
+    print '\\\\'
+
 def plotMultipleSeparateAxes(d, dateStart, dateEnd):
     '''
     plots the credit, watthours, status in each circuit account on a separate axis.
