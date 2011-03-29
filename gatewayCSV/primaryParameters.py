@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import datetime
 import os.path
 
-usecols = [0,5,6,7,8,9]
 plotColorList  = ['b', 'r', 'g', 'k', 'b', 'r', 'g', 'k', 'b', 'r', 'g', 'k']
 plotSymbolList  = ['x', 'x', 'x', 'x', 's', 's', 's', 's', 'd', 'd', 'd', 'd']
 dateStart = datetime.datetime(2011,  1,  1)
@@ -381,7 +380,8 @@ def printRecharges(dateStart):
             total = sum(recharges['amount'])
             monthly = total / days * 30 / 500
             monthly = '%.2f' % monthly
-            printTableRow((cir-12, total, avgTime, monthly), widths)
+            #printTableRow((cir-12, total, avgTime, monthly), widths)
+            printTableRowLatex((cir-12, total, avgTime, monthly), widths)
 
     print
     print 'data generated at',
@@ -487,12 +487,11 @@ def parseTotalEnergyPerDay(d, dateStart, dateEnd):
                 data = data[(data['date']>todayStart) & (data['date']<todayEnd)]
             if data.shape == (0,):
                 print 'no date data for', todayStart
+                energy[dateIndex, circuitIndex] = 0
             else:
                 lastSampleDate = data['date'].max()
-                #print lastSampleDate,
                 thisSample = data[data['date']==lastSampleDate]['watthours']
-                #print dateIndex, circuitIndex
-                energy[dateIndex, circuitIndex] = thisSample
+                energy[dateIndex, circuitIndex] = thisSample[0]
         todayStart = todayEnd
         dateIndex += 1
     return energy
@@ -545,7 +544,7 @@ def plotTotalEnergyPerDayByCircuit(d, dateStart, dateEnd):
         x = (i % 4)
         y = 3 - (i / 4)
         ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
-        ax.plot_date(plotDates, energy[:,i],'x-k')
+        ax.plot_date(plotDates, energy[:,i],'-k')
         # set the plot to have 3 major ticks with month-day format
         ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
         ax.xaxis.set_minor_locator(matplotlib.dates.DayLocator())
@@ -561,7 +560,7 @@ def plotTotalEnergyPerDayByCircuit(d, dateStart, dateEnd):
     x = 1
     y = 0
     ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
-    ax.plot_date(plotDates, energy[:,:11].sum(1),'x-k')
+    ax.plot_date(plotDates, energy[:,:11].sum(1),'-k')
     ax.set_title('All Households')
     ax.set_ylim((0,2000))
     ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
@@ -571,14 +570,14 @@ def plotTotalEnergyPerDayByCircuit(d, dateStart, dateEnd):
     x = 2
     y = 0
     ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
-    ax.plot_date(plotDates, energy[:,12]-energy[:,:11].sum(1),'x-k')
+    ax.plot_date(plotDates, energy[:,12]-energy[:,:11].sum(1),'-k')
     ax.set_title('Meter Consumption')
     ax.set_ylim((0,2000))
     ax.xaxis.set_major_locator(matplotlib.dates.DayLocator(interval=len(plotDates)/3))
     ax.xaxis.set_minor_locator(matplotlib.dates.DayLocator())
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d'))
 
-    fig.suptitle('Pelengana Energy Consumption')
+    fig.suptitle('Pelengana Energy Consumption\nWatt-Hours Vs. Date')
     fig.autofmt_xdate()
     fig.savefig('plotTotalEnergyPerDayByCircuit.pdf')
 
@@ -959,7 +958,7 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
 if __name__ == '__main__':
 
     print('Begin Load Data')
-    d = getDataAsRecordArray()
+    d = getDataAsRecordArray(downloadFile=False)
     print('End Load Data\n')
 
     flag = False
@@ -993,6 +992,7 @@ if __name__ == '__main__':
         printRecharges(dateStart)
         plotRecharges(dateStart)
 
-    dateStart = datetime.datetime(2011,2,1)
-    dateEnd = datetime.datetime(2011,3,14)
-    energy = parseTotalEnergyPerDay(d, dateStart, dateEnd)
+
+    plotTotalEnergyPerDayByCircuit(d,
+                                datetime.datetime(2011,1,1),
+                                datetime.datetime(2011,3,20))
