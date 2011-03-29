@@ -210,6 +210,51 @@ def printTableRow(strings, widths):
         print str(s).center(w),
     print
 
+def plotMultipleSeparateAxes(d, dateStart, dateEnd):
+    '''
+    plots the credit, watthours, status in each circuit account on a separate axis.
+    i'm trying to see if people are turning their circuits off while they have
+    credit in their accounts.
+    currently in a 1x12 array.
+    '''
+    fig = plt.figure(figsize=(8,12))
+    circuits = set(d['circuit_id'])
+    circuits = range(13,25)
+    d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
+    for i,c in enumerate(circuits):
+        # assemble data by circuit
+        circuitMask = d['circuit_id'] == c
+        dates = matplotlib.dates.date2num(d[circuitMask]['date'])
+        credit = d[circuitMask]['credit']
+        watthours = d[circuitMask]['watthours'] * 5
+        status = d[circuitMask]['status'] * 1000
+
+        # mask for status = 0 but credit > 0
+        newMask = (status==0) & (credit>0)
+
+        # plot individual circuit data
+        if i == 0:
+            ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        else:
+            ax = fig.add_axes((0.15,0.1+i*0.072,0.7,0.05))
+        ax.plot_date(dates[newMask], credit[newMask], '-x')
+        ax.plot_date(dates[newMask], watthours[newMask], '-o')
+        ax.plot_date(dates[newMask], status[newMask], '-d')
+        ax.text(1.05, 0.4, c, transform = ax.transAxes)
+        ax.set_yticks((0,500,1000))
+        oldax = ax
+        ax.set_ylim((0,1000))
+        dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+        ax.xaxis.set_major_formatter(dateFormatter)
+        if i==0:
+            ax.set_xlabel('Date')
+        if i!=0:
+            ax.set_xticklabels([])
+
+    fig.text(0.05, 0.7, 'Account Credit (FCFA)', rotation='vertical')
+    fig.suptitle('Account Credit in Pelengana')
+    fig.savefig('plotMultipleSeparateAxes.pdf')
+
 
 # recharging and credit
 
