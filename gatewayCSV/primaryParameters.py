@@ -116,47 +116,6 @@ def printPrimaryLogReports(d, dateStart, dateEnd):
     print 'printPrimaryLogReports - end'
     print
 
-def plotAllWattHours(d):
-    # fixme: this function has plot points that don't make sense
-    '''
-    for each date in d, sum watt hours and report
-    '''
-    # yank non-pelengana customer circuits
-    d = d[d['circuit_id']!=25]     #MAINS pelengana
-    d = d[d['circuit_id']!=28]
-    d = d[d['circuit_id']!=29]
-    d = d[d['circuit_id']!=30]
-
-    dates = set(d['date'])
-
-    plotDates = np.array([])
-    plotWattHours = np.array([])
-
-    for date in dates:
-        sum = d[d['date']==date]['watthours'].sum()
-        plotDates = np.append(plotDates, date)
-        plotWattHours = np.append(plotWattHours, sum)
-
-    plotDates = matplotlib.dates.date2num(plotDates)
-
-    sortIndices = plotDates.argsort()
-    wh = np.take(plotWattHours, sortIndices)
-    plotDates.sort()
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-    plt.plot_date(plotDates, wh, '-')
-    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
-    ax.xaxis.set_major_formatter(dateFormatter)
-    fig.autofmt_xdate()
-
-    ax.grid()
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy (Watt-Hours)')
-    ax.set_title('Cumulative Energy Consumed (Reset Daily)')
-    fig.savefig('plotAllWattHours.pdf')
-
 def printTableRow(strings, widths):
     '''
     this is a short helper function to write out a formatted row of a table.
@@ -768,6 +727,7 @@ def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
                   '\nWatthours vs. Time of Day')
     fig.savefig('plotWindowAveragedWatthours.pdf')
 
+
 # deprecated
 
 def plotColloquium(d):
@@ -956,6 +916,47 @@ def plotTotalEnergyPerDay(d, dateStart, dateEnd):
     ax.set_title('Total Household Energy Consumed Per Day')
 
     fig.savefig('plotTotalEnergyPerDay.pdf')
+
+def plotAllWattHours(d):
+    # fixme: this function has plot points that don't make sense
+    '''
+    for each date in d, sum watt hours and report
+    '''
+    # yank non-pelengana customer circuits
+    d = d[d['circuit_id']!=25]     #MAINS pelengana
+    d = d[d['circuit_id']!=28]
+    d = d[d['circuit_id']!=29]
+    d = d[d['circuit_id']!=30]
+
+    dates = set(d['date'])
+
+    plotDates = np.array([])
+    plotWattHours = np.array([])
+
+    for date in dates:
+        sum = d[d['date']==date]['watthours'].sum()
+        plotDates = np.append(plotDates, date)
+        plotWattHours = np.append(plotWattHours, sum)
+
+    plotDates = matplotlib.dates.date2num(plotDates)
+
+    sortIndices = plotDates.argsort()
+    wh = np.take(plotWattHours, sortIndices)
+    plotDates.sort()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    plt.plot_date(plotDates, wh, '-')
+    dateFormatter = matplotlib.dates.DateFormatter('%m-%d')
+    ax.xaxis.set_major_formatter(dateFormatter)
+    fig.autofmt_xdate()
+
+    ax.grid()
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy (Watt-Hours)')
+    ax.set_title('Cumulative Energy Consumed (Reset Daily)')
+    fig.savefig('plotAllWattHours.pdf')
 
 
 if __name__ == '__main__':
