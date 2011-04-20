@@ -668,15 +668,24 @@ def plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd):
 
 def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
     '''
-    unfinished.
+    input:
+        d - data record array
+        dateStart - datetime object with start date
+        dateEnd   - datetime object with end date
+    output:
+        pdf file written to 'plotWindowAveragedWatthoursByCircuit.pdf'
+
     this function plots an averaged daily load curve based on a range of
     data between dateStart and dateEnd.
+    data is binned hourly and averaged to get averaged curves.
     Data is published for each household and for the mains.
+    Lines are fit and slopes reported for daytime and nighttime consumption
     '''
+    # filter date range
     d = d[(d['date'] > dateStart) & (d['date'] < dateEnd)]
 
+    # create figure and define spacings
     fig = plt.figure(figsize=(12,8))
-
     # spacing for x and y
     dx = 0.20
     dy = 0.22
@@ -684,27 +693,57 @@ def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
     sx = dx * 0.8
     sy = dy * 0.75
 
+    # loop over circuits, pull data, average, plot
     numCircuits = 13
     totalAveragedEnergy = np.zeros(25)
+    print 'circuit & day wattage & night wattage'
     for i,c in enumerate(range(numCircuits)):
+        # place axis for circuit at desired location
         x = (i % 4)
         y = 3 - (i / 4)
         ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+        ax.grid(True)
 
+        # select circuit and convert datetime object to decimal hour of day
         thisData = d[d['circuit_id']==c+13]
         thisTime = np.array([tt.hour + tt.minute/60. for tt in thisData['date']])
 
+        # create length 25 array, and create an average watthour reading by binning data
+        # first sample is the zero value at midnight
         averagedEnergy = np.zeros(25)
         for i in range(1,25):
             timeMask = (thisTime < i) & (thisTime > i-1)
             averagedEnergy[i] = thisData[timeMask]['watthours'].mean()
 
+        # plot raw data on axis
         ax.plot(thisTime, thisData['watthours'],'x', color = '#d0d0d0')
+        # plot averaged data on axis
         ax.plot(range(0,25), averagedEnergy, 'x-k')
+
+        # separate daytime data and nighttime data
+        dayStart   = 8
+        dayEnd     = 17
+        nightStart = 21
+        nightEnd   = 23
+        print c + 1, '  &  ',
+        # section off day data and perform linear fit
+        dayTimeMask = (thisTime > dayStart) & (thisTime < dayEnd )
+        p = np.polyfit(thisTime[dayTimeMask],thisData[dayTimeMask]['watthours'],1)
+        ax.text(dayStart,100,round(p[0],2))
+        print round(p[0],2), '  &  ',
+        # section off day data and perform linear fit
+        nightTimeMask = (thisTime > nightStart) & (thisTime < nightEnd )
+        p = np.polyfit(thisTime[nightTimeMask],thisData[nightTimeMask]['watthours'],1)
+        ax.text(nightStart-3,100,round(p[0],2))
+        print round(p[0],2), '  \\\\'
+
+
+        # logic for titles and ticks
         if c == 12:
             ax.set_ylim((0,2000))
             ax.set_title('Total Consumption')
         else:
+            # create total of household consumption
             totalAveragedEnergy += averagedEnergy
             ax.set_title('Household ' + str(c + 1))
             ax.set_ylim((0,150))
@@ -712,20 +751,29 @@ def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
         ax.set_xlim(0,24)
         ax.set_xticks((0,6,12,18,24))
 
+    # plot total of household consumption
     i = 13
     x = (i % 4)
     y = 3 - (i / 4)
     ax = fig.add_axes((0.10 + x*dx, 0.05 + y*dy, sx, sy))
+    ax.grid(True)
     ax.plot(range(0,25), totalAveragedEnergy, 'x-k')
+    p = np.polyfit(range(dayStart,dayEnd),totalAveragedEnergy[dayStart:dayEnd],1)
+    ax.text(dayStart, 500, round(p[0],2))
+    print p
+    p = np.polyfit(range(nightStart,nightEnd),totalAveragedEnergy[nightStart:nightEnd],1)
+    ax.text(nightStart, 500, round(p[0],2))
+    print p
     ax.set_ylim((0,1000))
     ax.set_title('Household Consumption')
     ax.set_xlim(0,24)
     ax.set_xticks((0,6,12,18,24))
 
+    # title and save figure
     fig.suptitle('Averaged Accumulated Energy Consumption\n' +
                   dateStart.strftime('%Y-%m-%d') + ' to ' + dateEnd.strftime('%Y-%m-%d') +
                   '\nWatthours vs. Time of Day')
-    fig.savefig('plotWindowAveragedWatthours.pdf')
+    fig.savefig('plotWindowAveragedWatthoursByCircuit.pdf')
 
 
 # deprecated
