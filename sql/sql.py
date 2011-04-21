@@ -108,7 +108,7 @@ class Circuit(Base):
 class Log(Base):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime)
+    date = Column(DateTime)         # this is the time stamp from the meter
     uuid = Column(String)
     _type = Column('type', String(50))
     __mapper_args__ = {'polymorphic_on': _type}
@@ -122,7 +122,7 @@ class Log(Base):
         self.circuit = circuit
 
 
-
+# this inherits from Log
 class PrimaryLog(Log):
     __tablename__ = "primary_log"
     __mapper_args__ = {'polymorphic_identity': 'primary_log'}
@@ -171,14 +171,54 @@ class PrimaryLog(Log):
 
 import datetime as dt
 
-circuit = session.query(Circuit).get(13)
+circuit = session.query(Circuit).all()
 
-thisQuery = session.query(PrimaryLog).filter_by(circuit=circuit)
-thisQuery = thisQuery.filter(PrimaryLog.created > dt.datetime(2011,4,9))
-thisQuery = thisQuery.filter(PrimaryLog.created < dt.datetime(2011,4,9,12))
+print len(circuit)
+
+clist = [c.id for c in circuit]
+clist.sort()
+
+#print clist
+
+startDate = dt.datetime(2011,4,14)
+endDate   = dt.datetime(2011,4,21)
+
+originalQuery = session.query(PrimaryLog)
+
+start = startDate
+while 1:
+    end = start + dt.timedelta(hours=1)
+
+    thisQuery = originalQuery
+    thisQuery = thisQuery.filter(PrimaryLog.date > start)
+    thisQuery = thisQuery.filter(PrimaryLog.date < end)
+    #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
+
+    cclist = [tq.circuit_id for tq in thisQuery]
+    cclist.sort()
+
+    print start,
+    print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+
+    if start.hour == 23:
+        lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59,59)
+        thisQuery = originalQuery
+        thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
+        print lastReportTime,
+        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+
+    start = start + dt.timedelta(hours=1)
+    if start > endDate:
+        break
+
+'''
+print len(cclist)
+print cclist
+
 
 
 for tl in thisQuery:
-    print tl.created
-
+    print tl.date,
+    print tl.circuit_id
+'''
 
