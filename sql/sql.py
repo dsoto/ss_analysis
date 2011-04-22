@@ -220,19 +220,6 @@ while 1:
     if start > endDate:
         break
 
-for i, row in enumerate(report):
-    print dates[i],
-    for col in row:
-        if col == 0:
-            print ' ',
-        else:
-            print '.',
-    print
-
-percentReporting = report.sum(0) / report.shape[0]
-print percentReporting
-
-hoursReporting = report.sum(1)
 
 # loop through meters and output graphs of per circuit uptime
 
