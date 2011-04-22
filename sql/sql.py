@@ -179,11 +179,12 @@ numCol = max(clist) + 1
 
 startDate = dt.datetime(2011, 4, 14)
 endDate   = dt.datetime(2011, 4, 21)
-numRow = (endDate - startDate).days * 25 + 1
+numRow = (endDate - startDate).days * 25
 
 import numpy as np
 
 report = np.zeros((numRow, numCol))
+print report.shape
 dates = []
 originalQuery = session.query(PrimaryLog)
 
@@ -191,7 +192,6 @@ start = startDate
 i = 0
 while 1:
     end = start + dt.timedelta(hours=1)
-    dates.append(start)
     thisQuery = originalQuery
 
     # deal with double report problem
@@ -204,6 +204,7 @@ while 1:
         cclist.sort()
         # add to numpy array
         report[i,cclist] = 1
+        dates.append(start)
         i += 1
         # output to screen
         print start,
@@ -217,6 +218,7 @@ while 1:
         cclist.sort()
         # add to numpy array
         report[i,cclist] = 1
+        dates.append(start)
         i += 1
         # output to screen
         print start,
@@ -228,6 +230,7 @@ while 1:
         cclist.sort()
         # add to numpy array
         report[i,cclist] = 1
+        dates.append(lastReportTime)
         i += 1
         # output to screen
         print lastReportTime,
@@ -237,10 +240,7 @@ while 1:
     if start >= endDate:
         break
 
-
 # loop through meters and output graphs of per circuit uptime
-
-
 
 for meter_id in [4,6,7,8]:
     meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
@@ -262,4 +262,17 @@ for meter_id in [4,6,7,8]:
     ax.set_ylim((0,1))
     ax.set_xlabel('circuit index (not well ordered)')
     ax.set_ylabel('Percentage of time reporting')
-    fig.savefig('uptime_'+meterName+'.pdf')
+    fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
+
+    import matplotlib.dates
+    messagesReceived = meterReport.sum(1)
+    mpldates = matplotlib.dates.date2num(dates)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot_date(mpldates,messagesReceived,'-x')
+    ax.set_title(meterName)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Number of circuits reporting')
+    fig.autofmt_xdate()
+    fig.savefig('uptime_by_date_'+meterName+'.pdf')
