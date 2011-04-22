@@ -234,31 +234,28 @@ print percentReporting
 
 hoursReporting = report.sum(1)
 
-'''
-import matplotlib.pyplot as plt
-plt.plot(hoursReporting, 'x')
-plt.show()
-'''
+# loop through meters and output graphs of per circuit uptime
 
-'''
-maliCircuits = session.query(Circuit).filter(Circuit.meter_id == 4)
-[m.name for m in meters]
-[m.id for m in meters]
-#[u'demo001', u'mali001', u'uganda002', u'ml06', u'ml05', u'independent']
-#[         3,          4,            6,      8 ,       7,             5]
-'''
-meter_id = 8
-meterCircuits = session.query(Circuit).filter(Circuit.meter_id == 8)
-meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
-print meterName
 
-meterCircuits = [mc.id for mc in meterCircuits]
-meterCircuits.sort()
-print meterCircuits
 
-meterReport = report[:,meterCircuits]
+for meter_id in [4,6,7,8]:
+    meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
+    meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
+    print 'generating for ', meterName
 
-import matplotlib.pyplot as plt
-plt.plot(meterReport.sum(0) / meterReport.shape[0])
-plt.title(meterName)
-plt.show()
+    meterCircuits = [mc.id for mc in meterCircuits]
+    meterCircuits.sort()
+    print meterCircuits
+
+    meterReport = report[:,meterCircuits]
+
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(meterReport.sum(0) / meterReport.shape[0],'x')
+    ax.set_title(meterName+'\nFrom '+startDate.strftime('%Y-%m-%d')+' to '+
+                                     endDate.strftime('%Y-%m-%d'))
+    ax.set_ylim((0,1))
+    ax.set_xlabel('circuit index (not well ordered)')
+    ax.set_ylabel('Percentage of time reporting')
+    fig.savefig('uptime_'+meterName+'.pdf')
