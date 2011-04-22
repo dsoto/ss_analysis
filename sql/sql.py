@@ -207,7 +207,7 @@ while 1:
 
     if start.hour == 23:
         i += 1
-        lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59,59)
+        lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
         thisQuery = originalQuery
         thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
         print lastReportTime,
