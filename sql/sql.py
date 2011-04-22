@@ -193,31 +193,48 @@ while 1:
     end = start + dt.timedelta(hours=1)
     dates.append(start)
     thisQuery = originalQuery
-    thisQuery = thisQuery.filter(PrimaryLog.date > start)
-    thisQuery = thisQuery.filter(PrimaryLog.date < end)
-    #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
 
-    cclist = [tq.circuit_id for tq in thisQuery]
-    cclist.sort()
-
-    report[i,cclist] = 1
-
-    print start,
-    print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-
-    if start.hour == 23:
+    # deal with double report problem
+    if start.hour != 23:
+        # take reports in the hour between start and end
+        thisQuery = thisQuery.filter(PrimaryLog.date > start)
+        thisQuery = thisQuery.filter(PrimaryLog.date < end)
+        #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
+        cclist = [tq.circuit_id for tq in thisQuery]
+        cclist.sort()
+        # add to numpy array
+        report[i,cclist] = 1
         i += 1
+        # output to screen
+        print start,
+        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+    else:
+        # change report range to prevent including the 23:59:59 report in the 23:00:00 row
         lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
+        thisQuery = thisQuery.filter(PrimaryLog.date > start)
+        thisQuery = thisQuery.filter(PrimaryLog.date < lastReportTime)
+        cclist = [tq.circuit_id for tq in thisQuery]
+        cclist.sort()
+        # add to numpy array
+        report[i,cclist] = 1
+        i += 1
+        # output to screen
+        print start,
+        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+        # end of day report
         thisQuery = originalQuery
         thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
+        cclist = [tq.circuit_id for tq in thisQuery]
+        cclist.sort()
+        # add to numpy array
+        report[i,cclist] = 1
+        i += 1
+        # output to screen
         print lastReportTime,
         print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-        report[i, cclist] = 1
-        dates.append(lastReportTime)
 
     start = start + dt.timedelta(hours=1)
-    i += 1
-    if start > endDate:
+    if start >= endDate:
         break
 
 
