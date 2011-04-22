@@ -14,7 +14,6 @@ from sqlalchemy import Unicode
 engine = sqlalchemy.create_engine('postgres://postgres:postgres@localhost:5432/gateway')
 connection = engine.connect()
 
-
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
@@ -104,7 +103,6 @@ class Circuit(Base):
         self.credit = credit
         self.account = account
 
-
 class Log(Base):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
@@ -120,7 +118,6 @@ class Log(Base):
         self.date = date
         self.uuid = str(uuid.uuid4())
         self.circuit = circuit
-
 
 # this inherits from Log
 class PrimaryLog(Log):
@@ -168,7 +165,6 @@ class PrimaryLog(Log):
                                  ('wh', float(self.watthours))] + self.getCreditAndType())
 
 
-
 import datetime as dt
 
 circuit = session.query(Circuit).all()
@@ -177,18 +173,25 @@ print len(circuit)
 
 clist = [c.id for c in circuit]
 clist.sort()
+numCol = max(clist) + 1
 
 #print clist
 
-startDate = dt.datetime(2011,4,14)
-endDate   = dt.datetime(2011,4,21)
+startDate = dt.datetime(2011, 4, 15)
+endDate   = dt.datetime(2011, 4, 22)
+numRow = (endDate - startDate).days * 25 + 1
 
+import numpy as np
+
+report = np.zeros((numRow, numCol))
+dates = []
 originalQuery = session.query(PrimaryLog)
 
 start = startDate
+i = 0
 while 1:
     end = start + dt.timedelta(hours=1)
-
+    dates.append(start)
     thisQuery = originalQuery
     thisQuery = thisQuery.filter(PrimaryLog.date > start)
     thisQuery = thisQuery.filter(PrimaryLog.date < end)
@@ -197,28 +200,65 @@ while 1:
     cclist = [tq.circuit_id for tq in thisQuery]
     cclist.sort()
 
+    report[i,cclist] = 1
+
     print start,
     print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
 
     if start.hour == 23:
+        i += 1
         lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59,59)
         thisQuery = originalQuery
         thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
         print lastReportTime,
         print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+        report[i, cclist] = 1
+        dates.append(lastReportTime)
 
     start = start + dt.timedelta(hours=1)
+    i += 1
     if start > endDate:
         break
 
+for i, row in enumerate(report):
+    print dates[i],
+    for col in row:
+        if col == 0:
+            print ' ',
+        else:
+            print '.',
+    print
+
+percentReporting = report.sum(0) / report.shape[0]
+print percentReporting
+
+hoursReporting = report.sum(1)
+
 '''
-print len(cclist)
-print cclist
-
-
-
-for tl in thisQuery:
-    print tl.date,
-    print tl.circuit_id
+import matplotlib.pyplot as plt
+plt.plot(hoursReporting, 'x')
+plt.show()
 '''
 
+'''
+maliCircuits = session.query(Circuit).filter(Circuit.meter_id == 4)
+[m.name for m in meters]
+[m.id for m in meters]
+#[u'demo001', u'mali001', u'uganda002', u'ml06', u'ml05', u'independent']
+#[         3,          4,            6,      8 ,       7,             5]
+'''
+meter_id = 8
+meterCircuits = session.query(Circuit).filter(Circuit.meter_id == 8)
+meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
+print meterName
+
+meterCircuits = [mc.id for mc in meterCircuits]
+meterCircuits.sort()
+print meterCircuits
+
+meterReport = report[:,meterCircuits]
+
+import matplotlib.pyplot as plt
+plt.plot(meterReport.sum(0) / meterReport.shape[0])
+plt.title(meterName)
+plt.show()
