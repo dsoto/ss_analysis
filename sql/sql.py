@@ -177,8 +177,8 @@ numCol = max(clist) + 1
 
 #print clist
 
-startDate = dt.datetime(2011, 4, 15)
-endDate   = dt.datetime(2011, 4, 22)
+startDate = dt.datetime(2011, 4, 14)
+endDate   = dt.datetime(2011, 4, 21)
 numRow = (endDate - startDate).days * 25 + 1
 
 import numpy as np
