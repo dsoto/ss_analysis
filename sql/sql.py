@@ -178,7 +178,7 @@ numCol = max(clist) + 1
 #print clist
 
 startDate = dt.datetime(2011, 4, 14)
-endDate   = dt.datetime(2011, 4, 21)
+endDate   = dt.datetime(2011, 4, 27)
 numRow = (endDate - startDate).days * 25
 
 import numpy as np
@@ -242,37 +242,58 @@ while 1:
 
 # loop through meters and output graphs of per circuit uptime
 
-for meter_id in [4,6,7,8]:
-    meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
-    meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
-    print 'generating for ', meterName
 
-    meterCircuits = [mc.id for mc in meterCircuits]
-    meterCircuits.sort()
-    print meterCircuits
+def plotByCircuit():
+    for i, meter_id in enumerate([4,6,7,8]):
+        meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
+        meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
+        print 'generating for ', meterName
 
-    meterReport = report[:,meterCircuits]
+        meterCircuits = [mc.id for mc in meterCircuits]
+        meterCircuits.sort()
+        print meterCircuits
 
+        meterReport = report[:,meterCircuits]
+
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(meterReport.sum(0) / meterReport.shape[0],'x')
+        ax.set_title(meterName+'\nFrom '+startDate.strftime('%Y-%m-%d')+' to '+
+                                         endDate.strftime('%Y-%m-%d'))
+        ax.set_ylim((0,1))
+        ax.set_xlabel('circuit index (not well ordered)')
+        ax.set_ylabel('Percentage of time reporting')
+        fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
+
+def plotByTimeSeries():
     import matplotlib.pyplot as plt
     fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(meterReport.sum(0) / meterReport.shape[0],'x')
-    ax.set_title(meterName+'\nFrom '+startDate.strftime('%Y-%m-%d')+' to '+
-                                     endDate.strftime('%Y-%m-%d'))
-    ax.set_ylim((0,1))
-    ax.set_xlabel('circuit index (not well ordered)')
-    ax.set_ylabel('Percentage of time reporting')
-    fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
+    for i, meter_id in enumerate([4,6,7,8]):
+        meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
+        meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
+        print 'generating for ', meterName
 
-    import matplotlib.dates
-    messagesReceived = meterReport.sum(1)
-    mpldates = matplotlib.dates.date2num(dates)
+        meterCircuits = [mc.id for mc in meterCircuits]
+        meterCircuits.sort()
+        print meterCircuits
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot_date(mpldates,messagesReceived,'-x')
-    ax.set_title(meterName)
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Number of circuits reporting')
+        meterReport = report[:,meterCircuits]
+
+        import matplotlib.pyplot as plt
+        import matplotlib.dates
+        messagesReceived = meterReport.sum(1)
+        mpldates = matplotlib.dates.date2num(dates)
+
+        ax = fig.add_subplot(4,1,i)
+        ax.plot_date(mpldates,messagesReceived,'-x')
+        ax.set_title(meterName)
+        ax.set_xlabel('Date')
+        ax.set_ylabel('# Reporting')
     fig.autofmt_xdate()
-    fig.savefig('uptime_by_date_'+meterName+'.pdf')
+    fig.savefig('uptime_by_date_.pdf')
+
+
+plotByCircuit()
+
+plotByTimeSeries()
