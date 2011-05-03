@@ -301,6 +301,9 @@ def printRecharges(dateStart):
     # filter on dateStart
     data = d[d['date']>dateStart]
 
+    days = (datetime.datetime.now() - dateStart).days
+
+    '''
     # report table of recharges
     print
     print 'recharges since', dateStart.strftime('%Y-%m-%d')
@@ -311,13 +314,15 @@ def printRecharges(dateStart):
                        d['date'].strftime('%Y-%m-%d %H:%M'),
                        d['amount']),
                        widths)
+    '''
 
+    '''
     # system average daily income
     print
     print 'system average daily income (USD)'
-    days = (datetime.datetime.now() - dateStart).days
     print '%.2f' % (sum(data['amount'])/days/500)
     print
+    '''
 
     # print out table by user/household
     circuits = list(set(data['cid']))
@@ -729,13 +734,13 @@ def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
         # section off day data and perform linear fit
         dayTimeMask = (thisTime > dayStart) & (thisTime < dayEnd )
         p = np.polyfit(thisTime[dayTimeMask],thisData[dayTimeMask]['watthours'],1)
-        ax.text(dayStart,100,round(p[0],2))
-        print round(p[0],2), '  &  ',
+        #ax.text(dayStart,100,round(p[0],2))
+        print round(p[0],1), '  &  ',
         # section off day data and perform linear fit
         nightTimeMask = (thisTime > nightStart) & (thisTime < nightEnd )
         p = np.polyfit(thisTime[nightTimeMask],thisData[nightTimeMask]['watthours'],1)
-        ax.text(nightStart-3,100,round(p[0],2))
-        print round(p[0],2), '  \\\\'
+        #ax.text(nightStart-3,100,round(p[0],2))
+        print round(p[0],1), '  \\\\'
 
 
         # logic for titles and ticks
@@ -759,11 +764,11 @@ def plotWindowAveragedWatthoursByCircuit(d, dateStart, dateEnd):
     ax.grid(True)
     ax.plot(range(0,25), totalAveragedEnergy, 'x-k')
     p = np.polyfit(range(dayStart,dayEnd),totalAveragedEnergy[dayStart:dayEnd],1)
-    ax.text(dayStart, 500, round(p[0],2))
-    print p
+    #ax.text(dayStart, 500, round(p[0],2))
+    print 'all household daytime wattage = ', p[0]
     p = np.polyfit(range(nightStart,nightEnd),totalAveragedEnergy[nightStart:nightEnd],1)
-    ax.text(nightStart, 500, round(p[0],2))
-    print p
+    #ax.text(nightStart, 500, round(p[0],2))
+    print 'all household nighttime wattage = ', p[0]
     ax.set_ylim((0,1000))
     ax.set_title('Household Consumption')
     ax.set_xlim(0,24)
@@ -1013,16 +1018,11 @@ if __name__ == '__main__':
     d = getDataAsRecordArray(downloadFile=False)
     print('End Load Data\n')
 
-    flag = False
-    if flag:
-        dateStart = datetime.datetime(2011,  3,  3)
-        dateEnd   = datetime.datetime(2011,  4,  1)
-        #plotRecharges(d, dateStart, dateEnd)
+    dateStart = datetime.datetime(2011,  3,  3)
+    dateEnd   = datetime.datetime(2011,  5,  1)
 
     flag = False
     if flag:
-        dateStart = datetime.datetime(2011,  2,  14)
-        dateEnd   = datetime.datetime(2011,  3,  12)
         #plotCreditSeparateAxes(d, dateStart, dateEnd)
         plotHouseholdEnergyPerHour(d, dateStart, dateEnd)
         plotHouseholdEnergyPerDay(d, dateStart, dateEnd)
@@ -1038,13 +1038,14 @@ if __name__ == '__main__':
         plotAveragedAccumulatedHourlyEnergy(energy, dateStart, dateEnd)
         plotAveragedHourlyEnergy(energy, dateStart, dateEnd)
 
-    flag = False
+    flag = True
     if flag:
         dateStart = datetime.datetime(2011, 3, 3)
         printRecharges(dateStart)
         plotRecharges(dateStart)
 
-
-    plotTotalEnergyPerDayByCircuit(d,
+    flag = False
+    if flag:
+        plotTotalEnergyPerDayByCircuit(d,
                                 datetime.datetime(2011,1,1),
                                 datetime.datetime(2011,3,20))
