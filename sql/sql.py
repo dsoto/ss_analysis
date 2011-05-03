@@ -1,6 +1,7 @@
 import sqlalchemy
 import urllib
 import numpy as np
+import datetime as dt
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -275,6 +276,70 @@ def plotMeterMessagesByCircuit():
         fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
         plt.close()
 
+def generateReportArray( startDate = dt.datetime(2011, 4, 21),
+                         endDate   = dt.datetime(2011, 4, 27)):
+
+    import datetime as dt
+    import numpy as np
+
+    circuit = session.query(Circuit).order_by(Circuit.id).all()
+    clist = [c.id for c in circuit]
+    #clist.sort()
+
+    # report array size
+    numCol = max(clist) + 1
+    numRow = (endDate - startDate).days * 25
+    report = np.zeros((numRow, numCol))
+
+    # initialize date list
+    dates = []
+    originalQuery = session.query(PrimaryLog)
+
+    start = startDate
+    i = 0
+    while 1:
+        end = start + dt.timedelta(hours=1)
+        thisQuery = originalQuery
+
+        # deal with double report problem
+        if start.hour != 23:
+            # take reports in the hour between start and end
+            thisQuery = thisQuery.filter(PrimaryLog.date > start)\
+                                 .filter(PrimaryLog.date < end)
+            #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            #cclist.sort()
+            # add to numpy array
+            report[i, cclist] = 1
+            dates.append(start)
+            i += 1
+        else:
+            # change report range to prevent including the 23:59:59 report in the 23:00:00 row
+            lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
+            thisQuery = thisQuery.filter(PrimaryLog.date > start)
+            thisQuery = thisQuery.filter(PrimaryLog.date < lastReportTime)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            cclist.sort()
+            # add to numpy array
+            report[i,cclist] = 1
+            dates.append(start)
+            i += 1
+            # end of day report
+            thisQuery = originalQuery
+            thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            cclist.sort()
+            # add to numpy array
+            report[i,cclist] = 1
+            dates.append(lastReportTime)
+            i += 1
+
+        start = start + dt.timedelta(hours=1)
+        if start >= endDate:
+            break
+    return (report, dates)
+
+
 def printHugeMessageTable():
     import datetime as dt
 
@@ -350,8 +415,12 @@ def printHugeMessageTable():
         start = start + dt.timedelta(hours=1)
         if start >= endDate:
             break
+    return (report, dates)
 
-def plotByTimeSeries():
+
+# for inclusion in gateway:
+# todo: pass meter id
+def plotByTimeSeries(report, dates):
     import matplotlib.pyplot as plt
     fig = plt.figure()
     for i, meter_id in enumerate([4,6,7,8]):
