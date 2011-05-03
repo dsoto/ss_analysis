@@ -252,7 +252,7 @@ def meterAnalyze(meter_id, verbose=0):
         for c in circuits:
             analyzeDailyEnergyPerCircuit(c, startDate, endDate, verbose=verbose)
 
-def plotMeterMessagesByCircuit():
+def plotMeterMessagesByCircuit(report, dates):
     for i, meter_id in enumerate([4,6,7,8]):
         meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
         meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
@@ -262,6 +262,8 @@ def plotMeterMessagesByCircuit():
         meterCircuits.sort()
         print meterCircuits
 
+        startDate = dates[0]
+        endDate = dates[-1]
         meterReport = report[:,meterCircuits]
 
         import matplotlib.pyplot as plt
@@ -276,8 +278,8 @@ def plotMeterMessagesByCircuit():
         fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
         plt.close()
 
-def generateReportArray( startDate = dt.datetime(2011, 4, 21),
-                         endDate   = dt.datetime(2011, 4, 27)):
+def generateReportArray(startDate = dt.datetime(2011, 4, 21),
+                        endDate   = dt.datetime(2011, 5, 04)):
 
     import datetime as dt
     import numpy as np
@@ -339,8 +341,8 @@ def generateReportArray( startDate = dt.datetime(2011, 4, 21),
             break
     return (report, dates)
 
-
-def printHugeMessageTable():
+def printHugeMessageTable(startDate = dt.datetime(2011, 4, 21),
+                          endDate   = dt.datetime(2011, 5, 04)):
     import datetime as dt
 
     circuit = session.query(Circuit).all()
@@ -353,8 +355,6 @@ def printHugeMessageTable():
 
     #print clist
 
-    startDate = dt.datetime(2011, 4, 21)
-    endDate   = dt.datetime(2011, 4, 27)
     numRow = (endDate - startDate).days * 25
 
     import numpy as np
@@ -415,7 +415,6 @@ def printHugeMessageTable():
         start = start + dt.timedelta(hours=1)
         if start >= endDate:
             break
-    return (report, dates)
 
 
 # for inclusion in gateway:
@@ -423,7 +422,7 @@ def printHugeMessageTable():
 def plotByTimeSeries(report, dates):
     import matplotlib.pyplot as plt
     fig = plt.figure()
-    for i, meter_id in enumerate([4,6,7,8]):
+    for i, meter_id in enumerate([4,7,8]):
         meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
         meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
         print 'generating for ', meterName
@@ -439,7 +438,7 @@ def plotByTimeSeries(report, dates):
         messagesReceived = meterReport.sum(1)
         mpldates = matplotlib.dates.date2num(dates)
 
-        ax = fig.add_subplot(4,1,i)
+        ax = fig.add_subplot(3,1,i)
         ax.plot_date(mpldates,messagesReceived,'-x')
         ax.set_title(meterName)
         ax.set_xlabel('Date')
