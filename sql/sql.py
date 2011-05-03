@@ -1,5 +1,6 @@
 import sqlalchemy
 import urllib
+import numpy as np
 
 from sqlalchemy import Column
 from sqlalchemy import Integer
@@ -164,86 +165,93 @@ class PrimaryLog(Log):
                                  ('tu', int(self.use_time)),
                                  ('wh', float(self.watthours))] + self.getCreditAndType())
 
+def printTableRow(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
+    for s,w in zip(strings, widths):
+        print str(s).rjust(w),
+    print
 
-import datetime as dt
-
-circuit = session.query(Circuit).all()
-
-print len(circuit)
-
-clist = [c.id for c in circuit]
-clist.sort()
-numCol = max(clist) + 1
-
-#print clist
-
-startDate = dt.datetime(2011, 4, 14)
-endDate   = dt.datetime(2011, 4, 27)
-numRow = (endDate - startDate).days * 25
-
-import numpy as np
-
-report = np.zeros((numRow, numCol))
-print report.shape
-dates = []
-originalQuery = session.query(PrimaryLog)
-
-start = startDate
-i = 0
-while 1:
-    end = start + dt.timedelta(hours=1)
-    thisQuery = originalQuery
-
-    # deal with double report problem
-    if start.hour != 23:
-        # take reports in the hour between start and end
-        thisQuery = thisQuery.filter(PrimaryLog.date > start)
-        thisQuery = thisQuery.filter(PrimaryLog.date < end)
-        #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
-        cclist = [tq.circuit_id for tq in thisQuery]
-        cclist.sort()
-        # add to numpy array
-        report[i,cclist] = 1
-        dates.append(start)
+def printTableRowLatex(strings, widths):
+    '''
+    this is a short helper function to write out a formatted row of a table.
+    '''
+    numColumns = len(zip(strings, widths))
+    i = 0
+    for s,w in zip(strings, widths):
+        print str(s).center(w),
+        if i <= numColumns - 2:
+            print '&',
         i += 1
-        # output to screen
-        print start,
-        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-    else:
-        # change report range to prevent including the 23:59:59 report in the 23:00:00 row
-        lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
-        thisQuery = thisQuery.filter(PrimaryLog.date > start)
-        thisQuery = thisQuery.filter(PrimaryLog.date < lastReportTime)
-        cclist = [tq.circuit_id for tq in thisQuery]
-        cclist.sort()
-        # add to numpy array
-        report[i,cclist] = 1
-        dates.append(start)
-        i += 1
-        # output to screen
-        print start,
-        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-        # end of day report
-        thisQuery = originalQuery
-        thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
-        cclist = [tq.circuit_id for tq in thisQuery]
-        cclist.sort()
-        # add to numpy array
-        report[i,cclist] = 1
-        dates.append(lastReportTime)
-        i += 1
-        # output to screen
-        print lastReportTime,
-        print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-
-    start = start + dt.timedelta(hours=1)
-    if start >= endDate:
-        break
+    print '\\\\'
 
 # loop through meters and output graphs of per circuit uptime
 
+def analyzeDailyEnergyPerCircuit(circuit_id, startDate, endDate, verbose = 0):
+    '''
+    this function takes a circuit_id and the start and end date.
+    input:
+        circuit_id  database id for a circuit
+        startDate   datetime object
+        endDate     datetime object
+        verbose     int, higher for more detail, zero for none
+    output:
+        text dump to console
+    '''
+    # get logs based on circuit
+    logs = session.query(PrimaryLog).filter(PrimaryLog.circuit_id == circuit_id)
+    # filter according to date
+    logs = logs.filter(PrimaryLog.date > startDate).filter(PrimaryLog.date < endDate)
+    # analyze only the reports at 23:59:59
+    data = np.array([l.watthours for l in logs if (l.date.hour == 23)
+                                              and (l.date.minute == 59)
+                                              and (l.date.second == 59)])
+    widths = (3, 10, 10, 10, 10, 10, 5)
+    if data.shape[0] == 0:
+        print 'no data for circuit', circuit_id
+    else:
+        printTableRow((str(circuit_id),
+                       '%0.2f' % data.min(),
+                       '%0.2f' % data.mean(),
+                       '%0.2f' % data.max(),
+                       '%0.2f' % data.std(),
+                       '%0.2f' % (data.std()/data.mean()),
+                       str(data.shape[0])),
+                       widths)
+    if verbose > 0:
+        for l in logs:
+            if l.date.hour == 23 and l.date.minute == 59 and l.date.second == 59:
+                print l.date, l.watthours
 
-def plotByCircuit():
+def meterAnalyze(meter_id, verbose=0):
+    '''
+    this function takes a tuple of ints as an argument and outputs a text table
+    of watt hour information from the 23:59:59 reports by calling
+    analyzeDailyEnergyPerCircuit.
+    input:
+        meter_id  tuple of ints
+    output:
+        text dump to console
+    '''
+    import datetime as dt
+    startDate = dt.datetime(2011,3,25)
+    endDate = dt.datetime(2011,4,26)
+    for mid in meter_id:
+        # get list of circuits associated with meter
+        circuits = session.query(Circuit).filter(Circuit.meter_id == mid).order_by(Circuit.id)
+        circuits = [c.id for c in circuits]
+        # print out header for table
+        print
+        print 'watt hour data for meter', mid
+        print 'over date range', startDate, 'to', endDate
+        widths = (3, 10, 10, 10, 10, 10, 5)
+        printTableRow(('cid', 'min', 'mean', 'max', 'std', 'std/mean', 'N'), widths)
+        # iterate over circuits and call analyzeDailyEnergyPerCircuit
+        for c in circuits:
+            analyzeDailyEnergyPerCircuit(c, startDate, endDate, verbose=verbose)
+
+def plotMeterMessagesByCircuit():
     for i, meter_id in enumerate([4,6,7,8]):
         meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
         meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
@@ -265,6 +273,83 @@ def plotByCircuit():
         ax.set_xlabel('circuit index (not well ordered)')
         ax.set_ylabel('Percentage of time reporting')
         fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
+        plt.close()
+
+def printHugeMessageTable():
+    import datetime as dt
+
+    circuit = session.query(Circuit).all()
+
+    print len(circuit)
+
+    clist = [c.id for c in circuit]
+    clist.sort()
+    numCol = max(clist) + 1
+
+    #print clist
+
+    startDate = dt.datetime(2011, 4, 21)
+    endDate   = dt.datetime(2011, 4, 27)
+    numRow = (endDate - startDate).days * 25
+
+    import numpy as np
+
+    report = np.zeros((numRow, numCol))
+    print report.shape
+    dates = []
+    originalQuery = session.query(PrimaryLog)
+
+    start = startDate
+    i = 0
+    while 1:
+        end = start + dt.timedelta(hours=1)
+        thisQuery = originalQuery
+
+        # deal with double report problem
+        if start.hour != 23:
+            # take reports in the hour between start and end
+            thisQuery = thisQuery.filter(PrimaryLog.date > start)
+            thisQuery = thisQuery.filter(PrimaryLog.date < end)
+            #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            cclist.sort()
+            # add to numpy array
+            report[i,cclist] = 1
+            dates.append(start)
+            i += 1
+            # output to screen
+            print start,
+            print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+        else:
+            # change report range to prevent including the 23:59:59 report in the 23:00:00 row
+            lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
+            thisQuery = thisQuery.filter(PrimaryLog.date > start)
+            thisQuery = thisQuery.filter(PrimaryLog.date < lastReportTime)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            cclist.sort()
+            # add to numpy array
+            report[i,cclist] = 1
+            dates.append(start)
+            i += 1
+            # output to screen
+            print start,
+            print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+            # end of day report
+            thisQuery = originalQuery
+            thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
+            cclist = [tq.circuit_id for tq in thisQuery]
+            cclist.sort()
+            # add to numpy array
+            report[i,cclist] = 1
+            dates.append(lastReportTime)
+            i += 1
+            # output to screen
+            print lastReportTime,
+            print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+
+        start = start + dt.timedelta(hours=1)
+        if start >= endDate:
+            break
 
 def plotByTimeSeries():
     import matplotlib.pyplot as plt
@@ -292,8 +377,7 @@ def plotByTimeSeries():
         ax.set_ylabel('# Reporting')
     fig.autofmt_xdate()
     fig.savefig('uptime_by_date_.pdf')
+    plt.close()
 
-
-plotByCircuit()
-
-plotByTimeSeries()
+if __name__ == "__main__":
+    pass
