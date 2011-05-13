@@ -278,9 +278,15 @@ def plotMeterMessagesByCircuit(report, dates):
         fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
         plt.close()
 
-def generateReportArray(startDate = dt.datetime(2011, 4, 21),
-                        endDate   = dt.datetime(2011, 5, 04)):
-
+def generateReportArray(startDate = dt.datetime(2011, 5, 1),
+                        endDate   = dt.datetime(2011, 5, 13)):
+    '''
+    creates a table of 1/0 values for whether or not a circuit reported at
+    the associated time
+    output:
+        report = date by circuit numpy array of 1 or 0 values for circuit reporting
+        dates  = list of dates corresponding to rows of report array
+    '''
     import datetime as dt
     import numpy as np
 
@@ -290,7 +296,7 @@ def generateReportArray(startDate = dt.datetime(2011, 4, 21),
 
     # report array size
     numCol = max(clist) + 1
-    numRow = (endDate - startDate).days * 25
+    numRow = (endDate - startDate).days * 24
     report = np.zeros((numRow, numCol))
 
     # initialize date list
@@ -303,46 +309,25 @@ def generateReportArray(startDate = dt.datetime(2011, 4, 21),
         end = start + dt.timedelta(hours=1)
         thisQuery = originalQuery
 
-        # deal with double report problem
-        if start.hour != 23:
-            # take reports in the hour between start and end
-            thisQuery = thisQuery.filter(PrimaryLog.date > start)\
-                                 .filter(PrimaryLog.date < end)
-            #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
-            cclist = [tq.circuit_id for tq in thisQuery]
-            #cclist.sort()
-            # add to numpy array
-            report[i, cclist] = 1
-            dates.append(start)
-            i += 1
-        else:
-            # change report range to prevent including the 23:59:59 report in the 23:00:00 row
-            lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
-            thisQuery = thisQuery.filter(PrimaryLog.date > start)
-            thisQuery = thisQuery.filter(PrimaryLog.date < lastReportTime)
-            cclist = [tq.circuit_id for tq in thisQuery]
-            cclist.sort()
-            # add to numpy array
-            report[i,cclist] = 1
-            dates.append(start)
-            i += 1
-            # end of day report
-            thisQuery = originalQuery
-            thisQuery = thisQuery.filter(PrimaryLog.date == lastReportTime)
-            cclist = [tq.circuit_id for tq in thisQuery]
-            cclist.sort()
-            # add to numpy array
-            report[i,cclist] = 1
-            dates.append(lastReportTime)
-            i += 1
+        # this no longer deals with double report problem at 11pm
+        # take reports in the hour between start and end
+        thisQuery = thisQuery.filter(PrimaryLog.date >= start)\
+                             .filter(PrimaryLog.date < end)
+        #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
+        cclist = [tq.circuit_id for tq in thisQuery]
+        #cclist.sort()
+        # add to numpy array
+        report[i, cclist] = 1
+        dates.append(start)
+        i += 1
 
         start = start + dt.timedelta(hours=1)
         if start >= endDate:
             break
     return (report, dates)
 
-def printHugeMessageTable(startDate = dt.datetime(2011, 4, 21),
-                          endDate   = dt.datetime(2011, 5, 04)):
+def printHugeMessageTable(startDate = dt.datetime(2011, 5, 1),
+                          endDate   = dt.datetime(2011, 5, 13)):
     import datetime as dt
 
     circuit = session.query(Circuit).all()
@@ -371,9 +356,11 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 4, 21),
         thisQuery = originalQuery
 
         # deal with double report problem
-        if start.hour != 23:
+
+        #if start.hour != 23:
+        if 1:
             # take reports in the hour between start and end
-            thisQuery = thisQuery.filter(PrimaryLog.date > start)
+            thisQuery = thisQuery.filter(PrimaryLog.date >= start)
             thisQuery = thisQuery.filter(PrimaryLog.date < end)
             #thisQuery = thisQuery.filter(PrimaryLog.date == endDate)
             cclist = [tq.circuit_id for tq in thisQuery]
@@ -385,6 +372,7 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 4, 21),
             # output to screen
             print start,
             print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
+        '''
         else:
             # change report range to prevent including the 23:59:59 report in the 23:00:00 row
             lastReportTime = dt.datetime(start.year, start.month, start.day, start.hour, 59, 59)
@@ -411,7 +399,7 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 4, 21),
             # output to screen
             print lastReportTime,
             print "".join([str(x).ljust(3) if x in cclist else ' - ' for x in clist])
-
+        '''
         start = start + dt.timedelta(hours=1)
         if start >= endDate:
             break
