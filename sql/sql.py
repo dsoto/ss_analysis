@@ -425,6 +425,37 @@ def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=1
             print dates[i],watthours[i]
     return dates, watthours
 
+def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
+    dates, watthours = getWattHourListForCircuit(circuit_id, date)
+    watthours = np.array(watthours)
+
+    #print watthours
+
+    # error checking
+    isMonotonic = np.alltrue(watthours >= 0)
+    has24reports = watthours.shape == (24,)
+
+    if (verbose > 0):
+        if isMonotonic:
+            print 'watthour data monotonic'
+        else:
+            print 'watthour reset error'
+        if has24reports:
+            print 'all hours reporting'
+        else:
+            print 'not all hours reporting'
+        print 'power for', date, '=', watthours[23]
+
+    if isMonotonic and has24reports:
+        return watthours[23]
+
+    else:
+        return -1
+
+    # count how many
+    # if not 24 print debug message
+    # check if all watthours are increasing
+    # if not print debug message
 # for inclusion in gateway:
 # todo: pass meter id
 def plotByTimeSeries(report, dates):
