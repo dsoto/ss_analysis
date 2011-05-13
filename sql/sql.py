@@ -404,6 +404,26 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 5, 1),
         if start >= endDate:
             break
 
+def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=1):
+    # set date range
+    startDate = date
+    endDate = startDate + dt.timedelta(days=1, hours=3)
+
+    # get query based on circuit and date
+    logs = session.query(PrimaryLog)\
+                  .filter(PrimaryLog.circuit_id == circuit_id)\
+                  .filter(PrimaryLog.date > startDate)\
+                  .filter(PrimaryLog.date <= endDate)\
+                  .order_by(PrimaryLog.date)
+    data = [(l.date, l.watthours) for l in logs]
+    data = list(set(data))
+    data.sort()
+    dates = [d[0] for d in data]
+    watthours = [d[1] for d in data]
+    if verbose >= 1:
+        for i in range(len(dates)):
+            print dates[i],watthours[i]
+    return dates, watthours
 
 # for inclusion in gateway:
 # todo: pass meter id
