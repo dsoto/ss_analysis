@@ -404,10 +404,20 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 5, 1),
         if start >= endDate:
             break
 
-def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=1):
+def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
+    '''
+    for a given circuit_id and date, this function returns a list of
+    watthour readings and dates.  uses set() to remove duplicate entries.
+    input:
+        circuit_id - circuit database id
+        date - datetime object for day of data.  data returned is for hours 1-24 of the date.
+    output:
+        dates - date stamps for watthour array
+        watthours - reported watthours
+    '''
     # set date range
     startDate = date
-    endDate = startDate + dt.timedelta(days=1, hours=3)
+    endDate = startDate + dt.timedelta(days=1)
 
     # get query based on circuit and date
     logs = session.query(PrimaryLog)\
@@ -415,36 +425,49 @@ def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=1
                   .filter(PrimaryLog.date > startDate)\
                   .filter(PrimaryLog.date <= endDate)\
                   .order_by(PrimaryLog.date)
+
+    # turn query into a sorted list of unique dates and watthour readings
     data = [(l.date, l.watthours) for l in logs]
     data = list(set(data))
     data.sort()
     dates = [d[0] for d in data]
     watthours = [d[1] for d in data]
+
+    # send details to console if requested
     if verbose >= 1:
         for i in range(len(dates)):
             print dates[i],watthours[i]
+
     return dates, watthours
 
 def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
-    dates, watthours = getWattHourListForCircuit(circuit_id, date)
+    '''
+    checks a watthour list to be sure it has 24 samples and that the watthour
+    readings are monotonic.
+    input:
+        circuit_id - circuit database id
+        date - datetime object
+    output:
+        watthours for the day specified by date in input.  returns -1 on error
+    '''
+    dates, watthours = getWattHourListForCircuit(circuit_id, date,verbose)
     watthours = np.array(watthours)
 
     #print watthours
 
     # error checking
-    isMonotonic = np.alltrue(watthours >= 0)
+    isMonotonic = np.alltrue(np.diff(watthours) >= 0)
     has24reports = watthours.shape == (24,)
 
     if (verbose > 0):
         if isMonotonic:
             print 'watthour data monotonic'
         else:
-            print 'watthour reset error'
+            print 'watthour data non-monotonic'
         if has24reports:
             print 'all hours reporting'
         else:
             print 'not all hours reporting'
-        print 'power for', date, '=', watthours[23]
 
     if isMonotonic and has24reports:
         return watthours[23]
