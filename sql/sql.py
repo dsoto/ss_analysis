@@ -1,6 +1,8 @@
 import sqlalchemy
 import urllib
 import numpy as np
+import matplotlib.dates
+import matplotlib.pyplot as plt
 import datetime as dt
 
 from sqlalchemy import Column
@@ -404,26 +406,25 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 5, 1),
         if start >= endDate:
             break
 
-def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
+def getWattHourListForCircuit(circuit_id,
+                              dateStart=dt.datetime(2011,5,12),
+                              dateEnd=dt.datetime(2011,5,13),
+                              verbose=0):
     '''
     for a given circuit_id and date, this function returns a list of
     watthour readings and dates.  uses set() to remove duplicate entries.
     input:
         circuit_id - circuit database id
-        date - datetime object for day of data.  data returned is for hours 1-24 of the date.
+        dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
     output:
         dates - date stamps for watthour array
         watthours - reported watthours
     '''
-    # set date range
-    startDate = date
-    endDate = startDate + dt.timedelta(days=1)
-
     # get query based on circuit and date
     logs = session.query(PrimaryLog)\
                   .filter(PrimaryLog.circuit_id == circuit_id)\
-                  .filter(PrimaryLog.date > startDate)\
-                  .filter(PrimaryLog.date <= endDate)\
+                  .filter(PrimaryLog.date > dateStart)\
+                  .filter(PrimaryLog.date <= dateEnd)\
                   .order_by(PrimaryLog.date)
 
     # turn query into a sorted list of unique dates and watthour readings
@@ -440,6 +441,7 @@ def getWattHourListForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0
 
     return dates, watthours
 
+
 def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
     '''
     checks a watthour list to be sure it has 24 samples and that the watthour
@@ -450,10 +452,12 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0)
     output:
         watthours for the day specified by date in input.  returns -1 on error
     '''
-    dates, watthours = getWattHourListForCircuit(circuit_id, date,verbose)
-    watthours = np.array(watthours)
+    # set date range
+    dateStart = date
+    dateEnd = dateStart + dt.timedelta(days=1)
 
-    #print watthours
+    dates, watthours = getWattHourListForCircuit(circuit_id, dateStart, dateEnd, verbose)
+    watthours = np.array(watthours)
 
     # error checking
     isMonotonic = np.alltrue(np.diff(watthours) >= 0)
@@ -479,6 +483,24 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0)
     # if not 24 print debug message
     # check if all watthours are increasing
     # if not print debug message
+
+def plotWattHoursForCircuit(circuit_id,
+                            dateStart=dt.datetime(2011,5,12),
+                            dateEnd=dt.datetime(2011,5,13)):
+    '''
+    returns plot axis with data from circuit
+    '''
+    dates, watthours = getWattHourListForCircuit(circuit_id, dateStart, dateEnd)
+    dates = matplotlib.dates.date2num(dates)
+    fig = plt.figure()
+    ax = fig.add_axes((.2,.2,.6,.6))
+    ax.plot_date(dates, watthours, 'x-')
+    titleString = 'circuit ' + str(circuit_id) + ' watthours'
+    ax.set_title(titleString)
+
+    return ax
+
+
 def plotWattHoursForAllCircuitsOnMeter(meter_id,
                                        dateStart=dt.datetime(2011,5,10),
                                        dateEnd=dt.datetime(2011,5,14)):
