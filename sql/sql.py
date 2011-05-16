@@ -503,20 +503,18 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
     '''
     '''
     for mid in meter_id:
-        circuits = session.query(Circuit)\
-                          .filter(Circuit.meter_id == mid)\
-                          .order_by(Circuit.id)
-        circuits = [c.id for c in circuits]
+        circuits = getCircuitsForMeter(mid)
 
-        fig, ax = plt.subplots(len(circuits), 1, sharex = True)
+        fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,20))
 
         for i,c in enumerate(circuits):
             dates, watthours = getWattHourListForCircuit(c, dateStart, dateEnd)
             dates = matplotlib.dates.date2num(dates)
             titleString = 'circuit ' + str(c) + ' watthours'
-            ax[i].plot_date(dates, watthours, '-')
+            ax[i].plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
             ax[i].xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0,12)))
             ax[i].xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+            ax[i].text(1.05,0.45,str(c),transform = ax[i].transAxes)
             #ax[i].set_title(titleString)
             #ax[i].grid(True)
 
