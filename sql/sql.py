@@ -543,12 +543,31 @@ def testFunction3(dateStart=dt.datetime(2011,5,1),
         print wh
         plotWattHoursForCircuit(c, dateStart, dateEnd)
 
-# for inclusion in gateway:
 def getCircuitsForMeter(mid):
     circuits = session.query(Circuit).filter(Circuit.meter_id == mid).order_by(Circuit.id)
     circuits = [c.id for c in circuits]
     return circuits
 
+def tableOfConsumption(meter_id,
+                       dateStart=dt.datetime(2011,5,12),
+                       dateEnd = dt.datetime(2011,5,16),
+                       strict=True):
+
+    circuit_id = getCircuitsForMeter(meter_id)
+    print ' '*10,
+    for cid in circuit_id:
+        print str(cid).rjust(6),
+    print
+    date = dateStart
+    while date < dateEnd:
+        print date.strftime("%Y-%m-%d"),
+        for cid in circuit_id:
+            print str(getDailyEnergyForCircuit(cid, date, verbose=0, strict=strict)).rjust(6),
+        print
+        date += dt.timedelta(days=1)
+
+
+# for   inclusion in gateway:
 # todo: pass meter id
 def plotByTimeSeries(report, dates):
     import matplotlib.pyplot as plt
