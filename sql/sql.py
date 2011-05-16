@@ -508,6 +508,25 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
         fig.savefig(fileNameString)
 
 
+
+def testFunction1(date=dt.datetime(2011,5,12), verbose=2):
+    for c in range(1,100):
+        print 'circuit', c
+        wh = getWattHourListForCircuit(c, date)
+        for w in wh:
+            print w
+
+def testFunction3(dateStart=dt.datetime(2011,5,1),
+                  dateEnd=dt.datetime(2011,5,13),
+                  verbose=2):
+    clist = range(13,99)
+    clist = [25,57,70,74,77]
+    for c in clist:
+        print 'circuit', c
+        wh = getDailyEnergyForCircuit(c, dateStart, verbose)
+        print wh
+        plotWattHoursForCircuit(c, dateStart, dateEnd)
+
 # for inclusion in gateway:
 # todo: pass meter id
 def plotByTimeSeries(report, dates):
