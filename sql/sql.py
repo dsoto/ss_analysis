@@ -461,7 +461,7 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0)
 
     # error checking
     isMonotonic = np.alltrue(np.diff(watthours) >= 0)
-    has24reports = watthours.shape == (24,)
+    has24reports = watthours.shape[0] >= 24
 
     if (verbose > 0):
         if isMonotonic:
