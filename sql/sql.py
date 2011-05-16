@@ -441,8 +441,7 @@ def getWattHourListForCircuit(circuit_id,
 
     return dates, watthours
 
-
-def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0):
+def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0, strict=True):
     '''
     checks a watthour list to be sure it has 24 samples and that the watthour
     readings are monotonic.
@@ -473,16 +472,13 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0)
         else:
             print 'not all hours reporting'
 
-    if isMonotonic and has24reports:
-        return watthours[23]
-
+    if strict:
+        if isMonotonic and has24reports:
+            return watthours[23]
+        else:
+            return -1
     else:
-        return -1
-
-    # count how many
-    # if not 24 print debug message
-    # check if all watthours are increasing
-    # if not print debug message
+        return max(watthours)
 
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
