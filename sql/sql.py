@@ -478,7 +478,7 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0,
         else:
             return -1
     else:
-        return max(watthours)
+        return watthours[22]
 
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
@@ -496,25 +496,36 @@ def plotWattHoursForCircuit(circuit_id,
 
     return ax
 
-
 def plotWattHoursForAllCircuitsOnMeter(meter_id,
-                                       dateStart=dt.datetime(2011,5,10),
-                                       dateEnd=dt.datetime(2011,5,14)):
+                                       dateStart=dt.datetime(2011,5,13),
+                                       dateEnd=dt.datetime(2011,5,17),
+                                       showMains=True):
     '''
     '''
-    for mid in meter_id:
+
+    for i,mid in enumerate(meter_id):
         circuits = getCircuitsForMeter(mid)
 
-        fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,20))
+        # drop mains circuit
+        for c in circuits:
+            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                circuits.remove(c)
+
+        fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
 
         for i,c in enumerate(circuits):
             dates, watthours = getWattHourListForCircuit(c, dateStart, dateEnd)
             dates = matplotlib.dates.date2num(dates)
             titleString = 'circuit ' + str(c) + ' watthours'
             ax[i].plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
-            ax[i].xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0,12)))
+            ax[i].xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
             ax[i].xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
             ax[i].text(1.05,0.45,str(c),transform = ax[i].transAxes)
+            if max(watthours) < 50:
+                ax[i].set_ylim((0,50))
+            else:
+                ax[i].set_ylim((0,100))
+            #ax[i].set_yticks((0,50,100))
             #ax[i].set_title(titleString)
             #ax[i].grid(True)
 
@@ -522,8 +533,6 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
         fig.suptitle(fileNameString)
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
-
-
 
 def testFunction1(date=dt.datetime(2011,5,12), verbose=2):
     for c in range(1,100):
