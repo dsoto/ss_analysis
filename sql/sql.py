@@ -548,23 +548,52 @@ def getCircuitsForMeter(mid):
     circuits = [c.id for c in circuits]
     return circuits
 
-def tableOfConsumption(meter_id,
+def calculateTableOfConsumption(meter_id,
+                                dateStart=dt.datetime(2011,5,12),
+                                dateEnd = dt.datetime(2011,5,16),
+                                strict=True):
+    circuit_id = getCircuitsForMeter(meter_id)
+    # define numpy array for data
+    numRows = (dateEnd - dateStart).days + 1
+    numColumns = len(circuit_id)
+    data = np.zeros((numRows, numColumns))
+
+    dates = []
+    date = dateStart
+    i = 0
+    while date <= dateEnd:
+        dates.append(date)
+        j = 0
+        for cid in circuit_id:
+             data[i,j] = getDailyEnergyForCircuit(cid, date, verbose=0, strict=strict)
+             j += 1
+        date += dt.timedelta(days=1)
+        i += 1
+
+    return dates, circuit_id, data
+
+def printTableOfConsumption(meter_id,
                        dateStart=dt.datetime(2011,5,12),
                        dateEnd = dt.datetime(2011,5,16),
                        strict=True):
-
-    circuit_id = getCircuitsForMeter(meter_id)
-    print ' '*10,
+    dates, circuit_id, data = calculateTableOfConsumption(meter_id, dateStart, dateEnd, strict=strict)
+    print ' '.ljust(10),
     for cid in circuit_id:
         print str(cid).rjust(6),
     print
-    date = dateStart
-    while date < dateEnd:
-        print date.strftime("%Y-%m-%d"),
-        for cid in circuit_id:
-            print str(getDailyEnergyForCircuit(cid, date, verbose=0, strict=strict)).rjust(6),
+    for i,date in enumerate(dates):
+        print date.strftime("%Y-%m-%d").ljust(10),
+        for d in data[i]:
+            print str(d).rjust(6),
         print
-        date += dt.timedelta(days=1)
+    print 'mean'.ljust(10),
+    for m in data.mean(0):
+        print str(m).rjust(6),
+    print
+    print 'stdev'.ljust(10),
+    for m in data.std(0):
+        print ('%0.2f' % m).rjust(6),
+    print
 
 
 # for   inclusion in gateway:
