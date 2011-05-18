@@ -547,7 +547,7 @@ def plotWattHoursForCircuit(circuit_id,
     return ax
 
 def plotWattHoursForAllCircuitsOnMeter(meter_id,
-                                       dateStart=dt.datetime(2011,5,13),
+                                       dateStart=dt.datetime(2011,4,1),
                                        dateEnd=dt.datetime(2011,5,18),
                                        showMains=True):
     '''
@@ -575,8 +575,8 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
             titleString = 'circuit ' + str(c) + ' watthours'
             thisAxes = ax[i % stride, i / stride]
             thisAxes.plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
-            thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-            thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+            #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+            #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
             thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
             if max(watthours) < 50:
                 thisAxes.set_ylim((0,50))
@@ -624,8 +624,8 @@ def plotForAllCircuitsOnMeter(meter_id,
         titleString = 'circuit ' + str(c) + ' watthours'
         thisAxes = ax[i % stride, i / stride]
         thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
-        thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+        #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+        #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
         thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
     fileNameString = 'meter credit ' + str(meter_id) + '.pdf'
