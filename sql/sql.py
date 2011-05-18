@@ -628,6 +628,25 @@ def calculateTableOfConsumption(meter_id,
 
     return dates, circuit_id, data
 
+def calculateTimeWithCredit(meter_id,
+                            dateStart=dt.datetime(2011,4,1),
+                            dateEnd = dt.datetime(2011,5,1)):
+    circuit_id = getCircuitsForMeter(meter_id)
+    print ' '.ljust(10),
+    for cid in circuit_id:
+        print str(cid).rjust(6),
+    print
+    print '% credit'.ljust(10),
+    for cid in circuit_id:
+        dates, credit = getCreditListForCircuit(cid, dateStart, dateEnd)
+        credit = np.array(credit)
+        hoursWithCredit = len(np.extract(credit>0, credit))
+        totalHours = len(credit)
+        timeWithCredit = float(hoursWithCredit)/float(totalHours)
+        print ('%0.2f' % timeWithCredit).rjust(6),
+    print
+
+
 def printTableOfConsumption(meter_id,
                        dateStart=dt.datetime(2011,5,13),
                        dateEnd = dt.datetime(2011,5,17),
