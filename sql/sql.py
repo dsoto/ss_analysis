@@ -581,6 +581,48 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
 
+def plotForAllCircuitsOnMeter(meter_id,
+                              dateStart=dt.datetime(2011,5,13),
+                              dateEnd=dt.datetime(2011,5,18),
+                              quantity='credit',
+                              showMains=False):
+    '''
+    plot credit or watthours for all circuits on a meter
+    '''
+
+    circuits = getCircuitsForMeter(meter_id)
+
+    # drop mains circuit
+    if showMains == False:
+        for c in circuits:
+            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                circuits.remove(c)
+
+    #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+    if len(circuits) > 12:
+        fig, ax = plt.subplots(4, 5, sharex = True, figsize=(11,8.5))
+        stride = 4
+    else:
+        fig, ax = plt.subplots(4, 3, sharex = True, figsize=(10,8))
+        stride = 4
+
+    for i,c in enumerate(circuits):
+        if quantity == 'credit':
+            dates, data = getCreditListForCircuit(c, dateStart, dateEnd)
+
+        dates = matplotlib.dates.date2num(dates)
+        titleString = 'circuit ' + str(c) + ' watthours'
+        thisAxes = ax[i % stride, i / stride]
+        thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
+        thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+        thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
+
+    fileNameString = 'meter credit ' + str(meter_id) + '.pdf'
+    fig.suptitle(fileNameString)
+    fig.autofmt_xdate()
+    fig.savefig(fileNameString)
+
 def testFunction1(date=dt.datetime(2011,5,12), verbose=2):
     for c in range(1,100):
         print 'circuit', c
