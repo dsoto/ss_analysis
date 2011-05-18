@@ -476,13 +476,18 @@ def getCreditListForCircuit(circuit_id,
 
     return dates, credit
 
-def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0, strict=True):
+def getDailyEnergyForCircuit(circuit_id,
+                             date=dt.datetime(2011,5,12),
+                             verbose=0,
+                             method='max',
+                             strict=True):
     '''
     checks a watthour list to be sure it has 24 samples and that the watthour
     readings are monotonic.
     input:
         circuit_id - circuit database id
         date - datetime object
+        method - 'max', 'midnight', 'eleven'
     output:
         watthours for the day specified by date in input.  returns -1 on error
     TODO:
@@ -510,19 +515,20 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0,
         else:
             print 'not all hours reporting'
 
-    if strict:
-        if isMonotonic and has24reports:
-            return watthours[23]
-        else:
-            return -1
+    if len(watthours) == 0:
+        return 0.001
     else:
-
-        if len(watthours) > 0:
+        if method == 'max':
+            return np.max(watthours)
+        if method == 'midnight':
+            if isMonotonic and has24reports:
+                return watthours[-1]
+            else:
+                return -1
+        if method == 'eleven':
+            # this is crazy janky
             # hack to return the value before the duplicate midnight samples
             return watthours[-3]
-            #return np.max(watthours)
-        else:
-            return -2
 
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
@@ -673,7 +679,7 @@ def calculateTableOfConsumption(meter_id,
         dates.append(date)
         j = 0
         for cid in circuit_id:
-             data[i,j] = getDailyEnergyForCircuit(cid, date, verbose=0, strict=strict)
+             data[i,j] = getDailyEnergyForCircuit(cid, date, verbose=0, method='max', strict=strict)
              j += 1
         date += dt.timedelta(days=1)
         i += 1
