@@ -642,6 +642,12 @@ def testFunction3(dateStart=dt.datetime(2011,5,1),
         print wh
         plotWattHoursForCircuit(c, dateStart, dateEnd)
 
+def tf4():
+    plotWattHoursForAllCircuitsOnMeter((4,7,8))
+    printTableOfConsumption(4, strict=False)
+    printTableOfConsumption(8, strict=False)
+
+
 def getCircuitsForMeter(mid):
     circuits = session.query(Circuit).filter(Circuit.meter_id == mid).order_by(Circuit.id)
     circuits = [c.id for c in circuits]
