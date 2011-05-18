@@ -485,6 +485,9 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0,
         date - datetime object
     output:
         watthours for the day specified by date in input.  returns -1 on error
+    TODO:
+        improve heuristic for estimating usage on days with incomplete data
+        currently if there is no data for a day, an error is thrown
     '''
     # set date range
     dateStart = date
