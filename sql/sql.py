@@ -441,6 +441,41 @@ def getWattHourListForCircuit(circuit_id,
 
     return dates, watthours
 
+def getCreditListForCircuit(circuit_id,
+                              dateStart=dt.datetime(2011,5,12),
+                              dateEnd=dt.datetime(2011,5,13),
+                              verbose=0):
+    '''
+    for a given circuit_id and date, this function returns a list of
+    credit readings and dates.  uses set() to remove duplicate entries.
+    input:
+        circuit_id - circuit database id
+        dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
+    output:
+        dates - date stamps for watthour array
+        credit - reported watthours
+    '''
+    # get query based on circuit and date
+    logs = session.query(PrimaryLog)\
+                  .filter(PrimaryLog.circuit_id == circuit_id)\
+                  .filter(PrimaryLog.date > dateStart)\
+                  .filter(PrimaryLog.date <= dateEnd)\
+                  .order_by(PrimaryLog.date)
+
+    # turn query into a sorted list of unique dates and watthour readings
+    data = [(l.date, l.credit) for l in logs]
+    data = list(set(data))
+    data.sort()
+    dates = [d[0] for d in data]
+    credit = [d[1] for d in data]
+
+    # send details to console if requested
+    if verbose >= 1:
+        for i in range(len(dates)):
+            print dates[i],watthours[i]
+
+    return dates, credit
+
 def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0, strict=True):
     '''
     checks a watthour list to be sure it has 24 samples and that the watthour
