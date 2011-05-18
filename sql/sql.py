@@ -478,8 +478,13 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0,
         else:
             return -1
     else:
-        return watthours[22]
 
+        if len(watthours) > 0:
+            # hack to return the value before the duplicate midnight samples
+            return watthours[-3]
+            #return np.max(watthours)
+        else:
+            return -2
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
                             dateEnd=dt.datetime(2011,5,13)):
