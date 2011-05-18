@@ -516,20 +516,27 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
             if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
                 circuits.remove(c)
 
-        fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+        #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+        if len(circuits) > 12:
+            fig, ax = plt.subplots(5, 4, sharex = True, figsize=(10,8))
+            stride = 5
+        else:
+            fig, ax = plt.subplots(4, 3, sharex = True, figsize=(10,8))
+            stride = 4
 
         for i,c in enumerate(circuits):
             dates, watthours = getWattHourListForCircuit(c, dateStart, dateEnd)
             dates = matplotlib.dates.date2num(dates)
             titleString = 'circuit ' + str(c) + ' watthours'
-            ax[i].plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
-            ax[i].xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-            ax[i].xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
-            ax[i].text(1.05,0.45,str(c),transform = ax[i].transAxes)
+            thisAxes = ax[i % stride, i / stride]
+            thisAxes.plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
+            thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+            thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+            thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
             if max(watthours) < 50:
-                ax[i].set_ylim((0,50))
+                thisAxes.set_ylim((0,50))
             else:
-                ax[i].set_ylim((0,100))
+                thisAxes.set_ylim((0,150))
             #ax[i].set_yticks((0,50,100))
             #ax[i].set_title(titleString)
             #ax[i].grid(True)
