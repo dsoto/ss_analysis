@@ -498,7 +498,7 @@ def plotWattHoursForCircuit(circuit_id,
 
 def plotWattHoursForAllCircuitsOnMeter(meter_id,
                                        dateStart=dt.datetime(2011,5,13),
-                                       dateEnd=dt.datetime(2011,5,17),
+                                       dateEnd=dt.datetime(2011,5,18),
                                        showMains=True):
     '''
     '''
@@ -582,8 +582,8 @@ def calculateTableOfConsumption(meter_id,
     return dates, circuit_id, data
 
 def printTableOfConsumption(meter_id,
-                       dateStart=dt.datetime(2011,5,12),
-                       dateEnd = dt.datetime(2011,5,16),
+                       dateStart=dt.datetime(2011,5,13),
+                       dateEnd = dt.datetime(2011,5,17),
                        strict=True):
     dates, circuit_id, data = calculateTableOfConsumption(meter_id, dateStart, dateEnd, strict=strict)
     print ' '.ljust(10),
