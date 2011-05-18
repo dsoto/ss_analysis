@@ -597,7 +597,7 @@ def printTableOfConsumption(meter_id,
         print
     print 'mean'.ljust(10),
     for m in data.mean(0):
-        print str(m).rjust(6),
+        print ('%0.2f' % m).rjust(6),
     print
     print 'stdev'.ljust(10),
     for m in data.std(0):
