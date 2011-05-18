@@ -520,6 +520,7 @@ def getDailyEnergyForCircuit(circuit_id, date=dt.datetime(2011,5,12), verbose=0,
             #return np.max(watthours)
         else:
             return -2
+
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
                             dateEnd=dt.datetime(2011,5,13)):
@@ -553,8 +554,8 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
 
         #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
         if len(circuits) > 12:
-            fig, ax = plt.subplots(5, 4, sharex = True, figsize=(10,8))
-            stride = 5
+            fig, ax = plt.subplots(4, 5, sharex = True, figsize=(11,8.5))
+            stride = 4
         else:
             fig, ax = plt.subplots(4, 3, sharex = True, figsize=(10,8))
             stride = 4
@@ -711,7 +712,6 @@ def printTableOfConsumption(meter_id,
     for m in data.std(0):
         print ('%0.2f' % m).rjust(6),
     print
-
 
 # for   inclusion in gateway:
 # todo: pass meter id
