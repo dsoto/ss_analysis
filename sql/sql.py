@@ -597,6 +597,9 @@ def getDailyEnergyForCircuit(circuit_id,
                              date=dt.datetime(2011,5,12),
                              verbose=0,
                              method='max',
+                             requireMonotonic=True,
+                             monotonicThreshold=-1,
+                             reportThreshold=12,
                              strict=True):
     # set date range
     dateStart = date
@@ -606,24 +609,27 @@ def getDailyEnergyForCircuit(circuit_id,
     watthours = np.array(watthours)
 
     # error checking
-    isMonotonic = np.alltrue(np.diff(watthours) >= 0)
-    has24reports = watthours.shape[0] >= 24
+    isMonotonic = np.alltrue(np.diff(watthours) >= monotonicThreshold)
+    numReports = watthours.shape[0]
+    has24reports = numReports >= 24
 
-    if (verbose > 0):
+    if (verbose > 1):
         if isMonotonic:
             print 'watthour data monotonic'
         else:
             print 'watthour data non-monotonic'
-        if has24reports:
-            print 'all hours reporting'
-        else:
-            print 'not all hours reporting'
+        print 'number of reports = ', numReports
 
     if len(watthours) == 0:
-        return 0.001
+        return -1
     else:
-        if method == 'max':
+        if method == 'max' and requireMonotonic and isMonotonic and numReports > reportThreshold:
             return np.max(watthours)
+        if method == 'max' and not requireMonotonic and numReports > reportThreshold:
+            return np.max(watthours)
+        else:
+            return -1
+
         if method == 'midnight':
             if isMonotonic and has24reports:
                 return watthours[-1]
@@ -641,13 +647,23 @@ days with unsatisfactory data
 def calculateAverageEnergyForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,4,1),
                             dateEnd=dt.datetime(2011,5,1),
-                            method='max'):
+                            method='max',
+                            requireMonotonic=True,
+                            monotonicThreshold=-1,
+                            reportThreshold=12,
+                            verbose=0):
     date = dateStart
     i = 0.0
     energyAccumulator = 0.0
     while date <= dateEnd:
-        tempData = getDailyEnergyForCircuit(circuit_id, date, verbose=0, method='max')
-        if tempData > 1:
+        tempData = getDailyEnergyForCircuit(circuit_id, date, verbose=verbose,
+                                                              method='max',
+                                                              requireMonotonic=requireMonotonic,
+                                                              monotonicThreshold=monotonicThreshold,
+                                                              reportThreshold=reportThreshold)
+        if verbose > 0:
+            print date, tempData
+        if tempData > 0:
             energyAccumulator += tempData
             i += 1
         date += dt.timedelta(days=1)
