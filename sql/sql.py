@@ -588,7 +588,7 @@ def getWattHourListForCircuit(circuit_id,
     watthours = [d[1] for d in data]
 
     # send details to console if requested
-    if verbose >= 1:
+    if verbose >= 2:
         for i in range(len(dates)):
             print dates[i],watthours[i]
 
