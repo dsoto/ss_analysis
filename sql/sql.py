@@ -689,6 +689,33 @@ def getDailyEnergyForCircuit(circuit_id,
 for a given circuit and date range, this function returns the average energy, discarding
 days with unsatisfactory data
 '''
+def getDailyEnergyListForCircuit(circuit_id,
+                            dateStart=dt.datetime(2011,4,1),
+                            dateEnd=dt.datetime(2011,5,1),
+                            method='max',
+                            requireMonotonic=True,
+                            monotonicThreshold=-1,
+                            reportThreshold=12,
+                            verbose=0):
+    date = dateStart
+    dateList = []
+    energyList = []
+    while date <= dateEnd:
+        tempData = getDailyEnergyForCircuit(circuit_id, date, verbose=verbose,
+                                                              method='max',
+                                                              requireMonotonic=requireMonotonic,
+                                                              monotonicThreshold=monotonicThreshold,
+                                                              reportThreshold=reportThreshold)
+        dateList.append(date)
+        energyList.append(tempData)
+        date += dt.timedelta(days=1)
+
+    return np.array(dateList), np.array(energyList)
+
+'''
+for a given circuit and date range, this function returns the average energy, discarding
+days with unsatisfactory data
+'''
 def calculateAverageEnergyForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,4,1),
                             dateEnd=dt.datetime(2011,5,1),
