@@ -694,7 +694,14 @@ def calculateTableOfConsumption(meter_id,
         dates.append(date)
         j = 0
         for cid in circuit_id:
-             data[i,j] = getDailyEnergyForCircuit(cid, date, verbose=0, method='max', strict=strict)
+             data[i,j] = getDailyEnergyForCircuit(cid,
+                                                  date,
+                                                  verbose=0,
+                                                  method='max',
+                                                  requireMonotonic=True,
+                                                  reportThreshold=12,
+                                                  monotonicThreshold=-1,
+                                                  strict=strict)
              j += 1
         date += dt.timedelta(days=1)
         i += 1
