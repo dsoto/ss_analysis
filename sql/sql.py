@@ -309,8 +309,10 @@ def plotWattHoursForCircuit(circuit_id,
     ax.plot_date(dates, watthours, 'x-')
     titleString = 'circuit ' + str(circuit_id) + ' watthours'
     ax.set_title(titleString)
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
+    fig.autofmt_xdate()
+    fig.savefig(titleString + '.pdf')
 
-    return ax
 
 '''
 plots all watthour readings for a meter on a grid over a given date range
