@@ -295,7 +295,9 @@ def plotMeterMessagesByCircuit(report, dates):
         plt.close()
 
 '''
-returns plot axis with data from circuit
+plots and saves file for a circuit watthours over a given date range.
+TODO: make this so that it returns an axis that can be returned to another
+function that is displaying a grid
 '''
 def plotWattHoursForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
