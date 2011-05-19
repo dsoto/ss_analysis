@@ -355,6 +355,51 @@ def plotWattHoursForAllCircuitsOnMeter(meter_id,
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
 
+def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
+                                                 dateStart=dt.datetime(2011,4,1),
+                                                 dateEnd=dt.datetime(2011,5,18),
+                                                 showMains=True):
+    for i,mid in enumerate(meter_id):
+        circuits = getCircuitsForMeter(mid)
+
+        # drop mains circuit
+        for c in circuits:
+            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                circuits.remove(c)
+
+        #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+        if len(circuits) > 12:
+            fig, ax = plt.subplots(4, 5, sharex = False, figsize=(11,8.5))
+            stride = 4
+        else:
+            fig, ax = plt.subplots(4, 3, sharex = False, figsize=(10,8))
+            stride = 4
+
+        for i,c in enumerate(circuits):
+            # fetch data
+            dates, watthours = getDailyEnergyListForCircuit(c, dateStart, dateEnd)
+
+            # filter based on greater than or equal zero consumption (neg is error)
+            mask = watthours > 0
+            dates = dates[mask]
+            watthours = watthours[mask]
+
+            dates = matplotlib.dates.date2num(dates)
+            thisAxes = ax[i % stride, i / stride]
+            thisAxes.plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
+            #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+            #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+            thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
+
+            thisAxes.set_ylim((0,150))
+            thisAxes.set_yticks((0,50,100,150))
+            #ax[i].set_title(titleString)
+            #ax[i].grid(True)
+
+        fileNameString = 'meter' + str(mid) + 'daily energy.pdf'
+        fig.suptitle(fileNameString)
+        fig.autofmt_xdate()
+        fig.savefig(fileNameString)
 '''
 plot credit or watthours for all circuits on a meter
 '''
