@@ -422,21 +422,23 @@ def plotForAllCircuitsOnMeter(meter_id,
             if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
                 circuits.remove(c)
 
+
+    fig = plt.figure()
     # create figure and axes with subplots
     if len(circuits) > 12:
-        fig, ax = plt.subplots(4, 5, sharex = True, figsize=(11,8.5))
-        stride = 4
+        numPlotsX = 4
+        numPlotsY = 5
     else:
-        fig, ax = plt.subplots(4, 3, sharex = True, figsize=(10,8))
-        stride = 4
+        numPlotsX = 4
+        numPlotsY = 3
 
     # loop through circuits, get data, plot
     for i,c in enumerate(circuits):
         dates, data = getDataListForCircuit(c, dateStart, dateEnd, quantity)
 
         dates = matplotlib.dates.date2num(dates)
-        titleString = 'circuit ' + str(c) + ' watthours'
-        thisAxes = ax[i % stride, i / stride]
+
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
         thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
         #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
         #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
