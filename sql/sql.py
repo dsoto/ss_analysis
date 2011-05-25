@@ -404,6 +404,7 @@ def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
         fig.suptitle(fileNameString)
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
+
 '''
 plot credit or watthours for all circuits on a meter
 '''
@@ -421,7 +422,7 @@ def plotForAllCircuitsOnMeter(meter_id,
             if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
                 circuits.remove(c)
 
-    #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+    # create figure and axes with subplots
     if len(circuits) > 12:
         fig, ax = plt.subplots(4, 5, sharex = True, figsize=(11,8.5))
         stride = 4
@@ -429,9 +430,9 @@ def plotForAllCircuitsOnMeter(meter_id,
         fig, ax = plt.subplots(4, 3, sharex = True, figsize=(10,8))
         stride = 4
 
+    # loop through circuits, get data, plot
     for i,c in enumerate(circuits):
-        if quantity == 'credit':
-            dates, data = getCreditListForCircuit(c, dateStart, dateEnd)
+        dates, data = getDataListForCircuit(c, dateStart, dateEnd, quantity)
 
         dates = matplotlib.dates.date2num(dates)
         titleString = 'circuit ' + str(c) + ' watthours'
@@ -441,7 +442,7 @@ def plotForAllCircuitsOnMeter(meter_id,
         #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
         thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
-    fileNameString = 'meter credit ' + str(meter_id) + '.pdf'
+    fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '.pdf'
     fig.suptitle(fileNameString)
     fig.autofmt_xdate()
     fig.savefig(fileNameString)
@@ -558,6 +559,36 @@ def printTableOfConsumption(meter_id,
 
 
 # uncategorized functions
+def getDataListForCircuit(circuit_id,
+                              dateStart=dt.datetime(2011,5,12),
+                              dateEnd=dt.datetime(2011,5,13),
+                              quantity='watthours',
+                              verbose=0):
+    # get query based on circuit and date
+    logs = session.query(PrimaryLog)\
+                  .filter(PrimaryLog.circuit_id == circuit_id)\
+                  .filter(PrimaryLog.date > dateStart)\
+                  .filter(PrimaryLog.date <= dateEnd)\
+                  .order_by(PrimaryLog.date)
+
+    # turn query into a sorted list of unique dates and watthour readings
+    if quantity == 'watthours':
+        data = [(l.date, l.watthours) for l in logs]
+    if quantity == 'credit':
+        data = [(l.date, l.credit) for l in logs]
+
+    # remove duplicate entries and sort by date
+    data = list(set(data))
+    data.sort()
+    dates = [d[0] for d in data]
+    watthours = [d[1] for d in data]
+
+    # send details to console if requested
+    if verbose >= 2:
+        for i in range(len(dates)):
+            print dates[i],watthours[i]
+
+    return dates, watthours
 
 '''
 for a given circuit_id and date, this function returns a list of
