@@ -13,13 +13,17 @@ import scipy.integrate
 verbose = 0
 numColumns = 20
 #dateRangeStart = datetime.datetime(2010, 12, 20)
-dateRangeStart = datetime.datetime(2011, 1, 24)
-dateRangeEnd = datetime.datetime(2011, 2, 17)
+dateRangeStart = datetime.datetime(2011, 5, 1)
+dateRangeEnd = datetime.datetime(2011, 5, 18)
 
 # helper functions
 # ----------------
 
-def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirectory):
+def getFormattedData(circuit = '201',
+                     beginDatetime = dateRangeStart,
+                     endDatetime = dateRangeEnd,
+                     dataDirectory = 'data/',
+                     verbose = 1):
     '''
     read in data from directories from begin date to end date
     and return numpy record array
@@ -65,8 +69,8 @@ def getFormattedData(circuit, beginDatetime, endDatetime, downsample, dataDirect
                                          currentDatetime.month,
                                          currentDatetime.day,
                                          currentDatetime.hour)
-        filename = '192_168_1_' + circuit + '.log'
-        file = dataDirectory + path + filename
+        filename = '192_168_1_' + str(circuit) + '.log'
+        file = str(dataDirectory) + str(path) + str(filename)
 
         if verbose >= 1:
             print 'reading ' + file
@@ -287,8 +291,10 @@ def calculateDailyUsage():
     '''
     #import ss_plotting as ssp
 
-    dataDirectory = './data/'
-    plotCircuitList = ['200','201','202','203','204','205','206','207','208','209','210','211','212']
+    #import pdb;pdb.set_trace()
+    dataDirectory = 'data/'
+    plotCircuitList = ['200','201','202','203','204','205','206','207','208','209',
+                       '210','211','212','213','214','215','216','217','218','219','220']
     #plotCircuitList = ['201','202','203','204','205','206','207','208','209','210','211','212']
     totalPower = []
 
@@ -314,7 +320,8 @@ def calculateDailyUsage():
         totalWattHoursForDay = 0
         print str(dateStart.year) + '/' + str(dateStart.month) + '/' + str(dateStart.day) + ',',
         for circuit in plotCircuitList:
-            data = getFormattedData(circuit, dateStart, dateEnd, 1, dataDirectory)
+            data = getFormattedData(circuit, dateStart, dateEnd, dataDirectory = dataDirectory,
+                                     verbose = 0)
             if data == []:
                 #print 'no data for', dateStart, circuit
                 integral = 0
