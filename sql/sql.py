@@ -409,9 +409,10 @@ def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
 plot credit or watthours for all circuits on a meter
 '''
 def plotForAllCircuitsOnMeter(meter_id,
-                              dateStart=dt.datetime(2011,5,13),
-                              dateEnd=dt.datetime(2011,5,18),
+                              dateStart=dt.datetime(2011,5,28),
+                              dateEnd=dt.datetime(2011,6,1),
                               quantity='credit',
+                              introspect=False,
                               showMains=False):
 
     circuits = getCircuitsForMeter(meter_id)
@@ -447,6 +448,8 @@ def plotForAllCircuitsOnMeter(meter_id,
     fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '.pdf'
     fig.suptitle(fileNameString)
     fig.autofmt_xdate()
+    if introspect:
+        plt.show()
     fig.savefig(fileNameString)
 
 
