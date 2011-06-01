@@ -562,33 +562,53 @@ def printTableOfConsumption(meter_id,
 
 # uncategorized functions
 def getDataListForCircuit(circuit_id,
-                              dateStart=dt.datetime(2011,5,12),
-                              dateEnd=dt.datetime(2011,5,13),
+                              dateStart=dt.datetime(2011,5,28),
+                              dateEnd=dt.datetime(2011,5,29),
                               quantity='watthours',
                               verbose=0):
     # get query based on circuit and date
+    # and sort by date received by gateway
     logs = session.query(PrimaryLog)\
                   .filter(PrimaryLog.circuit_id == circuit_id)\
                   .filter(PrimaryLog.date > dateStart)\
                   .filter(PrimaryLog.date <= dateEnd)\
-                  .order_by(PrimaryLog.date)
+                  .order_by(PrimaryLog.created)
 
     # turn query into a sorted list of unique dates and watthour readings
     if quantity == 'watthours':
-        data = [(l.date, l.watthours) for l in logs]
+        #data = [(l.date, l.watthours) for l in logs]
+        data = [(l.date, l.watthours, l.created) for l in logs]
     if quantity == 'credit':
         data = [(l.date, l.credit) for l in logs]
 
-    # remove duplicate entries and sort by date
-    data = list(set(data))
-    data.sort()
-    dates = [d[0] for d in data]
-    watthours = [d[1] for d in data]
+    dates = np.array([l.date for l in logs])
+    data  = np.array([getattr(l, quantity) for l in logs])
+    created = np.array([l.created for l in logs])
 
-    # send details to console if requested
-    if verbose >= 2:
-        for i in range(len(dates)):
-            print dates[i],watthours[i]
+    # remove midnight sample from the future
+    # by creating a boolean mask and then indexing arrays based on that mask
+    mask = []
+    for i in range(len(dates)):
+        if (created[i]-dates[i]).total_seconds() < 3600:
+            mask.append(True)
+        else:
+            mask.append(False)
+    mask = np.array(mask)
+    dates = dates[mask]
+    data = data[mask]
+
+    # put data into tuples and run set to get unique samples
+    dataList = []
+    for i in range(len(dates)):
+        dataList.append((dates[i], data[i]))
+    dataList = list(set(dataList))
+    dataList.sort()
+    dates = [d[0] for d in dataList]
+    watthours = [d[1] for d in dataList]
+
+    if verbose > 1:
+        for d in dataList:
+            print d
 
     return dates, watthours
 
