@@ -405,6 +405,22 @@ def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
 
+def plotDataForCircuit(circuit_id,
+                            dateStart=dt.datetime(2011,5,12),
+                            dateEnd=dt.datetime(2011,5,13),
+                            quantity='watthours',
+                            introspect=False):
+    dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity)
+    dates = matplotlib.dates.date2num(dates)
+    fig = plt.figure()
+    ax = fig.add_axes((.2,.2,.6,.6))
+    ax.plot_date(dates, data, 'x-')
+    titleString = 'circuit ' + str(circuit_id) + quantity
+    ax.set_title(titleString)
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
+    fig.autofmt_xdate()
+    fig.savefig(titleString + '.pdf')
+
 '''
 plot credit or watthours for all circuits on a meter
 '''
