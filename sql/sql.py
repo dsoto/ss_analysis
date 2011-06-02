@@ -471,6 +471,22 @@ def printTableOfConsumption(meter_id,
 
 
 # uncategorized functions
+'''
+for a given circuit_id and date range, this function returns a list of
+data specified by quantity.  uses set() to remove duplicate entries.
+also discards entries if the gateway time stamp is more than one hour
+ahead of the meter time stamp
+input:
+    circuit_id - circuit database id
+    dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
+    dateEnd - datetime object specifying end of data
+    quantity - 'watthours' or 'credit'
+    verbose - 1 gives an output to console of the data list
+            - 0 no output
+output:
+    dates - list of date stamps corresponding to data list
+    data - list of reported data
+'''
 def getDataListForCircuit(circuit_id,
                               dateStart=dt.datetime(2011,5,28),
                               dateEnd=dt.datetime(2011,5,29),
@@ -484,15 +500,7 @@ def getDataListForCircuit(circuit_id,
                   .filter(PrimaryLog.date <= dateEnd)\
                   .order_by(PrimaryLog.created)
 
-    '''
-    # turn query into a sorted list of unique dates and watthour readings
-    if quantity == 'watthours':
-        #data = [(l.date, l.watthours) for l in logs]
-        data = [(l.date, l.watthours, l.created) for l in logs]
-    if quantity == 'credit':
-        data = [(l.date, l.credit) for l in logs]
-    '''
-
+    # create separate arrays for each of these quantities
     dates = np.array([l.date for l in logs])
     data  = np.array([getattr(l, quantity) for l in logs])
     created = np.array([l.created for l in logs])
@@ -516,13 +524,13 @@ def getDataListForCircuit(circuit_id,
     dataList = list(set(dataList))
     dataList.sort()
     dates = [d[0] for d in dataList]
-    watthours = [d[1] for d in dataList]
+    data = [d[1] for d in dataList]
 
-    if verbose > 1:
+    if verbose > 0:
         for d in dataList:
             print d
 
-    return dates, watthours
+    return dates, data
 
 '''
 checks a watthour list to be sure it has 24 samples and that the watthour
