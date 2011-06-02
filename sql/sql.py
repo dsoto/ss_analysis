@@ -474,8 +474,8 @@ def plotForAllCircuitsOnMeter(meter_id,
 '''
 prints a table of whether or not circuits have reported on certain dates
 '''
-def printHugeMessageTable(startDate = dt.datetime(2011, 5, 1),
-                          endDate   = dt.datetime(2011, 5, 13)):
+def printHugeMessageTable(startDate = dt.datetime(2011, 5, 24),
+                          endDate   = dt.datetime(2011, 6, 1)):
     import datetime as dt
 
     circuit = session.query(Circuit).all()
@@ -593,12 +593,14 @@ def getDataListForCircuit(circuit_id,
                   .filter(PrimaryLog.date <= dateEnd)\
                   .order_by(PrimaryLog.created)
 
+    '''
     # turn query into a sorted list of unique dates and watthour readings
     if quantity == 'watthours':
         #data = [(l.date, l.watthours) for l in logs]
         data = [(l.date, l.watthours, l.created) for l in logs]
     if quantity == 'credit':
         data = [(l.date, l.credit) for l in logs]
+    '''
 
     dates = np.array([l.date for l in logs])
     data  = np.array([getattr(l, quantity) for l in logs])
@@ -608,7 +610,7 @@ def getDataListForCircuit(circuit_id,
     # by creating a boolean mask and then indexing arrays based on that mask
     mask = []
     for i in range(len(dates)):
-        if (created[i]-dates[i]).total_seconds() < 3600:
+        if (created[i] - dates[i]).total_seconds() < 3600:
             mask.append(True)
         else:
             mask.append(False)
@@ -1054,3 +1056,4 @@ def plotByTimeSeries(report, dates):
 
 if __name__ == "__main__":
     pass
+    #getDataListForCircuit(91,verbose=2)
