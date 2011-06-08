@@ -296,6 +296,31 @@ def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
         fig.autofmt_xdate()
         fig.savefig(fileNameString)
 
+def plotDatasForCircuit(circuit_id,
+                        dateStart=dt.datetime(2011,5,12),
+                        dateEnd=dt.datetime(2011,5,13),
+                        quantity=('watthours','credit'),
+                        introspect=False):
+    # set subplots for length of quantity
+    numPlotsX = 1
+    numPlotsY = len(quantity)
+
+    # plot creation
+    fig = plt.figure()
+
+    # iterate through quantity
+    for i,q in enumerate(quantity):
+        dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity=q)
+        dates = matplotlib.dates.date2num(dates)
+        thisAxes = fig.add_subplot(numPlotsY, numPlotsX, i+1)
+        thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=3, marker='o', mfc=None)
+        thisAxes.set_title(q)
+        thisAxes.grid(linestyle='-', color='#eeeeee')
+
+    fig.autofmt_xdate()
+    titleString = 'circuit ' + str(circuit_id) + ' multiple'
+    fig.savefig(titleString + '.pdf')
+
 def plotDataForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
                             dateEnd=dt.datetime(2011,5,13),
