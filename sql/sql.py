@@ -183,8 +183,129 @@ class PrimaryLog(Log):
                                  ('tu', int(self.use_time)),
                                  ('wh', float(self.watthours))] + self.getCreditAndType())
 
+class Job(Base):
+    __tablename__ = "jobs"
+    id = Column(Integer, primary_key=True)
+    _type = Column('type', String(50))
+    __mapper_args__ = {'polymorphic_on': _type}
+    uuid = Column(String)
+    start = Column(String)
+    end = Column(String)
+    state = Column(Boolean)
+    circuit_id = Column(Integer, ForeignKey('circuit.id'))
+    circuit = relation(Circuit,
+                       cascade="all,delete",
+                       lazy=False, primaryjoin=circuit_id == Circuit.id)
+
+    def __init__(self, circuit=None, state=True):
+        self.uuid = str(uuid.uuid4())
+        self.start = get_now()
+        self.circuit = circuit
+        self.state = state
+
+    def getMessage(self, session):
+        if len(self.job_message) is not 0:
+            incoming_uuid = self.job_message[0]
+        elif len(self.kannel_job_message) is not 0:
+            incoming_uuid = self.kannel_job_message[0].incoming
+        return session.query(IncomingMessage).\
+                            filter_by(uuid=incoming_uuid).first()
+
+    def url(self):
+        return "jobs/job/%s/" % self.id
+
+    def toDict(self):
+        return {"uuid": self.uuid,
+                "state": self.state,
+                "date": self.start,
+                "type": self._type}
+
+    def __str__(self):
+        return "job"
+
+class AddCredit(Job):
+    __tablename__ = "addcredit"
+    __mapper_args__ = {'polymorphic_identity': 'addcredit'}
+    description = "This job adds energy credit to the remote circuit"
+    id = Column(Integer, ForeignKey('jobs.id'), primary_key=True)
+    credit = Column(Integer)
+
+
+    def __init__(self, credit=None, circuit=None):
+        Job.__init__(self, circuit)
+        self.credit = credit
+
+    def __str__(self):
+        return "job=cr&jobid=%s&cid=%s&amt=%s;" % (self.id,
+                                                self.circuit.ip_address,
+                                                float(self.credit))
+
+class TurnOff(Job):
+    __tablename__ = "turnoff"
+    __mapper_args__ = {'polymorphic_identity': 'turnoff'}
+    description = "This job turns off the circuit on the remote meter"
+    id = Column(Integer, ForeignKey('jobs.id'), primary_key=True)
+
+    def __init__(self, circuit=None):
+        Job.__init__(self, circuit)
+
+    def __str__(self):
+        return "job=coff&jobid=%s&cid=%s;" % (self.id, self.circuit.ip_address)
+
+
+class TurnOn(Job):
+    __tablename__ = "turnon"
+    __mapper_args__ = {'polymorphic_identity': 'turnon'}
+    description = "This job turns on the circuit off the remote meter"
+    id = Column(Integer, ForeignKey('jobs.id'), primary_key=True)
+
+    def __init__(self, circuit=None):
+        Job.__init__(self, circuit)
+
+    def __str__(self):
+        return "job=con&jobid=%s&cid=%s;" % (self.id, self.circuit.ip_address)
+
+
+class Mping(Job):
+    """ Job that allows the admin to 'ping' a meter"""
+    __tablename__ = 'mping'
+    __mapper_args__ = {'polymorphic_identity': 'mping'}
+    description = "This job turns on the circuit off the remote meter"
+    id = Column(Integer, ForeignKey('jobs.id'), primary_key=True)
+
+    def __init__(self, meter=None):
+        Job.__init__(self, self.getMain(meter))
+
+    def getMain(self, meter):
+        return meter.get_circuits()[0]
+
+    def __str__(self):
+        return "job=mping&jobid=%s;" % self.id
+
+
+class Cping(Job):
+    """ Job that allows the admin to 'ping' a meter"""
+    __tablename__ = 'cping'
+    __mapper_args__ = {'polymorphic_identity': 'cping'}
+    description = "This job turns on the circuit off the remote meter"
+    id = Column(Integer, ForeignKey('jobs.id'), primary_key=True)
+
+    def __init__(self, circuit=None):
+        Job.__init__(self, circuit)
+
+    def __str__(self):
+        return "job=cping&jobid=%s&cid=%s;" % (self.id,
+                                               self.circuit.ip_address)
+
+
 
 # convenience and helper functions
+
+def printJobs():
+    #jobs = session.query(Job).filter(Job.circuit_id == 14)
+    jobs = session.query(Job).filter(Job._type == 'addcredit').filter(Job.circuit_id ==14)
+    for j in jobs:
+        print j
 
 '''
 this is a short helper function to write out a formatted row of a table.
