@@ -621,6 +621,60 @@ def printTableOfConsumption(meter_id,
 
 
 # uncategorized functions
+
+def removeDuplicates(dates, created, data):
+    # remove midnight sample from the future
+    # by creating a boolean mask and then indexing arrays based on that mask
+    mask = []
+    for i in range(len(dates)):
+        if (created[i] - dates[i]).total_seconds() < 3600:
+            mask.append(True)
+        else:
+            mask.append(False)
+    mask = np.array(mask)
+    dates = dates[mask]
+    data = data[mask]
+
+    # put data into tuples and run set to get unique samples
+    dataList = []
+    for i in range(len(dates)):
+        dataList.append((dates[i], data[i]))
+    dataList = list(set(dataList))
+    dataList.sort()
+    dates = [d[0] for d in dataList]
+    data = [d[1] for d in dataList]
+    return dates, data
+
+def inspectDayOfWatthours(circuit_id,
+                          day=dt.datetime(2011,5,28),
+                          verbose=0):
+    dates, created, data = getRawDataListForCircuit(circuit_id,
+                                                    day,
+                                                    day + dt.timedelta(days=1),
+                                                    quantity='watthours')
+    print 'number of raw samples = ', len(dates)
+    dates, data = removeDuplicates(dates, created, data)
+    print 'number of samples after duplicate removal = ', len(dates)
+
+    data = np.array(data)
+    power = np.diff(data)
+    dates = np.array(dates)
+
+    # mask values with decrease in watthours and adjust for by one offset
+    decreaseMask = power < 0
+    np.insert(decreaseMask, 0, False)
+
+    print 'decrease in watthours observed at these', sum(decreaseMask), 'times'
+    print dates[decreaseMask]
+
+    print 'apparent power consumption for day using max = ', max(data)
+
+    '''
+    print power
+    print dates
+    print data
+    '''
+
 '''
 for a given circuit_id and date range, this function returns a list of
 data specified by quantity.  uses set() to remove duplicate entries.
