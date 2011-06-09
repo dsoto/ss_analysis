@@ -736,6 +736,26 @@ def getDataListForCircuit(circuit_id,
 
     return dates, data
 
+def getRawDataListForCircuit(circuit_id,
+                              dateStart=dt.datetime(2011,5,28),
+                              dateEnd=dt.datetime(2011,5,29),
+                              quantity='watthours',
+                              verbose=0):
+    # get query based on circuit and date
+    # and sort by date received by gateway
+    logs = session.query(PrimaryLog)\
+                  .filter(PrimaryLog.circuit_id == circuit_id)\
+                  .filter(PrimaryLog.date > dateStart)\
+                  .filter(PrimaryLog.date <= dateEnd)\
+                  .order_by(PrimaryLog.date)
+
+    # create separate arrays for each of these quantities
+    dates = np.array([l.date for l in logs])
+    data  = np.array([getattr(l, quantity) for l in logs])
+    created = np.array([l.created for l in logs])
+
+    return dates, created, data
+
 '''
 checks a watthour list to be sure it has 24 samples and that the watthour
 readings are monotonic.
