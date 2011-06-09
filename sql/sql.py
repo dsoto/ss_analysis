@@ -440,6 +440,8 @@ def plotDatasForCircuit(circuit_id,
 
     fig.autofmt_xdate()
     titleString = 'circuit ' + str(circuit_id) + ' multiple'
+    if introspect:
+        plt.show()
     fig.savefig(titleString + '.pdf')
 
 def plotDataForCircuit(circuit_id,
@@ -456,6 +458,8 @@ def plotDataForCircuit(circuit_id,
     ax.set_title(titleString)
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
     fig.autofmt_xdate()
+    if introspect:
+        plt.show()
     fig.savefig(titleString + '.pdf')
 
 '''
