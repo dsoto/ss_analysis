@@ -691,12 +691,13 @@ def plotDaysOfWatthourDrops(circuit_id,
 	beg_day = dateStart    
 	for k in range(num_days.days):
 		errortimes = inspectDayOfWatthours(circuit_id, beg_day)
-		#remove times from dates
-		for i in range(len(errortimes)):
-			#errordates = errortimes[i].strftime('%Y,%m,%d')
-			errordates = dt.datetime(errortimes[i].year, errortimes[i].month, errortimes[i].day)
-		dates = np.append(dates, errordates)
-		beg_day = beg_day + dt.timedelta(days=1)
+		if len(errortimes)>0:
+			#remove times from dates
+			for i in range(len(errortimes)):
+				#errordates = errortimes[i].strftime('%Y,%m,%d')
+				errordates = dt.datetime(errortimes[i].year, errortimes[i].month, errortimes[i].day)
+			dates = np.append(dates, errordates)
+			beg_day = beg_day + dt.timedelta(days=1)
 	#print dates
 	dates = list(set(dates))
 	dates.sort()
