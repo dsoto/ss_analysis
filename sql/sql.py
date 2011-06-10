@@ -337,7 +337,6 @@ def getCircuitsForMeter(mid):
     circuits = [c.id for c in circuits]
     return circuits
 
-
 # plotting functions
 
 '''
@@ -368,8 +367,6 @@ def plotMeterMessagesByCircuit(report, dates):
         ax.set_ylabel('Percentage of time reporting')
         fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
         plt.close()
-
-
 
 def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
                                                  dateStart=dt.datetime(2011,4,1),
@@ -429,17 +426,20 @@ def plotDatasForCircuit(circuit_id,
     # plot creation
     fig = plt.figure()
 
+    dtSt = str.replace(str(dateStart), ' 00:00:00', '')
     # iterate through quantity
     for i,q in enumerate(quantity):
         dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity=q)
         dates = matplotlib.dates.date2num(dates)
         thisAxes = fig.add_subplot(numPlotsY, numPlotsX, i+1)
+        fig.add_axes(sharex=True)
         thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=3, marker='o', mfc=None)
         thisAxes.set_title(q)
         thisAxes.grid(linestyle='-', color='#eeeeee')
 
     fig.autofmt_xdate()
-    titleString = 'circuit ' + str(circuit_id) + ' multiple'
+    titleString = 'circuit ' + str(circuit_id) + '-' + dtSt + ' multiple'
+    fig.suptitle(titleString)
     if introspect:
         plt.show()
     fig.savefig(titleString + '.pdf')
@@ -471,7 +471,10 @@ def plotDataForAllCircuitsOnMeter(meter_id,
                               quantity='credit',
                               introspect=False,
                               showMains=False):
-
+    
+    dtSt = str.replace(str(dateStart), ' 00:00:00', '')
+    dtEnd = str.replace(str(dateEnd), ' 00:00:00', '')
+    
     circuits = getCircuitsForMeter(meter_id)
 
     # drop mains circuit
@@ -493,7 +496,6 @@ def plotDataForAllCircuitsOnMeter(meter_id,
     # loop through circuits, get data, plot
     for i,c in enumerate(circuits):
         dates, data = getDataListForCircuit(c, dateStart, dateEnd, quantity)
-
         dates = matplotlib.dates.date2num(dates)
 
         thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
@@ -502,7 +504,7 @@ def plotDataForAllCircuitsOnMeter(meter_id,
         #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
         thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
-    fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '.pdf'
+    fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
     fig.suptitle(fileNameString)
     fig.autofmt_xdate()
     if introspect:
@@ -619,7 +621,6 @@ def printTableOfConsumption(meter_id,
         print ('%0.2f' % m).rjust(6),
     print
 
-
 # uncategorized functions
 
 def removeDuplicates(dates, created, data):
@@ -661,12 +662,17 @@ def inspectDayOfWatthours(circuit_id,
     dates = np.array(dates)
 
     # mask values with decrease in watthours and adjust for by one offset
+    # want to remove drops at midnight which are normal
     decreaseMask = power < 0
     np.insert(decreaseMask, 0, False)
-
+    #should be last one per day? (unless there's a drop at 11pm and no report at 12.
+    if decreaseMask[-1] == 1:
+		decreaseMask[-1] = False
+		
+    
     print 'decrease in watthours observed at these', sum(decreaseMask), 'times'
     print dates[decreaseMask]
-
+    return dates[decreaseMask]
     print 'apparent power consumption for day using max = ', max(data)
 
     '''
@@ -674,6 +680,30 @@ def inspectDayOfWatthours(circuit_id,
     print dates
     print data
     '''
+
+def plotDaysOfWatthourDrops(circuit_id,
+                          dateStart=dt.datetime(2011,5,28), dateEnd=dt.datetime(2011,6,3),
+                          verbose=0):
+							  
+	dates = []						  
+	# break up time period into days
+	num_days = dateEnd - dateStart
+	beg_day = dateStart    
+	for k in range(num_days.days):
+		errortimes = inspectDayOfWatthours(circuit_id, beg_day)
+		#remove times from dates
+		for i in range(len(errortimes)):
+			#errordates = errortimes[i].strftime('%Y,%m,%d')
+			errordates = dt.datetime(errortimes[i].year, errortimes[i].month, errortimes[i].day)
+		dates = np.append(dates, errordates)
+		beg_day = beg_day + dt.timedelta(days=1)
+	#print dates
+	dates = list(set(dates))
+	dates.sort()
+	print dates
+	for d in range(len(dates)):
+		plotDatasForCircuit(circuit_id, dates[d], dates[d] + dt.timedelta(days=1))
+	
 
 '''
 for a given circuit_id and date range, this function returns a list of
@@ -962,14 +992,9 @@ def lookForBadSC20(circuit_id,
             print str(l).rjust(cw),
         print
 
-
 if __name__ == "__main__":
     pass
     #getDataListForCircuit(91,verbose=2)
-
-
-
-
 
 # for   inclusion in gateway:
 # todo: pass meter id
