@@ -189,7 +189,7 @@ class Job(Base):
     _type = Column('type', String(50))
     __mapper_args__ = {'polymorphic_on': _type}
     uuid = Column(String)
-    start = Column(String)
+    start = Column(DateTime)
     end = Column(String)
     state = Column(Boolean)
     circuit_id = Column(Integer, ForeignKey('circuit.id'))
@@ -222,6 +222,7 @@ class Job(Base):
 
     def __str__(self):
         return "job"
+
 
 class AddCredit(Job):
     __tablename__ = "addcredit"
@@ -298,7 +299,7 @@ class Cping(Job):
                                                self.circuit.ip_address)
 
 
-
+#--------------------------------------------------------------------------------------------#
 # convenience and helper functions
 
 def printJobs():
@@ -338,84 +339,8 @@ def getCircuitsForMeter(mid):
     return circuits
 
 
+#--------------------------------------------------------------------------------------------#
 # plotting functions
-
-'''
-this function reports the consistency of primary logs in graphical form
-'''
-def plotMeterMessagesByCircuit(report, dates):
-    for i, meter_id in enumerate([4,6,7,8]):
-        meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
-        meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
-        print 'generating for ', meterName
-
-        meterCircuits = [mc.id for mc in meterCircuits]
-        meterCircuits.sort()
-        print meterCircuits
-
-        startDate = dates[0]
-        endDate = dates[-1]
-        meterReport = report[:,meterCircuits]
-
-        import matplotlib.pyplot as plt
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(meterReport.sum(0) / meterReport.shape[0],'x')
-        ax.set_title(meterName+'\nFrom '+startDate.strftime('%Y-%m-%d')+' to '+
-                                         endDate.strftime('%Y-%m-%d'))
-        ax.set_ylim((0,1))
-        ax.set_xlabel('circuit index (not well ordered)')
-        ax.set_ylabel('Percentage of time reporting')
-        fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
-        plt.close()
-
-
-
-def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
-                                                 dateStart=dt.datetime(2011,4,1),
-                                                 dateEnd=dt.datetime(2011,5,18),
-                                                 showMains=True):
-    for i,mid in enumerate(meter_id):
-        circuits = getCircuitsForMeter(mid)
-
-        # drop mains circuit
-        for c in circuits:
-            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
-                circuits.remove(c)
-
-        #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
-        if len(circuits) > 12:
-            fig, ax = plt.subplots(4, 5, sharex = False, figsize=(11,8.5))
-            stride = 4
-        else:
-            fig, ax = plt.subplots(4, 3, sharex = False, figsize=(10,8))
-            stride = 4
-
-        for i,c in enumerate(circuits):
-            # fetch data
-            dates, watthours = getDailyEnergyListForCircuit(c, dateStart, dateEnd)
-
-            # filter based on greater than or equal zero consumption (neg is error)
-            mask = watthours > 0
-            dates = dates[mask]
-            watthours = watthours[mask]
-
-            dates = matplotlib.dates.date2num(dates)
-            thisAxes = ax[i % stride, i / stride]
-            thisAxes.plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
-            #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-            #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
-            thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
-
-            thisAxes.set_ylim((0,150))
-            thisAxes.set_yticks((0,50,100,150))
-            #ax[i].set_title(titleString)
-            #ax[i].grid(True)
-
-        fileNameString = 'meter' + str(mid) + 'daily energy.pdf'
-        fig.suptitle(fileNameString)
-        fig.autofmt_xdate()
-        fig.savefig(fileNameString)
 
 def plotDatasForCircuit(circuit_id,
                         dateStart=dt.datetime(2011,5,12),
@@ -510,6 +435,7 @@ def plotDataForAllCircuitsOnMeter(meter_id,
     fig.savefig(fileNameString)
 
 
+#--------------------------------------------------------------------------------------------#
 # printing functions
 
 '''
@@ -593,31 +519,6 @@ def printHugeMessageTable(startDate = dt.datetime(2011, 5, 24),
         if start >= endDate:
             break
 
-'''
-prints a table of consumption and mean and stdev for a meter and daterange
-'''
-def printTableOfConsumption(meter_id,
-                       dateStart=dt.datetime(2011,5,13),
-                       dateEnd = dt.datetime(2011,5,17),
-                       strict=True):
-    dates, circuit_id, data = calculateTableOfConsumption(meter_id, dateStart, dateEnd, strict=strict)
-    print ' '.ljust(10),
-    for cid in circuit_id:
-        print str(cid).rjust(6),
-    print
-    for i,date in enumerate(dates):
-        print date.strftime("%Y-%m-%d").ljust(10),
-        for d in data[i]:
-            print str(d).rjust(6),
-        print
-    print 'mean'.ljust(10),
-    for m in data.mean(0):
-        print ('%0.2f' % m).rjust(6),
-    print
-    print 'stdev'.ljust(10),
-    for m in data.std(0):
-        print ('%0.2f' % m).rjust(6),
-    print
 
 
 # uncategorized functions
@@ -696,19 +597,13 @@ def getDataListForCircuit(circuit_id,
                               dateEnd=dt.datetime(2011,5,29),
                               quantity='watthours',
                               verbose=0):
-    # get query based on circuit and date
-    # and sort by date received by gateway
-    logs = session.query(PrimaryLog)\
-                  .filter(PrimaryLog.circuit_id == circuit_id)\
-                  .filter(PrimaryLog.date > dateStart)\
-                  .filter(PrimaryLog.date <= dateEnd)\
-                  .order_by(PrimaryLog.created)
 
-    # create separate arrays for each of these quantities
-    dates = np.array([l.date for l in logs])
-    data  = np.array([getattr(l, quantity) for l in logs])
-    created = np.array([l.created for l in logs])
-
+    # get numpy arrays of dates, timestamps, and data
+    dates, created, data = getRawDataListForCircuit(circuit_id,
+                                                    dateStart,
+                                                    dateEnd,
+                                                    quantity,
+                                                    verbose)
     # remove midnight sample from the future
     # by creating a boolean mask and then indexing arrays based on that mask
     mask = []
