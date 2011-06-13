@@ -913,91 +913,65 @@ def calculateTableOfConsumption(meter_id,
 
     return dates, circuit_id, data
 
-'''
-for a meter and daterange, outputs a table of percentage of time that greater
-than zero credit is in the account.
-'''
-def calculateTimeWithCredit(meter_id,
-                            dateStart=dt.datetime(2011,4,1),
-                            dateEnd = dt.datetime(2011,5,1)):
-    circuit_id = getCircuitsForMeter(meter_id)
-    print ' '.ljust(10),
-    for cid in circuit_id:
-        print str(cid).rjust(6),
-    print
-    print '% credit'.ljust(10),
-    for cid in circuit_id:
-        dates, credit = getDataListForCircuit(cid, dateStart, dateEnd, quantity='credit')
-        credit = np.array(credit)
-        hoursWithCredit = len(np.extract(credit > 0, credit))
-        totalHours = len(credit)
-        timeWithCredit = float(hoursWithCredit) / float(totalHours)
-        print ('%0.2f' % timeWithCredit).rjust(6),
-    print
 
-def lookForBadSC20(circuit_id,
-                   dateStart=dt.datetime(2011,5,1),
-                   dateEnd = dt.datetime(2011,6,1)):
-    # get all primary parameters in date range
-    # loop over primary parameters and look for condition watthours>0 and credit<=0
-    # if true print date and circuit_id to console
-    logs = session.query(PrimaryLog)\
-                  .filter(PrimaryLog.circuit_id == circuit_id)\
-                  .filter(PrimaryLog.date > dateStart)\
-                  .filter(PrimaryLog.date <= dateEnd)\
-                  .order_by(PrimaryLog.created)
-    logList = []
-    for log in logs:
-        if log.watthours > 0 and log.credit <= 0:
-            logList.append((log.date, log.circuit_id, log.watthours))
-    logList = list(set(logList))
-    logList.sort()
+def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
+                                                 dateStart=dt.datetime(2011,4,1),
+                                                 dateEnd=dt.datetime(2011,5,18),
+                                                 showMains=True):
+    for i,mid in enumerate(meter_id):
+        circuits = getCircuitsForMeter(mid)
 
-    cw = 20
-    print 'date'.rjust(cw),
-    print 'circuit id'.rjust(cw),
-    print 'watthours'.rjust(cw)
-    for log in logList:
-        for l in log:
-            print str(l).rjust(cw),
-        print
+        # drop mains circuit
+        for c in circuits:
+            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                circuits.remove(c)
 
+        #fig, ax = plt.subplots(len(circuits), 1, sharex = True, figsize=(5,15))
+        if len(circuits) > 12:
+            fig, ax = plt.subplots(4, 5, sharex = False, figsize=(11,8.5))
+            stride = 4
+        else:
+            fig, ax = plt.subplots(4, 3, sharex = False, figsize=(10,8))
+            stride = 4
 
-if __name__ == "__main__":
-    pass
-    #getDataListForCircuit(91,verbose=2)
+        for i,c in enumerate(circuits):
+            # fetch data
+            dates, watthours = getDailyEnergyListForCircuit(c, dateStart, dateEnd)
 
+            # filter based on greater than or equal zero consumption (neg is error)
+            mask = watthours > 0
+            dates = dates[mask]
+            watthours = watthours[mask]
 
+            dates = matplotlib.dates.date2num(dates)
+            thisAxes = ax[i % stride, i / stride]
+            thisAxes.plot_date(dates, watthours, ls='-', ms=3, marker='o', mfc=None)
+            #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+            #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+            thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
+            thisAxes.set_ylim((0,150))
+            thisAxes.set_yticks((0,50,100,150))
+            #ax[i].set_title(titleString)
+            #ax[i].grid(True)
 
+        fileNameString = 'meter' + str(mid) + 'daily energy.pdf'
+        fig.suptitle(fileNameString)
+        fig.autofmt_xdate()
+        fig.savefig(fileNameString)
 
-# for   inclusion in gateway:
-# todo: pass meter id
-def plotByTimeSeries(report, dates):
-    import matplotlib.pyplot as plt
-    fig = plt.figure()
-    for i, meter_id in enumerate([4,7,8]):
-        meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
-        meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
-        print 'generating for ', meterName
+def plotHistogramAverageDailyConsumption(circuit_ids, dateStart, dateEnd):
+    # loop through circuits and calculate average consumption and append to list
+    energyList = []
+    for cid in circuit_ids:
+        avgEnergy, N = calculateAverageEnergyForCircuit(cid, dateStart, dateEnd, method='max',
+                                                        requireMonotonic=True,
+                                                        monotonicThreshold=0,
+                                                        reportThreshold=12,
+                                                        verbose=0)
+        energyList.append(avgEnergy)
+    print energyList
+    plt.hist(energyList)
+    plt.show()
 
-        meterCircuits = [mc.id for mc in meterCircuits]
-        meterCircuits.sort()
-        print meterCircuits
-
-        meterReport = report[:,meterCircuits]
-
-        import matplotlib.pyplot as plt
-        import matplotlib.dates
-        messagesReceived = meterReport.sum(1)
-        mpldates = matplotlib.dates.date2num(dates)
-
-        ax = fig.add_subplot(3,1,i)
-        ax.plot_date(mpldates,messagesReceived,'-x')
-        ax.set_title(meterName)
-        ax.set_xlabel('Date')
-        ax.set_ylabel('# Reporting')
-    fig.autofmt_xdate()
-    fig.savefig('uptime_by_date_.pdf')
-    plt.close()
 
