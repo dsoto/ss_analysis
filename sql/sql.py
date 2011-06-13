@@ -756,6 +756,227 @@ def getRawDataListForCircuit(circuit_id,
 
     return dates, created, data
 
+def getEnergyForCircuitForDayByMax(circuit_id,
+                                   day=dt.datetime(2011,6,8)):
+    dates, data = getDataListForCircuit(circuit_id, day, day+dt.timedelta(days=1))
+    print circuit_id, day
+    inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
+    print max(data)
+    print
+
+
+def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
+                           dateEnd=dt.datetime(2011,6,8)):
+
+    for circuit_id in circuit_id_list:
+        date = dateStart
+        while date <= dateEnd:
+            getEnergyForCircuitForDayByMax(circuit_id, date)
+            date += dt.timedelta(days=1)
+
+
+
+'''
+for a meter and daterange, outputs a table of percentage of time that greater
+than zero credit is in the account.
+'''
+def calculateTimeWithCredit(meter_id,
+                            dateStart=dt.datetime(2011,4,1),
+                            dateEnd = dt.datetime(2011,5,1)):
+    circuit_id = getCircuitsForMeter(meter_id)
+    print ' '.ljust(10),
+    for cid in circuit_id:
+        print str(cid).rjust(6),
+    print
+    print '% credit'.ljust(10),
+    for cid in circuit_id:
+        dates, credit = getDataListForCircuit(cid, dateStart, dateEnd, quantity='credit')
+        credit = np.array(credit)
+        hoursWithCredit = len(np.extract(credit > 0, credit))
+        totalHours = len(credit)
+        timeWithCredit = float(hoursWithCredit) / float(totalHours)
+        print ('%0.2f' % timeWithCredit).rjust(6),
+    print
+
+def lookForBadSC20(circuit_id,
+                   dateStart=dt.datetime(2011,5,1),
+                   dateEnd = dt.datetime(2011,6,1)):
+    # get all primary parameters in date range
+    # loop over primary parameters and look for condition watthours>0 and credit<=0
+    # if true print date and circuit_id to console
+    logs = session.query(PrimaryLog)\
+                  .filter(PrimaryLog.circuit_id == circuit_id)\
+                  .filter(PrimaryLog.date > dateStart)\
+                  .filter(PrimaryLog.date <= dateEnd)\
+                  .order_by(PrimaryLog.created)
+    logList = []
+    for log in logs:
+        if log.watthours > 0 and log.status == 0:
+            logList.append((log.date, log.circuit_id, log.watthours, log.status, log.credit))
+    logList = list(set(logList))
+    logList.sort()
+
+    cw = 20
+    print 'date'.rjust(cw),
+    print 'circuit id'.rjust(cw),
+    print 'watthours'.rjust(cw),
+    print 'status'.rjust(cw),
+    print 'credit'.rjust(cw)
+    for log in logList:
+        for l in log:
+            print str(l).rjust(cw),
+        print
+
+# def getCreditPurchaseList():
+
+# def getCreditPurchaseTotal():
+
+# def
+
+def calculateCreditJumps(circuit_id,
+                            dateStart=dt.datetime(2011,5,13),
+                            dateEnd=dt.datetime(2011,6,13),
+                            verbose=0):
+    lowThreshold = 400
+
+    dates, data = getDataListForCircuit(circuit_id,
+                            dateStart=dt.datetime(2011,5,13),
+                            dateEnd=dt.datetime(2011,6,13),
+                            quantity='credit')
+    dates = np.array(dates)
+    data = np.array(data)
+    diff = np.diff(data)
+    mask = diff > 400
+    np.delete(dates,0)
+    #print diff[mask]
+    #print dates[mask]
+
+    if verbose > 0:
+        for t in zip(diff[mask],dates[mask]):
+            print circuit_id, str(t[0]).rjust(8), str(t[1]).rjust(21)
+
+        print diff[mask].sum()
+    return diff[mask].sum()
+
+def calculateCreditPurchase(circuit_id,
+                            dateStart=dt.datetime(2011,5,13),
+                            dateEnd=dt.datetime(2011,6,13)):
+    addCredit = session.query(AddCredit)\
+                       .filter(Job.circuit_id == circuit_id)\
+                       .filter(Job.start >= dateStart)\
+                       .filter(Job.start <= dateEnd)\
+                       .order_by(Job.start)
+
+    sum = 0
+    if verbose > 0:
+        for ac in addCredit:
+            sum += ac.credit
+            print ac.id, ac.credit, ac.circuit_id, ac.start
+
+    return sum
+
+def printCreditPurchase(cid_list,
+                       dateStart=dt.datetime(2011,6,1),
+                       dateEnd=dt.datetime(2011,6,13)):
+    for i, cid in enumerate(cid_list):
+        sum = calculateCreditPurchase(cid, dateStart, dateEnd)
+        print cid, sum
+
+def testFunction():
+    getDataListForCircuit(25)
+    printHugeMessageTable()
+    plotDataForCircuit(25)
+    plotDataForAllCircuitsOnMeter(4)
+
+def tf5():
+    print 'mali001'
+    for cid in mali001:
+        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
+                                                           dt.datetime(2011,5,30))
+        print cid, ('%0.2f' % avg).rjust(8),\
+                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
+                   str(N).rjust(8)
+    print 'ml05'
+    for cid in ml05:
+        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
+                                                           dt.datetime(2011,5,30))
+        print cid, ('%0.2f' % avg).rjust(8),\
+                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
+                   str(N).rjust(8)
+    print 'ml06'
+    for cid in ml06:
+        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
+                                                           dt.datetime(2011,5,30))
+        print cid, ('%0.2f' % avg).rjust(8),\
+                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
+                   str(N).rjust(8)
+
+if __name__ == "__main__":
+    pass
+    print ml06
+    energyTest(ml06)
+
+
+
+
+
+
+
+# deprecated functions, please ignore
+
+'''
+this function reports the consistency of primary logs in graphical form
+'''
+def plotMeterMessagesByCircuit(report, dates):
+    for i, meter_id in enumerate([4,6,7,8]):
+        meterCircuits = session.query(Circuit).filter(Circuit.meter_id == meter_id)
+        meterName = session.query(Meter).filter(Meter.id == meter_id)[0].name
+        print 'generating for ', meterName
+
+        meterCircuits = [mc.id for mc in meterCircuits]
+        meterCircuits.sort()
+        print meterCircuits
+
+        startDate = dates[0]
+        endDate = dates[-1]
+        meterReport = report[:,meterCircuits]
+
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(meterReport.sum(0) / meterReport.shape[0],'x')
+        ax.set_title(meterName+'\nFrom '+startDate.strftime('%Y-%m-%d')+' to '+
+                                         endDate.strftime('%Y-%m-%d'))
+        ax.set_ylim((0,1))
+        ax.set_xlabel('circuit index (not well ordered)')
+        ax.set_ylabel('Percentage of time reporting')
+        fig.savefig('uptime_by_circuit_'+meterName+'.pdf')
+        plt.close()
+'''
+prints a table of consumption and mean and stdev for a meter and daterange
+'''
+def printTableOfConsumption(meter_id,
+                       dateStart=dt.datetime(2011,5,13),
+                       dateEnd = dt.datetime(2011,5,17),
+                       strict=True):
+    dates, circuit_id, data = calculateTableOfConsumption(meter_id, dateStart, dateEnd, strict=strict)
+    print ' '.ljust(10),
+    for cid in circuit_id:
+        print str(cid).rjust(6),
+    print
+    for i,date in enumerate(dates):
+        print date.strftime("%Y-%m-%d").ljust(10),
+        for d in data[i]:
+            print str(d).rjust(6),
+        print
+    print 'mean'.ljust(10),
+    for m in data.mean(0):
+        print ('%0.2f' % m).rjust(6),
+    print
+    print 'stdev'.ljust(10),
+    for m in data.std(0):
+        print ('%0.2f' % m).rjust(6),
+    print
 '''
 checks a watthour list to be sure it has 24 samples and that the watthour
 readings are monotonic.
