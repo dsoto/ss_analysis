@@ -32,6 +32,9 @@ mali001 = range(13,25)
 ml05 = [56, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 76, 77, 93, 95]
 ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97, 98, 99, 100]
 
+today = dt.datetime.now()
+dateEnd = dt.datetime(today.year, today.month, today.day) - dt.timedelta(days=1)
+dateStart = dateEnd - dt.timedelta(days=7)
 
 # orm classes
 
