@@ -655,6 +655,23 @@ def getRawDataListForCircuit(circuit_id,
 
     return dates, created, data
 
+def printEnergyGridForCircuits(circuit_id_list,
+                        dateStart = dateStart,
+                        dateEnd = dateEnd):
+
+    printTableRow(("circuit", "max", "mean", "min"),(4,20,20,20))
+
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        printTableRow((c,max(data),data.mean(),data.min()),(4,20,20,20))
+        '''
+        print c,
+        print max(data),
+        print data.mean(),
+        print data.min()
+        '''
+
 def getEnergyForCircuit(circuit_id,
                         dateStart=dateStart,
                         dateEnd=dateEnd):
