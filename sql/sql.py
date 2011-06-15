@@ -1,8 +1,9 @@
+# uses python 2.7.1
 import sqlalchemy
 import urllib
-import numpy as np
+import numpy as np                # version 1.5.1
 import matplotlib.dates
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt   # version 1.0.1
 import datetime as dt
 
 from sqlalchemy import Column
