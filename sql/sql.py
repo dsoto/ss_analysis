@@ -729,10 +729,11 @@ def getEnergyForCircuit(circuit_id,
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
     dates, data = getDataListForCircuit(circuit_id, day, day+dt.timedelta(days=1))
-    print circuit_id, day
-    inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
-    print max(data)
-    print
+    #print circuit_id, day
+    #inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
+    #print max(data)
+    #print
+    return max(data)
 
 
 def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
