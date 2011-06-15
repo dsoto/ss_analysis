@@ -654,6 +654,20 @@ def getRawDataListForCircuit(circuit_id,
 
     return dates, created, data
 
+def getEnergyForCircuit(circuit_id,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd):
+    data = []
+    dates = []
+    currentDate = dateStart
+    while currentDate <= dateEnd:
+        data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
+        dates.append(currentDate)
+        currentDate += dt.timedelta(days=1)
+    data = np.array(data)
+    return data, dates
+
+
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
     dates, data = getDataListForCircuit(circuit_id, day, day+dt.timedelta(days=1))
