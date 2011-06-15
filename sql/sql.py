@@ -672,6 +672,46 @@ def printEnergyGridForCircuits(circuit_id_list,
         print data.min()
         '''
 
+def plotEnergyGridForCircuits(circuit_id_list,
+                        dateStart = dateStart,
+                        dateEnd = dateEnd):
+
+    fig = plt.figure()
+    # create figure and axes with subplots
+    if len(circuit_id_list) > 12:
+        numPlotsX = 4
+        numPlotsY = 5
+    else:
+        numPlotsX = 4
+        numPlotsY = 3
+    #fig, axes = plt.subplots(numPlotsY, numPlotsX, sharex=True)
+
+    plt.subplots_adjust(wspace=0.5)
+
+    # loop through circuits, get data, plot
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        print c, max(data), data.mean(), data.min()
+        dates = matplotlib.dates.date2num(dates)
+
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
+        #thisAxes = axes[i/numPlotsY, i%numPlotsX]
+        thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
+        thisAxes.set_ylim((0,50))
+        #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d'))
+        thisAxes.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator(minticks=3,maxticks=5))
+        thisAxes.text(0.5,0.7,str(c),transform = thisAxes.transAxes)
+
+    fileNameString = 'testenergyplotgrid.pdf'
+    fig.suptitle(fileNameString)
+    fig.autofmt_xdate()
+    #if introspect:
+    #    plt.show()
+    fig.savefig(fileNameString)
+
+
 def getEnergyForCircuit(circuit_id,
                         dateStart=dateStart,
                         dateEnd=dateEnd):
