@@ -802,6 +802,28 @@ def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
         timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
         averageTime += timeWithCredit / numCircuits
     return averageTime
+
+def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
+                                              dateStart=dateStart,
+                                              dateEnd=dateEnd,
+                                              range=(0.0, 1.0),
+                                              plotFileName='creditHistogram.pdf'):
+    timeList = []
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        timeList.append(timeWithCredit)
+
+    # plot histogram
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax.hist(timeList, bins=10, range=range, normed=False, facecolor='#dddddd')
+    ax.set_xlabel("Percentage of time with credit available")
+    ax.set_ylabel("Customers")
+    ax.set_xlim(range)
+    fig.savefig(plotFileName)
+
+
+
 def lookForBadSC20(circuit_id,
                    dateStart=dt.datetime(2011,5,1),
                    dateEnd = dt.datetime(2011,6,1)):
