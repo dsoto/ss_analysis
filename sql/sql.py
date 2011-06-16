@@ -726,6 +726,25 @@ def getEnergyForCircuit(circuit_id,
     data = np.array(data)
     return data, dates
 
+def plotEnergyHistogram(circuit_id_list,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        bins=10,
+                        range=(0,200),
+                        plotFileName='energyHistogram.pdf'):
+    dataList = np.array([])
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        # append data onto master list of energy
+        dataList = np.append(dataList, data)
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax.hist(dataList, bins=bins, range=range, normed=False, facecolor='#dddddd')
+    ax.set_xlabel("Daily Watthours")
+    ax.set_ylabel("Days of Usage")
+    #plt.show()
+    fig.savefig(plotFileName)
 
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
