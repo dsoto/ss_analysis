@@ -2,7 +2,7 @@
 import sqlalchemy
 import urllib
 import numpy as np                # version 1.5.1
-import matplotlib.dates
+import matplotlib.dates           # version 1.0.1
 import matplotlib.pyplot as plt   # version 1.0.1
 import datetime as dt
 
