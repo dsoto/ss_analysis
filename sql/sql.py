@@ -766,6 +766,15 @@ def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
             date += dt.timedelta(days=1)
 
 
+def calculateTimeWithCreditForCircuit(circuit_id,
+                                      dateStart=dateStart,
+                                      dateEnd=dateEnd):
+    dates, credit = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='credit')
+    credit = np.array(credit)
+    hoursWithCredit = len(np.extract(credit > 0, credit))
+    totalHours = len(credit)
+    timeWithCredit = float(hoursWithCredit) / float(totalHours)
+    return timeWithCredit
 
 '''
 for a meter and daterange, outputs a table of percentage of time that greater
