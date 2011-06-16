@@ -793,6 +793,15 @@ def calculateTimeWithCreditForCircuitList(circuit_id_list,
         print ('%0.2f' % timeWithCredit).rjust(6),
     print
 
+def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
+                                                 dateStart=dateStart,
+                                                 dateEnd=dateEnd):
+    averageTime = 0
+    numCircuits = len(circuit_id_list)
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        averageTime += timeWithCredit / numCircuits
+    return averageTime
 def lookForBadSC20(circuit_id,
                    dateStart=dt.datetime(2011,5,1),
                    dateEnd = dt.datetime(2011,6,1)):
