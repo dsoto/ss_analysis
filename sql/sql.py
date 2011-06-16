@@ -780,21 +780,16 @@ def calculateTimeWithCreditForCircuit(circuit_id,
 for a meter and daterange, outputs a table of percentage of time that greater
 than zero credit is in the account.
 '''
-def calculateTimeWithCredit(meter_id,
-                            dateStart=dt.datetime(2011,4,1),
-                            dateEnd = dt.datetime(2011,5,1)):
-    circuit_id = getCircuitsForMeter(meter_id)
+def calculateTimeWithCreditForCircuitList(circuit_id_list,
+                                          dateStart=dateStart,
+                                          dateEnd=dateEnd):
     print ' '.ljust(10),
-    for cid in circuit_id:
+    for cid in circuit_id_list:
         print str(cid).rjust(6),
     print
     print '% credit'.ljust(10),
-    for cid in circuit_id:
-        dates, credit = getDataListForCircuit(cid, dateStart, dateEnd, quantity='credit')
-        credit = np.array(credit)
-        hoursWithCredit = len(np.extract(credit > 0, credit))
-        totalHours = len(credit)
-        timeWithCredit = float(hoursWithCredit) / float(totalHours)
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
         print ('%0.2f' % timeWithCredit).rjust(6),
     print
 
