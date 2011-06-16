@@ -719,7 +719,7 @@ def getEnergyForCircuit(circuit_id,
     data = []
     dates = []
     currentDate = dateStart
-    while currentDate <= dateEnd:
+    while currentDate < dateEnd:
         data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
         dates.append(currentDate)
         currentDate += dt.timedelta(days=1)
