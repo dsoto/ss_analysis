@@ -897,6 +897,17 @@ def calculateCreditConsumedForCircuit(circuit_id,
     credit_consumed = sum(credit_derivative)
     return credit_consumed
 
+def printReportOfCreditConsumedForCircuitList(circuit_id_list,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            threshold = 100,
+                            verbose=0):
+    list = []
+    for cid in circuit_id_list:
+         list.append(calculateCreditConsumedForCircuit(cid, dateStart, dateEnd, threshold=500))
+    print list
+    return list
+
 def calculateCreditJumps(circuit_id,
                             dateStart=dt.datetime(2011,5,13),
                             dateEnd=dt.datetime(2011,6,13),
