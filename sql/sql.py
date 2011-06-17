@@ -714,6 +714,42 @@ def plotEnergyGridForCircuits(circuit_id_list,
     #    plt.show()
     fig.savefig(fileNameString)
 
+def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
+                                                  dateStart=dateStart,
+                                                  dateEnd=dateEnd,
+                                                  plotFileName = 'averagedAccumulatedEnergy.pdf'):
+    '''
+    plots averaged consumption for a single circuit
+    report on the hour reports consumption for previous hour
+    '''
+
+    # get list for entire date range
+    dates, data = getDataListForCircuit(circuit_id, dateStart=dateStart, dateEnd=dateEnd)
+
+    # create dictionary with key = hour and value = []
+    dataDict = {}
+    for hour in range(0,24):
+        dataDict[hour] = []
+
+    # iterate over list and place samples in a dictionary with key=hour
+    for i, date in enumerate(dates):
+        dataDict[date.hour].append(data[i])
+
+    # iterate over keys and average watthour readings for each hour
+
+    # plot both of these
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1, 0.1, 0.8, 0.8))
+    for key in dataDict.keys():
+        # construct a list of hours the same length as dictionary list
+        hour = key * np.ones(len(dataDict[key]))
+        ax.plot(hour, dataDict[key],'o', mfc='#dddddd', mec='#dddddd')
+        avg_energy_for_hour = np.array(dataDict[key]).mean()
+        ax.plot(key, avg_energy_for_hour, 'kx', ms=10)
+    ax.set_xlabel('Hour of Day')
+    ax.set_ylabel('Acumulated Energy (Watthours)')
+    fig.savefig(plotFileName)
 
 def getEnergyForCircuit(circuit_id,
                         dateStart=dateStart,
