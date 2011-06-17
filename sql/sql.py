@@ -37,6 +37,8 @@ ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
 today = dt.datetime.now()
 dateEnd = dt.datetime(today.year, today.month, today.day) - dt.timedelta(days=1)
 dateStart = dateEnd - dt.timedelta(days=6)
+may_15 = dt.datetime(2011,5,15)
+jun_15 = dt.datetime(2011,6,15)
 
 # orm classes
 
