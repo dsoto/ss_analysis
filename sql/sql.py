@@ -864,6 +864,25 @@ def lookForBadSC20(circuit_id,
 
 # def
 
+def calculateCreditConsumedForCircuit(circuit_id,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            threshold = 100,
+                            verbose=0):
+    dates, data = getDataListForCircuit(circuit_id,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            quantity='credit')
+    credit_derivative = np.diff(data)
+    # only calculate decreases
+    credit_derivative = np.extract(credit_derivative < 0, credit_derivative)
+    # invert credit derivative
+    credit_derivative *= -1
+    # ignore decreases greater than threshold
+    credit_derivative = np.extract(credit_derivative < threshold, credit_derivative)
+    credit_consumed = sum(credit_derivative)
+    return credit_consumed
+
 def calculateCreditJumps(circuit_id,
                             dateStart=dt.datetime(2011,5,13),
                             dateEnd=dt.datetime(2011,6,13),
