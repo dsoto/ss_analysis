@@ -798,6 +798,20 @@ def calculateTimeWithCreditForCircuitList(circuit_id_list,
     print
     return credit_list
 
+def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
+                                                            dateStart=dateStart,
+                                                            dateEnd=dateEnd,
+                                                            plotFileName='scatterCreditTime.pdf'):
+    credit_consumed = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+    time_with_credit = calculateTimeWithCreditForCircuitList(circuit_id_list, dateStart, dateEnd)
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
+    ax.set_xlabel('Monthly Electricity Expenditure')
+    ax.set_ylabel('Fraction of Time with Credit Available')
+    fig.savefig(plotFileName)
+
+
 def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
                                                  dateStart=dateStart,
                                                  dateEnd=dateEnd):
