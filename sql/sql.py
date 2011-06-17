@@ -790,10 +790,13 @@ def calculateTimeWithCreditForCircuitList(circuit_id_list,
         print str(cid).rjust(6),
     print
     print '% credit'.ljust(10),
+    credit_list = []
     for cid in circuit_id_list:
         timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        credit_list.append(timeWithCredit)
         print ('%0.2f' % timeWithCredit).rjust(6),
     print
+    return credit_list
 
 def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
                                                  dateStart=dateStart,
