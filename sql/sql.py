@@ -583,28 +583,27 @@ def inspectDayOfWatthours(circuit_id,
     print data
     '''
 
-'''
-for a given circuit_id and date range, this function returns a list of
-data specified by quantity.  uses set() to remove duplicate entries.
-also discards entries if the gateway time stamp is more than one hour
-ahead of the meter time stamp
-input:
-    circuit_id - circuit database id
-    dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
-    dateEnd - datetime object specifying end of data
-    quantity - 'watthours' or 'credit'
-    verbose - 1 gives an output to console of the data list
-            - 0 no output
-output:
-    dates - list of date stamps corresponding to data list
-    data - list of reported data
-'''
 def getDataListForCircuit(circuit_id,
                               dateStart=dt.datetime(2011,5,28),
                               dateEnd=dt.datetime(2011,5,29),
                               quantity='watthours',
                               verbose=0):
-
+    '''
+    for a given circuit_id and date range, this function returns a list of
+    data specified by quantity.  uses set() to remove duplicate entries.
+    also discards entries if the gateway time stamp is more than one hour
+    ahead of the meter time stamp
+    input:
+        circuit_id - circuit database id
+        dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
+        dateEnd - datetime object specifying end of data
+        quantity - 'watthours' or 'credit'
+        verbose - 1 gives an output to console of the data list
+                - 0 no output
+    output:
+        dates - list of date stamps corresponding to data list
+        data - list of reported data
+    '''
     # get numpy arrays of dates, timestamps, and data
     dates, created, data = getRawDataListForCircuit(circuit_id,
                                                     dateStart,
@@ -814,13 +813,13 @@ def calculateTimeWithCreditForCircuit(circuit_id,
     timeWithCredit = float(hoursWithCredit) / float(totalHours)
     return timeWithCredit
 
-'''
-for a meter and daterange, outputs a table of percentage of time that greater
-than zero credit is in the account.
-'''
 def calculateTimeWithCreditForCircuitList(circuit_id_list,
                                           dateStart=dateStart,
                                           dateEnd=dateEnd):
+    '''
+    for a meter and daterange, outputs a table of percentage of time that greater
+    than zero credit is in the account.
+    '''
     print ' '.ljust(10),
     for cid in circuit_id_list:
         print str(cid).rjust(6),
