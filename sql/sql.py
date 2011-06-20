@@ -398,8 +398,8 @@ def plotDataForCircuit(circuit_id,
 plot credit or watthours for all circuits on a meter
 '''
 def plotDataForAllCircuitsOnMeter(meter_id,
-                              dateStart=dt.datetime(2011,5,28),
-                              dateEnd=dt.datetime(2011,6,1),
+                              dateStart=dateStart,
+                              dateEnd=dateEnd,
                               quantity='credit',
                               introspect=False,
                               showMains=False):
@@ -414,6 +414,8 @@ def plotDataForAllCircuitsOnMeter(meter_id,
 
 
     fig = plt.figure()
+    plt.subplots_adjust(wspace=0.5)
+
     # create figure and axes with subplots
     if len(circuits) > 12:
         numPlotsX = 4
@@ -429,9 +431,9 @@ def plotDataForAllCircuitsOnMeter(meter_id,
         dates = matplotlib.dates.date2num(dates)
 
         thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
-        thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
-        #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-        #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+        thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=3, marker='o', mfc=None)
+        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d'))
+        thisAxes.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator(minticks=3,maxticks=5))
         thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
     fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '.pdf'
