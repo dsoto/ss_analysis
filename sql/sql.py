@@ -471,9 +471,8 @@ def plotDataForAllCircuitsOnMeter(meter_id,
 '''
 prints a table of whether or not circuits have reported on certain dates
 '''
-def printHugeMessageTable(startDate = dt.datetime(2011, 5, 24),
-                          endDate   = dt.datetime(2011, 6, 1)):
-    import datetime as dt
+def printHugeMessageTable(startDate=dateStart,
+                          endDate=dateEnd):
 
     circuit = session.query(Circuit).all()
 
@@ -607,8 +606,8 @@ def inspectDayOfWatthours(circuit_id,
     '''
 
 def getDataListForCircuit(circuit_id,
-                              dateStart=dt.datetime(2011,5,28),
-                              dateEnd=dt.datetime(2011,5,29),
+                              dateStart=dateStart,
+                              dateEnd=dateStart,
                               quantity='watthours',
                               verbose=0):
     '''
