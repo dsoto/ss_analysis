@@ -394,6 +394,27 @@ def plotDataForCircuit(circuit_id,
         plt.show()
     fig.savefig(titleString + '.pdf')
 
+def plotPowerForCircuit(circuit_id,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        introspect=True):
+    dates, data = calculatePowerListForCircuit(circuit_id, dateStart, dateEnd)
+
+    dates = matplotlib.dates.date2num(dates)
+    fig = plt.figure()
+    ax = fig.add_axes((.2,.2,.6,.6))
+    ax.plot_date(dates, data, 'x-')
+    titleString = 'circuit ' + str(circuit_id)
+    ax.set_title(titleString)
+    ax.set_ylabel("Power (W)")
+    ax.set_xlabel("Time")
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
+    fig.autofmt_xdate()
+    if introspect:
+        plt.show()
+    fig.savefig(titleString + '.pdf')
+
+
 '''
 plot credit or watthours for all circuits on a meter
 '''
