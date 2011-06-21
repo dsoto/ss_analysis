@@ -659,6 +659,31 @@ def getRawDataListForCircuit(circuit_id,
 
     return dates, created, data
 
+
+def calculatePowerListForCircuit(circuit_id,
+                                       dateStart=dateStart,
+                                       dateEnd=dateEnd):
+    '''
+    pulls watthour data list and creates a report of the power consumed over that hour
+    '''
+    dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='watthours')
+    #print dates, data
+    power_dates = []
+    power_data = []
+    for i in range(len(dates)):
+        # if 1am energy sample is energy over last hour
+        if dates[i].hour == 1:
+            power_dates.append(dates[i])
+            power_data.append(data[i])
+        # only append if not 1am, after the first sample and if power is positive
+        if (dates[i].hour != 1) and (i > 0) and ((dates[i] - dates[i-1]) == dt.timedelta(hours=1)):
+            if (data[i] - data[i-1]) >= 0:
+                power_dates.append(dates[i])
+                power_data.append(data[i] - data[i-1])
+    #print power_dates
+    #print power_data
+    return power_dates, power_data
+
 def printEnergyGridForCircuits(circuit_id_list,
                         dateStart = dateStart,
                         dateEnd = dateEnd):
