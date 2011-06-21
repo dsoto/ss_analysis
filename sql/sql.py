@@ -415,6 +415,18 @@ def plotPowerForCircuit(circuit_id,
     fig.savefig(titleString + '.pdf')
 
 
+def plotDataForCircuitList(circuit_id_list,
+                           dateStart=dateStart,
+                           dateEnd=dateEnd,
+                           quantity='credit',
+                           introspect=False):
+    '''
+    this function takes a list of circuit ids and plots a grid of data for the
+    specified quantity over the specified date range
+    '''
+    pass
+
+
 '''
 plot credit or watthours for all circuits on a meter
 '''
