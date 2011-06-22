@@ -969,6 +969,34 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     ax.set_xlim(range)
     fig.savefig(plotFileName)
 
+def plotHistogramCreditConsumed(circuit_id_list,
+                                dateStart=dateStart,
+                                dateEnd=dateEnd,
+                                plotFileName='consumptionHistogram.pdf'):
+
+    consumptionList = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+
+    range = (0,2500)
+    bins = 10
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    ax.hist(consumptionList, bins=10, range=range, normed=False, facecolor='#dddddd')
+    #ax.hist(consumptionList)
+    ax.set_xlabel("Monthly Credit Consumed (XFCA)")
+    ax.set_ylabel("Customers")
+    ax.set_xlim(range)
+    annotation = []
+    annotation.append('circuits = ' + str(circuit_id_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    import matplotlib.font_manager as mpf
+    textFont = mpf.FontProperties()
+    textFont.set_family('monospace')
+    textFont.set_size(6)
+
+    fig.text(0.01,0.01, annotation, fontproperties=textFont)
+    fig.savefig(plotFileName)
 
 
 def lookForBadSC20(circuit_id,
