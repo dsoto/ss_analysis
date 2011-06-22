@@ -990,7 +990,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		'''
 		# how to make xlabels & ylabels smaller?
 		# how to make room for xlabels on all graphs?
-		thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, ylim=(0,1100))
+		thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100))	#to keep all plots even, assuming 1100 is enough
 		thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
 		thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
 		#thisAxes.xlim(xmin=1)
