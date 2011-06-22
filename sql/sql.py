@@ -961,7 +961,9 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     # plot histogram
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax.hist(timeList, bins=10, range=range, normed=False, facecolor='#dddddd')
+    hist, bin_edges = np.histogram(timeList, bins=10, range=range)
+    ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
+    #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
     ax.set_xlabel("Percentage of time with credit available")
     ax.set_ylabel("Customers")
     ax.set_xlim(range)
