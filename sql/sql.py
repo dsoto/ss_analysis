@@ -814,6 +814,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     ax.set_xlabel('Hour of Day')
     ax.set_ylabel('Average Power (Watts)')
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotAveragedPowerForCircuit.__name__)
     annotation.append('circuit = ' + str(circuit_id))
     annotation.append('date start = ' + str(dateStart))
@@ -905,7 +906,6 @@ def getEnergyForCircuitForDayByMax(circuit_id,
     #print
     return max(data)
 
-
 def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
                            dateEnd=dt.datetime(2011,6,8)):
 
@@ -958,6 +958,7 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     ax.set_xlabel('Monthly Electricity Expenditure')
     ax.set_ylabel('Fraction of Time with Credit Available')
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotScatterCreditConsumedVsTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1002,6 +1003,7 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     ax.set_ylabel("Customers")
     ax.set_xlim(range)
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotHistogramTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1032,6 +1034,7 @@ def plotHistogramCreditConsumed(circuit_id_list,
     ax.set_ylabel("Customers")
     ax.set_xlim(range)
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotHistogramCreditConsumed.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1048,10 +1051,10 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
 def generate_ictd_figures():
     plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
-    #plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
-    #plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
     #plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    #plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
+    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
 
 
 def lookForBadSC20(circuit_id,
@@ -1126,8 +1129,8 @@ def calculateCreditJumps(circuit_id,
     lowThreshold = 400
 
     dates, data = getDataListForCircuit(circuit_id,
-                            dateStart=dt.datetime(2011,5,13),
-                            dateEnd=dt.datetime(2011,6,13),
+                            dateStart,
+                            dateEnd,
                             quantity='credit')
     dates = np.array(dates)
     data = np.array(data)
@@ -1142,7 +1145,9 @@ def calculateCreditJumps(circuit_id,
             print circuit_id, str(t[0]).rjust(8), str(t[1]).rjust(21)
 
         print diff[mask].sum()
-    return diff[mask].sum()
+    #return diff[mask].sum()
+    daysOfCredit = dates[mask], diff[mask]
+    return daysOfCredit
 
 def calculateCreditPurchase(circuit_id,
                             dateStart=dt.datetime(2011,5,13),
