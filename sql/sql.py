@@ -1120,7 +1120,7 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
                                               dateStart=dateStart,
                                               dateEnd=dateEnd,
                                               range=(0.0, 1.0),
-                                              plotFileName='creditHistogram.pdf'):
+                                              plotFileName='timeWithCreditHistogram.pdf'):
     timeList = []
     for cid in circuit_id_list:
         timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
@@ -1148,7 +1148,7 @@ def plotHistogramCreditConsumed(circuit_id_list,
     bins = 10
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
-    ax.hist(consumptionList, bins=10, range=range, normed=False, facecolor='#dddddd')
+    ax.hist(consumptionList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
     ax.set_xlabel("Monthly Credit Consumed (XFCA)")
     ax.set_ylabel("Customers")
@@ -1165,6 +1165,12 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
+
+
+def generate_ictd_figures():
+    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    plotHistogramCreditConsumed(ml05+ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+
 
 
 def lookForBadSC20(circuit_id,
