@@ -40,6 +40,18 @@ dateStart = dateEnd - dt.timedelta(days=6)
 may_15 = dt.datetime(2011,5,15)
 jun_15 = dt.datetime(2011,6,15)
 
+#font properties---------------------
+import matplotlib.font_manager as mpf
+#for labels
+labelFont = mpf.FontProperties()
+labelFont.set_family('serif')
+labelFont.set_size(14)
+#labelFont.set_linespacing(1.5)
+#font prop's for annotation
+textFont = mpf.FontProperties()
+textFont.set_family('monospace')
+textFont.set_size(6)
+
 # orm classes
 
 """
@@ -972,8 +984,8 @@ def plotAveragedPowerForCircuit(circuit_id,
     plt.setp(bp['whiskers'], color='black')
     plt.setp(bp['fliers'], color='gray', marker='+')
     '''
-    ax.set_xlabel('Hour of Day')
-    ax.set_ylabel('Average Power (Watts)')
+    ax.set_xlabel('Hour of Day', fontproperties=labelFont)
+    ax.set_ylabel('Average Power (Watts)', fontproperties=labelFont)
     annotation = []
     annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotAveragedPowerForCircuit.__name__)
@@ -981,10 +993,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     annotation.append('date start = ' + str(dateStart))
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
-    import matplotlib.font_manager as mpf
-    textFont = mpf.FontProperties()
-    textFont.set_family('monospace')
-    textFont.set_size(6)
+
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
 
@@ -1124,8 +1133,8 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
-    ax.set_xlabel('Monthly Electricity Expenditure')
-    ax.set_ylabel('Fraction of Time with Credit Available')
+    ax.set_xlabel('Monthly Electricity Expenditure', fontproperties=labelFont)
+    ax.set_ylabel('Fraction of Time with Credit Available', fontproperties=labelFont)
     annotation = []
     annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotScatterCreditConsumedVsTimeWithCreditForCircuitList.__name__)
@@ -1133,10 +1142,6 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     annotation.append('date start = ' + str(dateStart))
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
-    import matplotlib.font_manager as mpf
-    textFont = mpf.FontProperties()
-    textFont.set_family('monospace')
-    textFont.set_size(6)
 
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
@@ -1168,8 +1173,8 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     hist, bin_edges = np.histogram(timeList, bins=10, range=range)
     ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
     #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
-    ax.set_xlabel("Percentage of time with credit available")
-    ax.set_ylabel("Customers")
+    ax.set_xlabel("Percentage of time with credit available", fontproperties=labelFont)
+    ax.set_ylabel("Customers", fontproperties=labelFont)
     ax.set_xlim(range)
     annotation = []
     annotation.append('plot generated ' + today.date().__str__() )
@@ -1178,10 +1183,6 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     annotation.append('date start = ' + str(dateStart))
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
-    import matplotlib.font_manager as mpf
-    textFont = mpf.FontProperties()
-    textFont.set_family('monospace')
-    textFont.set_size(6)
 
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
@@ -1196,11 +1197,12 @@ def plotHistogramCreditConsumed(circuit_id_list,
     range = (0,2500)
     bins = 10
     fig = plt.figure()
+    
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.hist(consumptionList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
-    ax.set_xlabel("Monthly Credit Consumed (XFCA)")
-    ax.set_ylabel("Customers")
+    ax.set_xlabel("Monthly Credit Consumed (XFCA)", fontproperties=labelFont)
+    ax.set_ylabel("Customers", fontproperties=labelFont)
     ax.set_xlim(range)
     annotation = []
     annotation.append('plot generated ' + today.date().__str__() )
@@ -1209,10 +1211,6 @@ def plotHistogramCreditConsumed(circuit_id_list,
     annotation.append('date start = ' + str(dateStart))
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
-    import matplotlib.font_manager as mpf
-    textFont = mpf.FontProperties()
-    textFont.set_family('monospace')
-    textFont.set_size(6)
 
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
@@ -1350,7 +1348,17 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 	circuits = getCircuitsForMeter(meter_id)
 	dtSt = str.replace(str(dateStart), ' 00:00:00', '')
 	dtEnd = str.replace(str(dateEnd), ' 00:00:00', '')
-    	
+	
+	#get date labels
+	num_days = dateEnd - dateStart
+	dateList = []
+	d = dateStart
+	while d <= dateEnd:
+		dateList.append(d)
+		d += dt.timedelta(days=1)
+	#print dateList
+	yLabels = np.arange(0,1100,200)
+	
 	# drop mains circuit
 	if showMains == False:
 		for c in circuits:
@@ -1358,6 +1366,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 				circuits.remove(c)
 
 	fig = plt.figure()
+
     # create figure and axes with subplots
 	if len(circuits) > 12:
 		numPlotsX = 4
@@ -1416,6 +1425,8 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100))	#to keep all plots even, assuming 1100 is enough
 		thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
 		thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
+		thisAxes.set_xticklabels(dateList, fontproperties=textFont)
+		thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
 		#thisAxes.xlim(xmin=1)
 		thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
 		
