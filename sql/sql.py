@@ -1127,5 +1127,20 @@ if __name__ == "__main__":
     #plotEnergyGridForCircuits(ml06, dt.datetime(2011,6,1), dt.datetime(2011,6,15))
     #printEnergyGridForCircuits(ml06, dt.datetime(2011,6,1), dt.datetime(2011,6,15))
     #plotEnergyHistogram(mali001, plotFileName="pelenganaHistogram.pdf")
-    plotEnergyHistogram(ml06, dateStart=dt.datetime(2011,6,1), dateEnd=dt.datetime(2011,6,15),
-                        bins=(0,1,5,10,15,20,25,30,35,40,45,50), plotFileName="ml06Histogram.pdf")
+    #plotEnergyHistogram(ml06, dateStart=dt.datetime(2011,6,1), dateEnd=dt.datetime(2011,6,15),
+    #                    bins=(0,1,5,10,15,20,25,30,35,40,45,50), plotFileName="ml06Histogram.pdf")
+    #for cid in ml06:
+    #    print cid, calculateCreditConsumedForCircuit(cid, may_15, jun_15, threshold=500)
+    #plotAveragedAccumulatedHourlyEnergyForCircuit(78, may_15, jun_15)
+
+
+    dates, data = getDataListForCircuit(78, dt.datetime(2011,6,6), dt.datetime(2011,6,8), quantity='watthours')
+    power_dates, power_data = calculatePowerListForCircuit(78, dt.datetime(2011,6,6), dt.datetime(2011,6,8))
+
+    for element in zip(dates,data,power_dates,power_data):
+        print element
+
+    #print dates
+    #print data
+    #plotPowerForCircuit(78, dt.datetime(2011,6,1), dt.datetime(2011,6,20))
+    plotAveragedPowerForCircuit(78, may_15, jun_15)
