@@ -619,7 +619,7 @@ def inspectDayOfWatthours(circuit_id,
 
 def getDataListForCircuit(circuit_id,
                               dateStart=dateStart,
-                              dateEnd=dateStart,
+                              dateEnd=dateEnd,
                               quantity='watthours',
                               verbose=0):
     '''
