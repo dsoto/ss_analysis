@@ -999,6 +999,12 @@ def plotHistogramCreditConsumed(circuit_id_list,
     fig.savefig(plotFileName)
 
 
+def generate_ictd_figures():
+    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    plotHistogramCreditConsumed(ml05+ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+
+
+
 def lookForBadSC20(circuit_id,
                    dateStart=dt.datetime(2011,5,1),
                    dateEnd = dt.datetime(2011,6,1)):
