@@ -1,8 +1,9 @@
+# uses python 2.7.1
 import sqlalchemy
 import urllib
-import numpy as np
-import matplotlib.dates
-import matplotlib.pyplot as plt
+import numpy as np                # version 1.5.1
+import matplotlib.dates           # version 1.0.1
+import matplotlib.pyplot as plt   # version 1.0.1
 import datetime as dt
 
 from sqlalchemy import Column
@@ -30,8 +31,14 @@ session = Session()
 # circuit id's for quick and dirty lists
 mali001 = range(13,25)
 ml05 = [56, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 76, 77, 93, 95]
-ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97, 98, 99, 100]
+#ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97, 98, 99, 100]
+ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
 
+today = dt.datetime.now()
+dateEnd = dt.datetime(today.year, today.month, today.day) - dt.timedelta(days=1)
+dateStart = dateEnd - dt.timedelta(days=6)
+may_15 = dt.datetime(2011,5,15)
+jun_15 = dt.datetime(2011,6,15)
 
 # orm classes
 
@@ -468,12 +475,45 @@ def plotDataForCircuit(circuit_id,
         plt.show()
     fig.savefig(titleString + '.pdf')
 
+def plotPowerForCircuit(circuit_id,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        introspect=True):
+    dates, data = calculatePowerListForCircuit(circuit_id, dateStart, dateEnd)
+
+    dates = matplotlib.dates.date2num(dates)
+    fig = plt.figure()
+    ax = fig.add_axes((.2,.2,.6,.6))
+    ax.plot_date(dates, data, 'x-')
+    titleString = 'circuit ' + str(circuit_id)
+    ax.set_title(titleString)
+    ax.set_ylabel("Power (W)")
+    ax.set_xlabel("Time")
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
+    fig.autofmt_xdate()
+    if introspect:
+        plt.show()
+    fig.savefig(titleString + '.pdf')
+
+
+def plotDataForCircuitList(circuit_id_list,
+                           dateStart=dateStart,
+                           dateEnd=dateEnd,
+                           quantity='credit',
+                           introspect=False):
+    '''
+    this function takes a list of circuit ids and plots a grid of data for the
+    specified quantity over the specified date range
+    '''
+    pass
+
+
 '''
 plot credit or watthours for all circuits on a meter
 '''
 def plotDataForAllCircuitsOnMeter(meter_id,
-                              dateStart=dt.datetime(2011,5,28),
-                              dateEnd=dt.datetime(2011,6,1),
+                              dateStart=dateStart,
+                              dateEnd=dateEnd,
                               quantity='credit',
                               introspect=False,
                               showMains=False):
@@ -491,6 +531,8 @@ def plotDataForAllCircuitsOnMeter(meter_id,
 
 
     fig = plt.figure()
+    plt.subplots_adjust(wspace=0.5)
+
     # create figure and axes with subplots
     if len(circuits) > 12:
         numPlotsX = 4
@@ -505,9 +547,9 @@ def plotDataForAllCircuitsOnMeter(meter_id,
         dates = matplotlib.dates.date2num(dates)
 
         thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
-        thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
-        #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
-        #thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d %H:%M'))
+        thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=3, marker='o', mfc=None)
+        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d'))
+        thisAxes.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator(minticks=3,maxticks=5))
         thisAxes.text(0.7,0.7,str(c),transform = thisAxes.transAxes)
 
     fileNameString = 'meter ' + quantity + ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
@@ -524,9 +566,8 @@ def plotDataForAllCircuitsOnMeter(meter_id,
 '''
 prints a table of whether or not circuits have reported on certain dates
 '''
-def printHugeMessageTable(startDate = dt.datetime(2011, 5, 24),
-                          endDate   = dt.datetime(2011, 6, 1)):
-    import datetime as dt
+def printHugeMessageTable(startDate=dateStart,
+                          endDate=dateEnd):
 
     circuit = session.query(Circuit).all()
 
@@ -729,8 +770,8 @@ output:
     data - list of reported data
 '''
 def getDataListForCircuit(circuit_id,
-                              dateStart=dt.datetime(2011,5,28),
-                              dateEnd=dt.datetime(2011,5,29),
+                              dateStart=dateStart,
+                              dateEnd=dateEnd,
                               quantity='watthours',
                               verbose=0):
     # get query based on circuit and date
@@ -741,6 +782,23 @@ def getDataListForCircuit(circuit_id,
                   .filter(PrimaryLog.date <= dateEnd)\
                   .order_by(PrimaryLog.created)
 
+
+    '''
+    for a given circuit_id and date range, this function returns a list of
+    data specified by quantity.  uses set() to remove duplicate entries.
+    also discards entries if the gateway time stamp is more than one hour
+    ahead of the meter time stamp
+    input:
+        circuit_id - circuit database id
+        dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
+        dateEnd - datetime object specifying end of data
+        quantity - 'watthours' or 'credit'
+        verbose - 1 gives an output to console of the data list
+                - 0 no output
+    output:
+        dates - list of date stamps corresponding to data list
+        data - list of reported data
+    '''
     # get numpy arrays of dates, timestamps, and data
     dates, created, data = getRawDataListForCircuit(circuit_id,
                                                     dateStart,
@@ -794,13 +852,197 @@ def getRawDataListForCircuit(circuit_id,
 
     return dates, created, data
 
+
+def calculatePowerListForCircuit(circuit_id,
+                                       dateStart=dateStart,
+                                       dateEnd=dateEnd):
+    '''
+    pulls watthour data list and creates a report of the power consumed over that hour
+    '''
+    dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='watthours')
+    #print dates, data
+    power_dates = []
+    power_data = []
+    for i in range(len(dates)):
+        # if 1am energy sample is energy over last hour
+        if dates[i].hour == 1:
+            power_dates.append(dates[i])
+            power_data.append(data[i])
+        # only append if not 1am, after the first sample and if power is positive
+        if (dates[i].hour != 1) and (i > 0) and ((dates[i] - dates[i-1]) == dt.timedelta(hours=1)):
+            if (data[i] - data[i-1]) >= 0:
+                power_dates.append(dates[i])
+                power_data.append(data[i] - data[i-1])
+    #print power_dates
+    #print power_data
+    return power_dates, power_data
+
+def printEnergyGridForCircuits(circuit_id_list,
+                        dateStart = dateStart,
+                        dateEnd = dateEnd):
+
+    printTableRow(("circuit", "max", "mean", "min"),(4,20,20,20))
+
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        printTableRow((c,max(data),data.mean(),data.min()),(4,20,20,20))
+        '''
+        print c,
+        print max(data),
+        print data.mean(),
+        print data.min()
+        '''
+
+def plotEnergyGridForCircuits(circuit_id_list,
+                        dateStart = dateStart,
+                        dateEnd = dateEnd):
+
+    fig = plt.figure()
+    # create figure and axes with subplots
+    if len(circuit_id_list) > 12:
+        numPlotsX = 4
+        numPlotsY = 5
+    else:
+        numPlotsX = 4
+        numPlotsY = 3
+    #fig, axes = plt.subplots(numPlotsY, numPlotsX, sharex=True)
+
+    plt.subplots_adjust(wspace=0.5)
+
+    # loop through circuits, get data, plot
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        print c, max(data), data.mean(), data.min()
+        dates = matplotlib.dates.date2num(dates)
+
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1)
+        #thisAxes = axes[i/numPlotsY, i%numPlotsX]
+        thisAxes.plot_date(dates, data, ls='-', ms=3, marker='o', mfc=None)
+        thisAxes.set_ylim((0,50))
+        #thisAxes.xaxis.set_major_locator(matplotlib.dates.HourLocator(byhour=(0)))
+        thisAxes.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y-%m-%d'))
+        thisAxes.xaxis.set_major_locator(matplotlib.dates.AutoDateLocator(minticks=3,maxticks=5))
+        thisAxes.text(0.5,0.7,str(c),transform = thisAxes.transAxes)
+
+    fileNameString = 'testenergyplotgrid.pdf'
+    fig.suptitle(fileNameString)
+    fig.autofmt_xdate()
+    #if introspect:
+    #    plt.show()
+    fig.savefig(fileNameString)
+
+def plotAveragedPowerForCircuit(circuit_id,
+                                dateStart=dateStart,
+                                dateEnd=dateEnd,
+                                plotFileName='averagePower.pdf'):
+    # get list for entire date range
+    dates, data = calculatePowerListForCircuit(circuit_id, dateStart=dateStart, dateEnd=dateEnd)
+
+    # create dictionary with key = hour and value = []
+    dataDict = {}
+    for hour in range(0,24):
+        dataDict[hour] = []
+
+    # iterate over list and place samples in a dictionary with key=hour
+    for i, date in enumerate(dates):
+        dataDict[date.hour].append(data[i])
+
+    # iterate over keys and average watthour readings for each hour
+
+    # plot both of these
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1, 0.1, 0.8, 0.8))
+    for key in dataDict.keys():
+        # construct a list of hours the same length as dictionary list
+        hour = key * np.ones(len(dataDict[key]))
+        ax.plot(hour, dataDict[key],'o', mfc='#dddddd', mec='#dddddd')
+        avg_energy_for_hour = np.array(dataDict[key]).mean()
+        ax.plot(key, avg_energy_for_hour, 'kx', ms=10)
+    ax.set_xlabel('Hour of Day')
+    ax.set_ylabel('Average Power (Watts)')
+    fig.savefig(plotFileName)
+
+def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
+                                                  dateStart=dateStart,
+                                                  dateEnd=dateEnd,
+                                                  plotFileName = 'averagedAccumulatedEnergy.pdf'):
+    '''
+    plots averaged consumption for a single circuit
+    report on the hour reports consumption for previous hour
+    '''
+
+    # get list for entire date range
+    dates, data = getDataListForCircuit(circuit_id, dateStart=dateStart, dateEnd=dateEnd)
+
+    # create dictionary with key = hour and value = []
+    dataDict = {}
+    for hour in range(0,24):
+        dataDict[hour] = []
+
+    # iterate over list and place samples in a dictionary with key=hour
+    for i, date in enumerate(dates):
+        dataDict[date.hour].append(data[i])
+
+    # iterate over keys and average watthour readings for each hour
+
+    # plot both of these
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1, 0.1, 0.8, 0.8))
+    for key in dataDict.keys():
+        # construct a list of hours the same length as dictionary list
+        hour = key * np.ones(len(dataDict[key]))
+        ax.plot(hour, dataDict[key],'o', mfc='#dddddd', mec='#dddddd')
+        avg_energy_for_hour = np.array(dataDict[key]).mean()
+        ax.plot(key, avg_energy_for_hour, 'kx', ms=10)
+    ax.set_xlabel('Hour of Day')
+    ax.set_ylabel('Acumulated Energy (Watthours)')
+    fig.savefig(plotFileName)
+
+def getEnergyForCircuit(circuit_id,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd):
+    data = []
+    dates = []
+    currentDate = dateStart
+    while currentDate < dateEnd:
+        data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
+        dates.append(currentDate)
+        currentDate += dt.timedelta(days=1)
+    data = np.array(data)
+    return data, dates
+
+def plotEnergyHistogram(circuit_id_list,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        bins=10,
+                        range=(0,200),
+                        plotFileName='energyHistogram.pdf'):
+    dataList = np.array([])
+    for i,c in enumerate(circuit_id_list):
+        # grab energy data for circuit
+        data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        # append data onto master list of energy
+        dataList = np.append(dataList, data)
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax.hist(dataList, bins=bins, range=range, normed=False, facecolor='#dddddd')
+    ax.set_xlabel("Daily Watthours")
+    ax.set_ylabel("Days of Usage")
+    #plt.show()
+    fig.savefig(plotFileName)
+
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
     dates, data = getDataListForCircuit(circuit_id, day, day+dt.timedelta(days=1))
-    print circuit_id, day
-    inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
-    print max(data)
-    print
+    #print circuit_id, day
+    #inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
+    #print max(data)
+    #print
+    return max(data)
 
 def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
                            dateEnd=dt.datetime(2011,6,8)):
@@ -819,19 +1061,111 @@ def calculateTimeWithCredit(meter_id,
                             dateStart=dt.datetime(2011,4,1),
                             dateEnd = dt.datetime(2011,5,1)):
     circuit_id = getCircuitsForMeter(meter_id)
+
+def calculateTimeWithCreditForCircuit(circuit_id,
+                                      dateStart=dateStart,
+                                      dateEnd=dateEnd):
+    dates, credit = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='credit')
+    credit = np.array(credit)
+    hoursWithCredit = len(np.extract(credit > 0, credit))
+    totalHours = len(credit)
+    timeWithCredit = float(hoursWithCredit) / float(totalHours)
+    return timeWithCredit
+
+def calculateTimeWithCreditForCircuitList(circuit_id_list,
+                                          dateStart=dateStart,
+                                          dateEnd=dateEnd):
+    '''
+    for a meter and daterange, outputs a table of percentage of time that greater
+    than zero credit is in the account.
+    '''
     print ' '.ljust(10),
-    for cid in circuit_id:
+    for cid in circuit_id_list:
         print str(cid).rjust(6),
     print
     print '% credit'.ljust(10),
-    for cid in circuit_id:
-        dates, credit = getDataListForCircuit(cid, dateStart, dateEnd, quantity='credit')
-        credit = np.array(credit)
-        hoursWithCredit = len(np.extract(credit > 0, credit))
-        totalHours = len(credit)
-        timeWithCredit = float(hoursWithCredit) / float(totalHours)
+    credit_list = []
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        credit_list.append(timeWithCredit)
         print ('%0.2f' % timeWithCredit).rjust(6),
     print
+    return credit_list
+
+def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
+                                                            dateStart=dateStart,
+                                                            dateEnd=dateEnd,
+                                                            plotFileName='scatterCreditTime.pdf'):
+    credit_consumed = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+    time_with_credit = calculateTimeWithCreditForCircuitList(circuit_id_list, dateStart, dateEnd)
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
+    ax.set_xlabel('Monthly Electricity Expenditure')
+    ax.set_ylabel('Fraction of Time with Credit Available')
+    fig.savefig(plotFileName)
+
+
+def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
+                                                 dateStart=dateStart,
+                                                 dateEnd=dateEnd):
+    averageTime = 0
+    numCircuits = len(circuit_id_list)
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        averageTime += timeWithCredit / numCircuits
+    return averageTime
+
+def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
+                                              dateStart=dateStart,
+                                              dateEnd=dateEnd,
+                                              range=(0.0, 1.0),
+                                              plotFileName='creditHistogram.pdf'):
+    timeList = []
+    for cid in circuit_id_list:
+        timeWithCredit = calculateTimeWithCreditForCircuit(cid, dateStart, dateEnd)
+        timeList.append(timeWithCredit)
+
+    # plot histogram
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    hist, bin_edges = np.histogram(timeList, bins=10, range=range)
+    ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
+    #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
+    ax.set_xlabel("Percentage of time with credit available")
+    ax.set_ylabel("Customers")
+    ax.set_xlim(range)
+    fig.savefig(plotFileName)
+
+def plotHistogramCreditConsumed(circuit_id_list,
+                                dateStart=dateStart,
+                                dateEnd=dateEnd,
+                                plotFileName='consumptionHistogram.pdf'):
+
+    consumptionList = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+
+    range = (0,2500)
+    bins = 10
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    ax.hist(consumptionList, bins=10, range=range, normed=False, facecolor='#dddddd')
+    #ax.hist(consumptionList)
+    ax.set_xlabel("Monthly Credit Consumed (XFCA)")
+    ax.set_ylabel("Customers")
+    ax.set_xlim(range)
+    annotation = []
+    annotation.append('circuits = ' + str(circuit_id_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    import matplotlib.font_manager as mpf
+    textFont = mpf.FontProperties()
+    textFont.set_family('monospace')
+    textFont.set_size(6)
+
+    fig.text(0.01,0.01, annotation, fontproperties=textFont)
+    fig.savefig(plotFileName)
+
 
 def lookForBadSC20(circuit_id,
                    dateStart=dt.datetime(2011,5,1),
@@ -867,6 +1201,36 @@ def lookForBadSC20(circuit_id,
 # def getCreditPurchaseTotal():
 
 # def
+
+def calculateCreditConsumedForCircuit(circuit_id,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            threshold = 100,
+                            verbose=0):
+    dates, data = getDataListForCircuit(circuit_id,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            quantity='credit')
+    credit_derivative = np.diff(data)
+    # only calculate decreases
+    credit_derivative = np.extract(credit_derivative < 0, credit_derivative)
+    # invert credit derivative
+    credit_derivative *= -1
+    # ignore decreases greater than threshold
+    credit_derivative = np.extract(credit_derivative < threshold, credit_derivative)
+    credit_consumed = sum(credit_derivative)
+    return credit_consumed
+
+def printReportOfCreditConsumedForCircuitList(circuit_id_list,
+                            dateStart=dateStart,
+                            dateEnd=dateEnd,
+                            threshold = 100,
+                            verbose=0):
+    list = []
+    for cid in circuit_id_list:
+         list.append(calculateCreditConsumedForCircuit(cid, dateStart, dateEnd, threshold=500))
+    print list
+    return list
 
 def calculateCreditJumps(circuit_id,
                             dateStart=dt.datetime(2011,5,13),
@@ -1010,40 +1374,11 @@ def printCreditPurchase(cid_list,
         sum = calculateCreditPurchase(cid, dateStart, dateEnd)
         print cid, sum
 
-def testFunction():
-    getDataListForCircuit(25)
-    printHugeMessageTable()
-    plotDataForCircuit(25)
-    plotDataForAllCircuitsOnMeter(4)
-
-def tf5():
-    print 'mali001'
-    for cid in mali001:
-        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
-                                                           dt.datetime(2011,5,30))
-        print cid, ('%0.2f' % avg).rjust(8),\
-                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
-                   str(N).rjust(8)
-    print 'ml05'
-    for cid in ml05:
-        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
-                                                           dt.datetime(2011,5,30))
-        print cid, ('%0.2f' % avg).rjust(8),\
-                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
-                   str(N).rjust(8)
-    print 'ml06'
-    for cid in ml06:
-        avg, N = calculateAverageEnergyForCircuit(cid, dt.datetime(2011,5,15),
-                                                           dt.datetime(2011,5,30))
-        print cid, ('%0.2f' % avg).rjust(8),\
-                   ('%0.2f' % (avg*30*0.005)).rjust(8),\
-                   str(N).rjust(8)
 
 if __name__ == "__main__":
     pass
     print ml06
     energyTest(ml06)
-
 
 # deprecated functions, please ignore
 
@@ -1355,4 +1690,8 @@ def plotHistogramAverageDailyConsumption(circuit_ids, dateStart, dateEnd):
     plt.hist(energyList)
     plt.show()
 
-
+    #plotEnergyGridForCircuits(ml06, dt.datetime(2011,6,1), dt.datetime(2011,6,15))
+    #printEnergyGridForCircuits(ml06, dt.datetime(2011,6,1), dt.datetime(2011,6,15))
+    #plotEnergyHistogram(mali001, plotFileName="pelenganaHistogram.pdf")
+    plotEnergyHistogram(ml06, dateStart=dt.datetime(2011,6,1), dateEnd=dt.datetime(2011,6,15),
+                        bins=(0,1,5,10,15,20,25,30,35,40,45,50), plotFileName="ml06Histogram.pdf")
