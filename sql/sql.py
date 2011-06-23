@@ -131,7 +131,7 @@ class Log(Base):
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
     date = Column(DateTime)         # this is the time stamp from the meter
-    uuid = Column(String)
+    #uuid = Column(String)
     _type = Column('type', String(50))
     __mapper_args__ = {'polymorphic_on': _type}
     circuit_id = Column(Integer, ForeignKey('circuit.id'))
@@ -140,7 +140,7 @@ class Log(Base):
 
     def __init__(self, date=None, circuit=None):
         self.date = date
-        self.uuid = str(uuid.uuid4())
+        #self.uuid = str(uuid.uuid4())
         self.circuit = circuit
 
 '''
