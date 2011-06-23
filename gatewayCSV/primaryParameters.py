@@ -354,7 +354,7 @@ def printRecharges(dateStart):
     print 'data generated at',
     print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-def plotRecharges(dateStart):
+def plotRecharges(dateStart = datetime.datetime(2011,5,1)):
     '''
     plots recharge events and outputs statistics on recharges.
     inputs a CSV from the gateway AddCredit output, reads them into a numpy record array
@@ -386,16 +386,16 @@ def plotRecharges(dateStart):
     data = d[d['date']>dateStart]
 
     recharge = []
-    circuits = range(13,25)
+    circuits = range(13,100)
 
     fig = plt.figure()
     ax = fig.add_axes((0.2, 0.2, 0.6, 0.6))
 
     dates = matplotlib.dates.date2num(data['date'])
-    circuit = np.array(map(float, data['cid'])) - 12
+    circuit = np.array(map(float, data['cid']))
     # adding random number to see overlapping data points
     import random
-    circuit = [c + (random.random() - 0.5) * .25 for c in circuit]
+    circuit = [c + (random.random() - 0.5) * .05 for c in circuit]
     credit = data['amount']
 
     ax.scatter(dates, circuit, s=credit/10,
@@ -409,8 +409,8 @@ def plotRecharges(dateStart):
     fig.autofmt_xdate()
     ax.set_xlabel('Date')
     ax.set_ylabel('Circuit')
-    ax.set_ylim((0,13))
-    ax.set_yticks(range(1,13))
+    ax.set_ylim((10,25))
+    ax.set_yticks(range(13,25))
     ax.set_title('Recharge Purchases in Pelengana')
     annotation = 'plot generated - '
     annotation += datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
