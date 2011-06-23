@@ -975,6 +975,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     ax.set_xlabel('Hour of Day')
     ax.set_ylabel('Average Power (Watts)')
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotAveragedPowerForCircuit.__name__)
     annotation.append('circuit = ' + str(circuit_id))
     annotation.append('date start = ' + str(dateStart))
@@ -1126,6 +1127,7 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     ax.set_xlabel('Monthly Electricity Expenditure')
     ax.set_ylabel('Fraction of Time with Credit Available')
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotScatterCreditConsumedVsTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1170,6 +1172,7 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     ax.set_ylabel("Customers")
     ax.set_xlim(range)
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotHistogramTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1200,6 +1203,7 @@ def plotHistogramCreditConsumed(circuit_id_list,
     ax.set_ylabel("Customers")
     ax.set_xlim(range)
     annotation = []
+    annotation.append('plot generated ' + today.date().__str__() )
     annotation.append('function = ' + plotHistogramCreditConsumed.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1216,10 +1220,10 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
 def generate_ictd_figures():
     plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
-    #plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
-    #plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
     #plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    #plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
+    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
 
 
 def lookForBadSC20(circuit_id,
@@ -1414,6 +1418,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
 		#thisAxes.xlim(xmin=1)
 		thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
+		
 
 	fileNameString = 'credit diffs on meter ' +  ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
 	fig.suptitle(fileNameString)
