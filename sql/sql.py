@@ -56,6 +56,9 @@ textFont = mpf.FontProperties()
 textFont.set_family('monospace')
 textFont.set_size(6)
 
+# XFCA to USD
+toUSD = 1.0/500
+
 # orm classes
 
 """
@@ -731,7 +734,7 @@ def inspectDayOfWatthours(circuit_id,
     np.insert(decreaseMask, 0, False)
     #should be last one per day? (unless there's a drop at 11pm and no report at 12.
     if decreaseMask[-1] == 1:
-		decreaseMask[-1] = False
+        decreaseMask[-1] = False
 
 
     print 'decrease in watthours observed at these', sum(decreaseMask), 'times'
@@ -749,25 +752,25 @@ def plotDaysOfWatthourDrops(circuit_id,
                           dateStart=dt.datetime(2011,5,28), dateEnd=dt.datetime(2011,6,3),
                           verbose=0):
 
-	dates = []
-	# break up time period into days
-	num_days = dateEnd - dateStart
-	beg_day = dateStart
-	for k in range(num_days.days):
-		errortimes = inspectDayOfWatthours(circuit_id, beg_day)
-		if len(errortimes)>0:
-			#remove times from dates
-			for i in range(len(errortimes)):
-				#errordates = errortimes[i].strftime('%Y,%m,%d')
-				errordates = dt.datetime(errortimes[i].year, errortimes[i].month, errortimes[i].day)
-			dates = np.append(dates, errordates)
-			beg_day = beg_day + dt.timedelta(days=1)
-	#print dates
-	dates = list(set(dates))
-	dates.sort()
-	print dates
-	for d in range(len(dates)):
-		plotDatasForCircuit(circuit_id, dates[d], dates[d] + dt.timedelta(days=1))
+    dates = []
+    # break up time period into days
+    num_days = dateEnd - dateStart
+    beg_day = dateStart
+    for k in range(num_days.days):
+        errortimes = inspectDayOfWatthours(circuit_id, beg_day)
+        if len(errortimes)>0:
+            #remove times from dates
+            for i in range(len(errortimes)):
+                #errordates = errortimes[i].strftime('%Y,%m,%d')
+                errordates = dt.datetime(errortimes[i].year, errortimes[i].month, errortimes[i].day)
+            dates = np.append(dates, errordates)
+            beg_day = beg_day + dt.timedelta(days=1)
+    #print dates
+    dates = list(set(dates))
+    dates.sort()
+    print dates
+    for d in range(len(dates)):
+        plotDatasForCircuit(circuit_id, dates[d], dates[d] + dt.timedelta(days=1))
 
 '''
 for a given circuit_id and date range, this function returns a list of
@@ -974,22 +977,19 @@ def plotAveragedPowerForCircuit(circuit_id,
     for key in dataDict.keys():
         # construct a list of hours the same length as dictionary list
         hour = key * np.ones(len(dataDict[key]))
-        ax.plot(hour, dataDict[key],',', mfc='#dddddd', mec='#dddddd')
+        #ax.plot(hour, dataDict[key],',', mfc='#dddddd', mec='#dddddd')
         avg_energy_for_hour = np.array(dataDict[key]).mean()
         #ax.plot(key, avg_energy_for_hour, 's', ms=10)
         yerr = np.std(dataDict[key])
         ax.errorbar(key, avg_energy_for_hour, yerr=yerr, marker='s',
          mfc='0.85', mec='black', ms=6, mew=1, fmt='-', ecolor='k')
-        
-    ax.axis([-1,24,0,10])
-    
-    hourList = np.arange(0,24,2)
-    ax.set_xticks(hourList)
-    ax.set_xticklabels(hourList, fontproperties=tickFont)
-    wattList = np.arange(0,11,2)
-    ax.set_yticklabels(wattList, fontproperties=tickFont)
 
-    '''		MEAN almost always 0...
+    ax.axis([-1,24,0,10])
+    # tick labels with fontprops
+    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
+    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+
+    '''     MEAN almost always 0...
     bp = plt.boxplot(dataDict, notch=0, sym='+', vert=1, whis=1.5)
     plt.setp(bp['boxes'], color='black')
     plt.setp(bp['whiskers'], color='black')
@@ -998,7 +998,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     ax.set_xlabel('Hour of Day', fontproperties=labelFont)
     ax.set_ylabel('Average Power (Watts)', fontproperties=labelFont)
     annotation = []
-    annotation.append('plot generated ' + today.date().__str__() )
+    annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotAveragedPowerForCircuit.__name__)
     annotation.append('circuit = ' + str(circuit_id))
     annotation.append('date start = ' + str(dateStart))
@@ -1006,7 +1006,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     annotation = '\n'.join(annotation)
 
     fig.text(0.01,0.01, annotation, fontproperties=textFont)
-    fig.savefig(plotFileName)
+    fig.savefig(plotFileName, transparent=True)
 
 def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
                                                   dateStart=dateStart,
@@ -1062,7 +1062,6 @@ def plotEnergyHistogram(circuit_id_list,
                         dateStart=dateStart,
                         dateEnd=dateEnd,
                         bins=10,
-                        range=(0,200),
                         plotFileName='energyHistogram.pdf'):
     dataList = np.array([])
     for i,c in enumerate(circuit_id_list):
@@ -1071,11 +1070,24 @@ def plotEnergyHistogram(circuit_id_list,
         # append data onto master list of energy
         dataList = np.append(dataList, data)
     fig = plt.figure()
-    ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax.hist(dataList, bins=bins, range=range, normed=False, facecolor='#dddddd')
-    ax.set_xlabel("Daily Watthours")
-    ax.set_ylabel("Days of Usage")
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    # range depends on data
+    high = int(np.ceil(max(dataList)) + 5)
+    bins = [0,1] + range(5,high,5)
+    ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
+    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
+    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+    ax.set_xlabel("Daily Watthours", fontproperties=labelFont)
+    ax.set_ylabel("Days of Usage", fontproperties=labelFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotEnergyHistogram.__name__)
+    annotation.append('circuits = ' + str(circuit_id_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
     #plt.show()
+    fig.text(0.01,0.01, annotation, fontproperties=textFont)
     fig.savefig(plotFileName)
 
 def getEnergyForCircuitForDayByMax(circuit_id,
@@ -1140,19 +1152,20 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
                                                             dateEnd=dateEnd,
                                                             plotFileName='scatterCreditTime.pdf'):
     credit_consumed = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+    # convert to USD
+    credit_consumed = [x*toUSD for x in credit_consumed]
     time_with_credit = calculateTimeWithCreditForCircuitList(circuit_id_list, dateStart, dateEnd)
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
-    expList = np.arange(400,2100,200)
-    ax.set_xticks(expList)
-    ax.set_xticklabels(expList, fontproperties=tickFont)
-    fractList = np.arange(0.5,1.1,0.1)
-    ax.set_yticklabels(fractList, fontproperties=tickFont)
-    ax.set_xlabel('Monthly Electricity Expenditure', fontproperties=labelFont)
+    # ticklabels with fontprops---------------
+    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
+    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+    ax.set_xlim((0,5))
+    ax.set_xlabel('Monthly Electricity Expenditure (USD)', fontproperties=labelFont)
     ax.set_ylabel('Fraction of Time with Credit Available', fontproperties=labelFont)
     annotation = []
-    annotation.append('plot generated ' + today.date().__str__() )
+    annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotScatterCreditConsumedVsTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1189,16 +1202,14 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     hist, bin_edges = np.histogram(timeList, bins=10, range=range)
     ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
     #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
-    percList = np.arange(0,1.1,.2)
-    ax.set_xticks(percList)
-    ax.set_xticklabels(percList, fontproperties=tickFont)
-    custList = np.arange(0,26,5)
-    ax.set_yticklabels(custList, fontproperties=tickFont)
+    #tick labels with fontprops
+    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
+    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
     ax.set_xlabel("Percentage of time with credit available", fontproperties=labelFont)
     ax.set_ylabel("Customers", fontproperties=labelFont)
     ax.set_xlim(range)
     annotation = []
-    annotation.append('plot generated ' + today.date().__str__() )
+    annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotHistogramTimeWithCreditForCircuitList.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1214,24 +1225,25 @@ def plotHistogramCreditConsumed(circuit_id_list,
                                 plotFileName='consumptionHistogram.pdf'):
 
     consumptionList = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
+    # convert to USD
+    consumptionList = [x*toUSD for x in consumptionList]
 
-    range = (0,2500)
-    bins = 10
+    high = np.ceil(max(consumptionList)) + 0.5
+    bins = np.arange(0, high, 0.5)
+    print bins
     fig = plt.figure()
 
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
-    ax.hist(consumptionList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
+    ax.hist(consumptionList, bins=bins, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
-    rangeList = np.arange(0,2600,500)
-    ax.set_xticks(rangeList)
-    ax.set_xticklabels(rangeList, fontproperties=tickFont)
-    custList = np.arange(0,7,1)
-    ax.set_yticklabels(custList, fontproperties=tickFont)
-    ax.set_xlabel("Monthly Credit Consumed (XFCA)", fontproperties=labelFont)
+    # tick labels with fontprops
+    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
+    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+    ax.set_xlabel("Monthly Credit Consumed (USD)", fontproperties=labelFont)
     ax.set_ylabel("Customers", fontproperties=labelFont)
-    ax.set_xlim(range)
+
     annotation = []
-    annotation.append('plot generated ' + today.date().__str__() )
+    annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotHistogramCreditConsumed.__name__)
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
@@ -1243,11 +1255,11 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
 
 def generate_ictd_figures():
-    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    #plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
     plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
-    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    #plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
     #plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
+    #plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
 
 
 def lookForBadSC20(circuit_id,
@@ -1361,108 +1373,108 @@ def calculateCreditPurchase(circuit_id,
             creditList = np.append(creditList, ac.credit)
             dateList = np.append(dateList, ac.start)
             if verbose > 0:
-				print ac.id, ac.credit, ac.circuit_id, ac.start
+                print ac.id, ac.credit, ac.circuit_id, ac.start
 
     #return sum
     daysOfCredit = [dateList, creditList]
     return daysOfCredit
 
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
-						dateEnd=dt.datetime(2011,5,20),
-							verbose = 0, introspect=False, showMains=False):
+                        dateEnd=dt.datetime(2011,5,20),
+                            verbose = 0, introspect=False, showMains=False):
 
-	circuits = getCircuitsForMeter(meter_id)
-	dtSt = str.replace(str(dateStart), ' 00:00:00', '')
-	dtEnd = str.replace(str(dateEnd), ' 00:00:00', '')
+    circuits = getCircuitsForMeter(meter_id)
+    dtSt = str.replace(str(dateStart), ' 00:00:00', '')
+    dtEnd = str.replace(str(dateEnd), ' 00:00:00', '')
 
-	#get date labels
-	num_days = dateEnd - dateStart
-	dateList = []
-	d = dateStart
-	while d <= dateEnd:
-		dateList.append(d)
-		d += dt.timedelta(days=1)
-	#print dateList
-	yLabels = np.arange(0,1100,200)
+    #get date labels
+    num_days = dateEnd - dateStart
+    dateList = []
+    d = dateStart
+    while d <= dateEnd:
+        dateList.append(d)
+        d += dt.timedelta(days=1)
+    #print dateList
+    yLabels = np.arange(0,1100,200)
 
-	# drop mains circuit
-	if showMains == False:
-		for c in circuits:
-			if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
-				circuits.remove(c)
+    # drop mains circuit
+    if showMains == False:
+        for c in circuits:
+            if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                circuits.remove(c)
 
-	fig = plt.figure()
+    fig = plt.figure()
 
     # create figure and axes with subplots
-	if len(circuits) > 12:
-		numPlotsX = 4
-		numPlotsY = 5
-	else:
-		numPlotsX = 4
-		numPlotsY = 3
+    if len(circuits) > 12:
+        numPlotsX = 4
+        numPlotsY = 5
+    else:
+        numPlotsX = 4
+        numPlotsY = 3
 
-	for i,c in enumerate(circuits):
-		calculatedCredits = calculateCreditJumps(c, dateStart, dateEnd, verbose)
-		loggedPurchases = calculateCreditPurchase(c, dateStart, dateEnd, verbose)
+    for i,c in enumerate(circuits):
+        calculatedCredits = calculateCreditJumps(c, dateStart, dateEnd, verbose)
+        loggedPurchases = calculateCreditPurchase(c, dateStart, dateEnd, verbose)
 
-		dates = np.union1d(calculatedCredits[0], loggedPurchases[0])
-		print dates
-		dates = matplotlib.dates.date2num(dates)
-		print dates
-		#dates = list(set(dates))
-		#dates.sort()
-		calculatedCreditDates = matplotlib.dates.date2num(calculatedCredits[0])
-		mask1 = []
-		for l in range(len(calculatedCreditDates)):
-			ind = np.where(dates==calculatedCreditDates[l])
-			#print ind
-			mask1.append(int(ind[0]))		#because ind was an array of arrays!
-		print mask1
-		#mask1 = np.where(dates,calculatedCredits[0])
-		#mask1 = np.setmember1d(dates, calculatedCredits[0])	#mergesort not avail for type
-		data1 = [-100]*len(dates)
-		for k in range(len(mask1)):
-			data1[mask1[k]] = calculatedCredits[1][k]
-		#data1[np.invert(mask1)] = 0
-		print data1
-		#mask2 = np.in1d(dates,loggedPurchases[0])
-		#mask2 = dates == loggedPurchases[0]
-		#mask2 = np.setmember1d(dates, loggedPurchases[0])	#mergesort not avail for type
-		purchaseDates = matplotlib.dates.date2num(loggedPurchases[0])
-		mask2 = []
-		for l in range(len(purchaseDates)):
-			ind = np.where(dates==purchaseDates[l])
-			#print ind
-			mask2.append(int(ind[0]))
-		data2 = [-100]*len(dates)
-		for j in range(len(mask2)):
-			data2[mask2[j]] = loggedPurchases[1][j]
-		#data2[mask2] = loggedPurchases[1]
-		#data2[np.invert(mask2)] = 0
-		print data2
-		'''
-		dates, data = getDataListForCircuit(c, dateStart,dateEnd,quantity='credit')
-		dates = matplotlib.dates.date2num(dates)
-		data1 = calculatedCredits[1]
-		data2 = loggedPurchases[1]
-		'''
-		# how to make xlabels & ylabels smaller?
-		# how to make room for xlabels on all graphs?
-		thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100))	#to keep all plots even, assuming 1100 is enough
-		thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
-		thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
-		thisAxes.set_xticklabels(dateList, fontproperties=textFont)
-		thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
-		#thisAxes.xlim(xmin=1)
-		thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
+        dates = np.union1d(calculatedCredits[0], loggedPurchases[0])
+        print dates
+        dates = matplotlib.dates.date2num(dates)
+        print dates
+        #dates = list(set(dates))
+        #dates.sort()
+        calculatedCreditDates = matplotlib.dates.date2num(calculatedCredits[0])
+        mask1 = []
+        for l in range(len(calculatedCreditDates)):
+            ind = np.where(dates==calculatedCreditDates[l])
+            #print ind
+            mask1.append(int(ind[0]))       #because ind was an array of arrays!
+        print mask1
+        #mask1 = np.where(dates,calculatedCredits[0])
+        #mask1 = np.setmember1d(dates, calculatedCredits[0])    #mergesort not avail for type
+        data1 = [-100]*len(dates)
+        for k in range(len(mask1)):
+            data1[mask1[k]] = calculatedCredits[1][k]
+        #data1[np.invert(mask1)] = 0
+        print data1
+        #mask2 = np.in1d(dates,loggedPurchases[0])
+        #mask2 = dates == loggedPurchases[0]
+        #mask2 = np.setmember1d(dates, loggedPurchases[0])  #mergesort not avail for type
+        purchaseDates = matplotlib.dates.date2num(loggedPurchases[0])
+        mask2 = []
+        for l in range(len(purchaseDates)):
+            ind = np.where(dates==purchaseDates[l])
+            #print ind
+            mask2.append(int(ind[0]))
+        data2 = [-100]*len(dates)
+        for j in range(len(mask2)):
+            data2[mask2[j]] = loggedPurchases[1][j]
+        #data2[mask2] = loggedPurchases[1]
+        #data2[np.invert(mask2)] = 0
+        print data2
+        '''
+        dates, data = getDataListForCircuit(c, dateStart,dateEnd,quantity='credit')
+        dates = matplotlib.dates.date2num(dates)
+        data1 = calculatedCredits[1]
+        data2 = loggedPurchases[1]
+        '''
+        # how to make xlabels & ylabels smaller?
+        # how to make room for xlabels on all graphs?
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
+        thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
+        thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
+        thisAxes.set_xticklabels(dateList, fontproperties=textFont)
+        thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        #thisAxes.xlim(xmin=1)
+        thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
 
 
-	fileNameString = 'credit diffs on meter ' +  ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
-	fig.suptitle(fileNameString)
-	fig.autofmt_xdate()
-	if introspect:
-		plt.show()
-	fig.savefig(fileNameString)
+    fileNameString = 'credit diffs on meter ' +  ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
+    fig.suptitle(fileNameString)
+    fig.autofmt_xdate()
+    if introspect:
+        plt.show()
+    fig.savefig(fileNameString)
 
 def printCreditPurchase(cid_list,
                        dateStart=dt.datetime(2011,6,1),
