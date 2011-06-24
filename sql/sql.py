@@ -816,7 +816,7 @@ def plotAveragedPowerForCircuit(circuit_id,
         ax.errorbar(key, avg_energy_for_hour, yerr=yerr, marker='s',
          mfc='0.85', mec='black', ms=6, mew=1, fmt='-', ecolor='k')
         ax.axis([-1,24,0,10])
-    
+
     '''		MEAN almost always 0...
     bp = plt.boxplot(dataDict, notch=0, sym='+', vert=1, whis=1.5)
     plt.setp(bp['boxes'], color='black')
@@ -1028,7 +1028,7 @@ def plotHistogramCreditConsumed(circuit_id_list,
     range = (0,2500)
     bins = 10
     fig = plt.figure()
-    
+
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.hist(consumptionList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
@@ -1171,15 +1171,15 @@ def calculateCreditPurchase(circuit_id,
     #return sum
     daysOfCredit = [dateList, creditList]
     return daysOfCredit
-    
+
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 						dateEnd=dt.datetime(2011,5,20),
 							verbose = 0, introspect=False, showMains=False):
-	
+
 	circuits = getCircuitsForMeter(meter_id)
 	dtSt = str.replace(str(dateStart), ' 00:00:00', '')
 	dtEnd = str.replace(str(dateEnd), ' 00:00:00', '')
-	
+
 	#get date labels
 	num_days = dateEnd - dateStart
 	dateList = []
@@ -1189,7 +1189,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		d += dt.timedelta(days=1)
 	#print dateList
 	yLabels = np.arange(0,1100,200)
-	
+
 	# drop mains circuit
 	if showMains == False:
 		for c in circuits:
@@ -1205,11 +1205,11 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 	else:
 		numPlotsX = 4
 		numPlotsY = 3
-        
+
 	for i,c in enumerate(circuits):
 		calculatedCredits = calculateCreditJumps(c, dateStart, dateEnd, verbose)
 		loggedPurchases = calculateCreditPurchase(c, dateStart, dateEnd, verbose)
-		
+
 		dates = np.union1d(calculatedCredits[0], loggedPurchases[0])
 		print dates
 		dates = matplotlib.dates.date2num(dates)
@@ -1246,7 +1246,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		#data2[np.invert(mask2)] = 0
 		print data2
 		'''
-		dates, data = getDataListForCircuit(c, dateStart,dateEnd,quantity='credit')        
+		dates, data = getDataListForCircuit(c, dateStart,dateEnd,quantity='credit')
 		dates = matplotlib.dates.date2num(dates)
 		data1 = calculatedCredits[1]
 		data2 = loggedPurchases[1]
@@ -1260,15 +1260,15 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 		thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
 		#thisAxes.xlim(xmin=1)
 		thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
-		
+
 
 	fileNameString = 'credit diffs on meter ' +  ' ' + str(meter_id) + '-' + dtSt + 'to' + dtEnd + '.pdf'
 	fig.suptitle(fileNameString)
 	fig.autofmt_xdate()
 	if introspect:
 		plt.show()
-	fig.savefig(fileNameString)        		
-									
+	fig.savefig(fileNameString)
+
 def printCreditPurchase(cid_list,
                        dateStart=dt.datetime(2011,6,1),
                        dateEnd=dt.datetime(2011,6,13)):
