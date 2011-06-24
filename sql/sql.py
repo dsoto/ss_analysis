@@ -1048,12 +1048,17 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
 
 def generate_ictd_figures():
+    print 'generating averagePower.pdf'
     plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    print 'generating consumptionHistogram.pdf'
     plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+    print 'creditHistogram.pdf'
     plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
-    #plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/energyHistogram.pdf')
-
+    print 'generating scatter.pdf'
+    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatter.pdf')
+    print 'generating energy histogram'
+    plotEnergyHistogram(ml06, dateStart=dt.datetime(2011,6,1), dateEnd=dt.datetime(2011,6,15),
+                        bins=(0,1,5,10,15,20,25,30,35,40,45,50), range=(0,50), plotFileName="ictd/ml06Histogram.pdf")
 
 def lookForBadSC20(circuit_id,
                    dateStart=dt.datetime(2011,5,1),
