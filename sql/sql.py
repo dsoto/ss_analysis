@@ -40,6 +40,7 @@ dateStart = dateEnd - dt.timedelta(days=6)
 may_15 = dt.datetime(2011,5,15)
 jun_15 = dt.datetime(2011,6,15)
 
+'''
 #font properties---------------------
 import matplotlib.font_manager as mpf
 #for labels
@@ -55,6 +56,17 @@ tickFont.set_size(12)
 textFont = mpf.FontProperties()
 textFont.set_family('monospace')
 textFont.set_size(6)
+'''
+
+# rcparams ----------------------------
+import matplotlib as mpl
+mpl.rcParams['font.family']='serif'
+mpl.rcParams['font.size']=8
+mpl.rcParams['axes.labelsize']=14
+mpl.rcParams['xtick.labelsize']=12
+mpl.rcParams['ytick.labelsize']=12
+#mpl.rcParams['figure.facecolor']='#ffffff'
+#mpl.rcParams['savefig.facecolor']='#ffffff'
 
 # XFCA to USD
 toUSD = 1.0/500
@@ -985,9 +997,11 @@ def plotAveragedPowerForCircuit(circuit_id,
          mfc='0.85', mec='black', ms=6, mew=1, fmt='-', ecolor='k')
 
     ax.axis([-1,24,0,10])
+    '''
     # tick labels with fontprops
     plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
     plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+    '''
 
     '''     MEAN almost always 0...
     bp = plt.boxplot(dataDict, notch=0, sym='+', vert=1, whis=1.5)
@@ -995,8 +1009,8 @@ def plotAveragedPowerForCircuit(circuit_id,
     plt.setp(bp['whiskers'], color='black')
     plt.setp(bp['fliers'], color='gray', marker='+')
     '''
-    ax.set_xlabel('Hour of Day', fontproperties=labelFont)
-    ax.set_ylabel('Average Power (Watts)', fontproperties=labelFont)
+    ax.set_xlabel('Hour of Day')    #, fontproperties=labelFont)
+    ax.set_ylabel('Average Power (Watts)')  #, fontproperties=labelFont)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotAveragedPowerForCircuit.__name__)
@@ -1005,7 +1019,7 @@ def plotAveragedPowerForCircuit(circuit_id,
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
 
-    fig.text(0.01,0.01, annotation, fontproperties=textFont)
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.savefig(plotFileName, transparent=True)
 
 def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
@@ -1075,10 +1089,12 @@ def plotEnergyHistogram(circuit_id_list,
     high = int(np.ceil(max(dataList)) + 5)
     bins = [0,1] + range(5,high,5)
     ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
+    ''' font props
     plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
     plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    ax.set_xlabel("Daily Watthours", fontproperties=labelFont)
-    ax.set_ylabel("Days of Usage", fontproperties=labelFont)
+    '''
+    ax.set_xlabel("Daily Watthours")    #, fontproperties=labelFont)
+    ax.set_ylabel("Days of Usage")  #, fontproperties=labelFont)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotEnergyHistogram.__name__)
@@ -1087,8 +1103,8 @@ def plotEnergyHistogram(circuit_id_list,
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
     #plt.show()
-    fig.text(0.01,0.01, annotation, fontproperties=textFont)
-    fig.savefig(plotFileName)
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(plotFileName, transparent=True)
 
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
@@ -1158,12 +1174,14 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
+    '''
     # ticklabels with fontprops---------------
     plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
     plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
+    '''
     ax.set_xlim((0,5))
-    ax.set_xlabel('Monthly Electricity Expenditure (USD)', fontproperties=labelFont)
-    ax.set_ylabel('Fraction of Time with Credit Available', fontproperties=labelFont)
+    ax.set_xlabel('Monthly Electricity Expenditure (USD)')  #, fontproperties=labelFont)
+    ax.set_ylabel('Fraction of Time with Credit Available') #, fontproperties=labelFont)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotScatterCreditConsumedVsTimeWithCreditForCircuitList.__name__)
@@ -1172,8 +1190,8 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
 
-    fig.text(0.01,0.01, annotation, fontproperties=textFont)
-    fig.savefig(plotFileName)
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(plotFileName, transparent=True)
 
 
 def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
@@ -1189,7 +1207,7 @@ def calculateAverageTimeWithCreditForCircuitList(circuit_id_list,
 def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
                                               dateStart=dateStart,
                                               dateEnd=dateEnd,
-                                              range=(0.0, 1.0),
+                                              rg=(0.0, 1.0),
                                               plotFileName='timeWithCreditHistogram.pdf'):
     timeList = []
     for cid in circuit_id_list:
@@ -1199,15 +1217,17 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     # plot histogram
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
-    hist, bin_edges = np.histogram(timeList, bins=10, range=range)
+    hist, bin_edges = np.histogram(timeList, bins=10, range=rg)
     ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
     #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
+    '''
     #tick labels with fontprops
     plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
     plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    ax.set_xlabel("Percentage of time with credit available", fontproperties=labelFont)
-    ax.set_ylabel("Customers", fontproperties=labelFont)
-    ax.set_xlim(range)
+    '''
+    ax.set_xlabel("Percentage of time with credit available")   #, fontproperties=labelFont)
+    ax.set_ylabel("Customers")  #, fontproperties=labelFont)
+    ax.set_xlim(rg)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotHistogramTimeWithCreditForCircuitList.__name__)
@@ -1216,8 +1236,8 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
 
-    fig.text(0.01,0.01, annotation, fontproperties=textFont)
-    fig.savefig(plotFileName)
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(plotFileName, transparent=True)
 
 def plotHistogramCreditConsumed(circuit_id_list,
                                 dateStart=dateStart,
@@ -1236,11 +1256,13 @@ def plotHistogramCreditConsumed(circuit_id_list,
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.hist(consumptionList, bins=bins, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
+    '''
     # tick labels with fontprops
     plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
     plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    ax.set_xlabel("Monthly Credit Consumed (USD)", fontproperties=labelFont)
-    ax.set_ylabel("Customers", fontproperties=labelFont)
+    '''
+    ax.set_xlabel("Monthly Credit Consumed (USD)")  #, fontproperties=labelFont)
+    ax.set_ylabel("Customers")  #, fontproperties=labelFont)
 
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
@@ -1250,16 +1272,16 @@ def plotHistogramCreditConsumed(circuit_id_list,
     annotation.append('date end = ' + str(dateEnd))
     annotation = '\n'.join(annotation)
 
-    fig.text(0.01,0.01, annotation, fontproperties=textFont)
-    fig.savefig(plotFileName)
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(plotFileName, transparent=True)
 
 
 def generate_ictd_figures():
-    #plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
     plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
-    #plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
-    #plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    #plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
+    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
+    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
 
 
 def lookForBadSC20(circuit_id,
