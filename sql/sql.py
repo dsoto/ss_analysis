@@ -1122,7 +1122,8 @@ def printReportOfCreditConsumedForCircuitList(circuit_id_list,
     list = []
     for cid in circuit_id_list:
          list.append(calculateCreditConsumedForCircuit(cid, dateStart, dateEnd, threshold=threshold))
-    print list
+    if verbose > 0:
+        print list
     return list
 
 def calculateCreditJumps(circuit_id,
