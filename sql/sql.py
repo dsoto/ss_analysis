@@ -1448,12 +1448,3 @@ def printCreditPurchase(cid_list,
 
 if __name__ == "__main__":
     pass
-    print ml06
-    energyTest(ml06)
-
-
-
-if __name__ == "__main__":
-    pass
-    #getDataListForCircuit(91,verbose=2)
-
