@@ -46,6 +46,10 @@ import matplotlib.font_manager as mpf
 labelFont = mpf.FontProperties()
 labelFont.set_family('serif')
 labelFont.set_size(14)
+#for ticks
+tickFont = mpf.FontProperties()
+tickFont.set_family('serif')
+tickFont.set_size(12)
 #labelFont.set_linespacing(1.5)
 #font prop's for annotation
 textFont = mpf.FontProperties()
@@ -976,7 +980,14 @@ def plotAveragedPowerForCircuit(circuit_id,
         yerr = np.std(dataDict[key])
         ax.errorbar(key, avg_energy_for_hour, yerr=yerr, marker='s',
          mfc='0.85', mec='black', ms=6, mew=1, fmt='-', ecolor='k')
-        ax.axis([-1,24,0,10])
+        
+    ax.axis([-1,24,0,10])
+    
+    hourList = np.arange(0,24,2)
+    ax.set_xticks(hourList)
+    ax.set_xticklabels(hourList, fontproperties=tickFont)
+    wattList = np.arange(0,11,2)
+    ax.set_yticklabels(wattList, fontproperties=tickFont)
 
     '''		MEAN almost always 0...
     bp = plt.boxplot(dataDict, notch=0, sym='+', vert=1, whis=1.5)
@@ -1133,6 +1144,11 @@ def plotScatterCreditConsumedVsTimeWithCreditForCircuitList(circuit_id_list,
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.plot(credit_consumed, time_with_credit, 'o', mfc='#cccccc')
+    expList = np.arange(400,2100,200)
+    ax.set_xticks(expList)
+    ax.set_xticklabels(expList, fontproperties=tickFont)
+    fractList = np.arange(0.5,1.1,0.1)
+    ax.set_yticklabels(fractList, fontproperties=tickFont)
     ax.set_xlabel('Monthly Electricity Expenditure', fontproperties=labelFont)
     ax.set_ylabel('Fraction of Time with Credit Available', fontproperties=labelFont)
     annotation = []
@@ -1173,6 +1189,11 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     hist, bin_edges = np.histogram(timeList, bins=10, range=range)
     ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
     #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
+    percList = np.arange(0,1.1,.2)
+    ax.set_xticks(percList)
+    ax.set_xticklabels(percList, fontproperties=tickFont)
+    custList = np.arange(0,26,5)
+    ax.set_yticklabels(custList, fontproperties=tickFont)
     ax.set_xlabel("Percentage of time with credit available", fontproperties=labelFont)
     ax.set_ylabel("Customers", fontproperties=labelFont)
     ax.set_xlim(range)
@@ -1201,6 +1222,11 @@ def plotHistogramCreditConsumed(circuit_id_list,
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.hist(consumptionList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
+    rangeList = np.arange(0,2600,500)
+    ax.set_xticks(rangeList)
+    ax.set_xticklabels(rangeList, fontproperties=tickFont)
+    custList = np.arange(0,7,1)
+    ax.set_yticklabels(custList, fontproperties=tickFont)
     ax.set_xlabel("Monthly Credit Consumed (XFCA)", fontproperties=labelFont)
     ax.set_ylabel("Customers", fontproperties=labelFont)
     ax.set_xlim(range)
