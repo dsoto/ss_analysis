@@ -40,24 +40,6 @@ dateStart = dateEnd - dt.timedelta(days=6)
 may_15 = dt.datetime(2011,5,15)
 jun_15 = dt.datetime(2011,6,15)
 
-'''
-#font properties---------------------
-import matplotlib.font_manager as mpf
-#for labels
-labelFont = mpf.FontProperties()
-labelFont.set_family('serif')
-labelFont.set_size(14)
-#for ticks
-tickFont = mpf.FontProperties()
-tickFont.set_family('serif')
-tickFont.set_size(12)
-#labelFont.set_linespacing(1.5)
-#font prop's for annotation
-textFont = mpf.FontProperties()
-textFont.set_family('monospace')
-textFont.set_size(6)
-'''
-
 # rcparams ----------------------------
 import matplotlib as mpl
 mpl.rcParams['font.family']='serif'
@@ -1047,10 +1029,6 @@ def plotEnergyHistogram(circuit_id_list,
     high = int(np.ceil(max(dataList)) + 5)
     bins = [0,1] + range(5,high,5)
     ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
-    ''' font props
-    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
-    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    '''
     ax.set_xlabel("Daily Watthours")    #, fontproperties=labelFont)
     ax.set_ylabel("Days of Usage")  #, fontproperties=labelFont)
     annotation = []
@@ -1177,12 +1155,6 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     hist, bin_edges = np.histogram(timeList, bins=10, range=rg)
     ax.bar(bin_edges[:-1], hist, width=0.1, color='#dddddd')
-    #ax.hist(timeList, bins=10, range=range, normed=False, cumulative=False, facecolor='#dddddd')
-    '''
-    #tick labels with fontprops
-    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
-    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    '''
     ax.set_xlabel("Percentage of time with credit available")   #, fontproperties=labelFont)
     ax.set_ylabel("Customers")  #, fontproperties=labelFont)
     ax.set_xlim(rg)
@@ -1214,11 +1186,6 @@ def plotHistogramCreditConsumed(circuit_id_list,
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     ax.hist(consumptionList, bins=bins, normed=False, cumulative=False, facecolor='#dddddd')
     #ax.hist(consumptionList)
-    '''
-    # tick labels with fontprops
-    plt.setp(ax.get_xticklabels(), fontproperties=tickFont)
-    plt.setp(ax.get_yticklabels(), fontproperties=tickFont)
-    '''
     ax.set_xlabel("Monthly Credit Consumed (USD)")  #, fontproperties=labelFont)
     ax.set_ylabel("Customers")  #, fontproperties=labelFont)
 
