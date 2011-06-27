@@ -1241,12 +1241,6 @@ def lookForBadSC20(circuit_id,
             print str(l).rjust(cw),
         print
 
-# def getCreditPurchaseList():
-
-# def getCreditPurchaseTotal():
-
-# def
-
 def calculateCreditConsumedForCircuit(circuit_id,
                             dateStart=dateStart,
                             dateEnd=dateEnd,
