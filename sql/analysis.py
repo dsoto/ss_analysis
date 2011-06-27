@@ -462,15 +462,6 @@ def getDataListForCircuit(circuit_id,
                               dateEnd=dateEnd,
                               quantity='watthours',
                               verbose=0):
-    # get query based on circuit and date
-    # and sort by date received by gateway
-    logs = session.query(PrimaryLog)\
-                  .filter(PrimaryLog.circuit_id == circuit_id)\
-                  .filter(PrimaryLog.date > dateStart)\
-                  .filter(PrimaryLog.date <= dateEnd)\
-                  .order_by(PrimaryLog.created)
-
-
     '''
     for a given circuit_id and date range, this function returns a list of
     data specified by quantity.  uses set() to remove duplicate entries.
