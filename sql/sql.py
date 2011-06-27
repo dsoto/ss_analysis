@@ -142,20 +142,17 @@ class Circuit(Base):
 ORM class for base log class.  primary log inherits from this class.
 '''
 class Log(Base):
+    """
+    Base class for all logs in the gateway.
+    """
     __tablename__ = "log"
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime)         # this is the time stamp from the meter
-    #uuid = Column(String)
+    date = Column(DateTime)
     _type = Column('type', String(50))
     __mapper_args__ = {'polymorphic_on': _type}
-    circuit_id = Column(Integer, ForeignKey('circuit.id'))
-    circuit = relation(Circuit, lazy=False,
-                       primaryjoin=circuit_id == Circuit.id)
 
-    def __init__(self, date=None, circuit=None):
+    def __init__(self, date=None):
         self.date = date
-        #self.uuid = str(uuid.uuid4())
-        self.circuit = circuit
 
 '''
 this inherits from Log
@@ -169,17 +166,20 @@ class PrimaryLog(Log):
     status = Column(Integer)
     created = Column(DateTime)
     credit = Column(Float, nullable=True)
-    status = Column(Integer)
+    circuit_id = Column(Integer, ForeignKey('circuit.id'))
+    circuit = relation(Circuit, lazy=False,
+                       primaryjoin=circuit_id == Circuit.id)
 
     def __init__(self, date=None, circuit=None, watthours=None,
                  use_time=None, status=None, credit=0):
-        Log.__init__(self, date, circuit)
+        Log.__init__(self, date)
         self.circuit = circuit
         self.watthours = watthours
         self.use_time = use_time
         self.credit = credit
         self.created = get_now()
         self.status = status
+        self.circuit = circuit
 
     def getUrl(self):
         return ""
@@ -190,19 +190,21 @@ class PrimaryLog(Log):
         else:
             return 'CIRCUIT'
 
-    def getCreditAndType(self):
+    def getCircuitAndType(self):
         if self.getType() == 'MAIN':
             return [('ct', self.getType()), ('cr', 0)]
         else:
             return [('cr', float(self.credit)), ('ct', self.getType())]
 
     def __str__(self):
-        return urllib.urlencode([('job', 'pp'),
-                                 ('status', self.status),
-                                 ('ts', self.created.strftime("%Y%m%d%H")),
-                                 ('cid', self.circuit.ip_address),
-                                 ('tu', int(self.use_time)),
-                                 ('wh', float(self.watthours))] + self.getCreditAndType())
+        return urllib\
+               .urlencode([('job', 'pp'),
+                           ('status', self.status),
+                           ('ts', self.created.strftime("%Y%m%d%H")),
+                           ('cid', self.circuit.ip_address),
+                           ('tu', int(self.use_time)),
+                           ('wh', float(self.watthours))] + self.getCircuitAndType())
+
 
 class Job(Base):
     __tablename__ = "jobs"
