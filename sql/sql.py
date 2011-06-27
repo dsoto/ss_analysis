@@ -1062,8 +1062,8 @@ def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
 
     for circuit_id in circuit_id_list:
         date = dateStart
-        while date <= dateEnd:
-            getEnergyForCircuitForDayByMax(circuit_id, date)
+        while date < dateEnd:
+            print date.strftime('%Y-%m-%d'), circuit_id, getEnergyForCircuitForDayByMax(circuit_id, date)
             date += dt.timedelta(days=1)
 
 '''
