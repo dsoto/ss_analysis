@@ -779,6 +779,9 @@ def getDataListForCircuit(circuit_id,
                                                     dateEnd,
                                                     quantity,
                                                     verbose)
+
+    if len(dates) == 0:
+        print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
     # remove midnight sample from the future
     # by creating a boolean mask and then indexing arrays based on that mask
     mask = []
