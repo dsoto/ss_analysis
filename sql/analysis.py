@@ -549,9 +549,10 @@ def calculatePowerListForCircuit(circuit_id,
                                        dateEnd=dateEnd):
     '''
     pulls watthour data list and creates a report of the power consumed over that hour
+    returns numpy arrays of power_dates, and power_data
     '''
     dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='watthours')
-    #print dates, data
+
     power_dates = []
     power_data = []
     for i in range(len(dates)):
@@ -564,8 +565,10 @@ def calculatePowerListForCircuit(circuit_id,
             if (data[i] - data[i-1]) >= 0:
                 power_dates.append(dates[i])
                 power_data.append(data[i] - data[i-1])
-    #print power_dates
-    #print power_data
+
+    power_dates = np.array(power_dates)
+    power_data = np.array(power_data)
+
     return power_dates, power_data
 
 def printEnergyGridForCircuits(circuit_id_list,
