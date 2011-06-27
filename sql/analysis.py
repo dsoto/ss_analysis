@@ -618,6 +618,32 @@ def plotEnergyGridForCircuits(circuit_id_list,
     #    plt.show()
     fig.savefig(fileNameString)
 
+def getAveragedPowerForCircuit(circuit_id, dateStart=dateStart,
+                               dateEnd = dateEnd):
+    '''
+    returns a numpy array of power for hour of day
+    '''
+    # get list for entire date range
+    dates, data = calculatePowerListForCircuit(circuit_id, dateStart=dateStart, dateEnd=dateEnd)
+
+    # create dictionary with key = hour and value = []
+    dataDict = {}
+    for hour in range(0,24):
+        dataDict[hour] = []
+
+    # iterate over list and place samples in a dictionary with key=hour
+    for i, date in enumerate(dates):
+        dataDict[date.hour].append(data[i])
+
+    avg_power = []
+    for key in dataDict.keys():
+        avg_power_for_hour = np.array(dataDict[key]).mean()
+        avg_power.append(avg_power_for_hour)
+
+    return np.array(avg_power)
+
+
+
 def plotAveragedPowerForCircuit(circuit_id,
                                 dateStart=dateStart,
                                 dateEnd=dateEnd,
