@@ -161,31 +161,39 @@ def plotDatasForCircuit(circuit_id,
                         dateStart=dt.datetime(2011,5,12),
                         dateEnd=dt.datetime(2011,5,13),
                         quantity=('watthours','credit'),
+                        titleString=None,
                         introspect=False):
+    '''
+    plots multiple quantities on a plot for printing and introspection
+    '''
     # set subplots for length of quantity
     numPlotsX = 1
     numPlotsY = len(quantity)
 
-    # plot creation
+    # plot, figure and axes creation
     fig = plt.figure()
+    fig, axs = plt.subplots(numPlotsY, numPlotsX, sharex=True)
 
-    dtSt = str.replace(str(dateStart), ' 00:00:00', '')
     # iterate through quantity
     for i,q in enumerate(quantity):
         dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity=q)
         dates = matplotlib.dates.date2num(dates)
-        thisAxes = fig.add_subplot(numPlotsY, numPlotsX, i+1)
-        fig.add_axes(sharex=True)
-        thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=3, marker='o', mfc=None)
+        thisAxes = axs[i]
+        thisAxes.plot_date(dates, data, ls='-', c='#eeeeee', ms=6, marker='o', mfc=None)
         thisAxes.set_title(q)
         thisAxes.grid(linestyle='-', color='#eeeeee')
+        thisAxes.set_xlim((matplotlib.dates.date2num(dateStart),
+                           matplotlib.dates.date2num(dateEnd)))
 
     fig.autofmt_xdate()
-    titleString = 'circuit ' + str(circuit_id) + '-' + dtSt + ' multiple'
+    # if no titleString passed in, use default
+    if titleString == None:
+        titleString = 'circuit ' + str(circuit_id) + ' - ' + dateStart.strftime('%Y%m%d') + ' multiple'
     fig.suptitle(titleString)
     if introspect:
         plt.show()
     fig.savefig(titleString + '.pdf')
+    plt.close()
 
 def plotDataForCircuit(circuit_id,
                             dateStart=dt.datetime(2011,5,12),
