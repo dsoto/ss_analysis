@@ -942,10 +942,15 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
 
 def generate_ictd_figures():
+    print 'generating averagePower.pdf'
     plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    print 'generating consumptionHistogram.pdf'
     plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+    print 'creditHistogram.pdf'
     plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    print 'generating scatter.pdf'
     plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
+    print 'generating energy histogram'
     plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
 
 
