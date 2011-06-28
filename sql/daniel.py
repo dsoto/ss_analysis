@@ -2,7 +2,6 @@ from sql.analysis import *
 
 import datetime as dt
 
-
 def calculateEuclidianDistance(powerVector1, powerVector2):
     return sum((powerVector2 - powerVector1)**2)**(0.5)
 
@@ -38,7 +37,35 @@ def lookForBadSC20(circuit_id,
 
 cid = 25
 
+def dailyReportForAllCircuits():
+    '''
+    prints a graph for each circuit available to be reviewed manually
+    '''
+
+    # get yesterdays date
+    # this is bad, specify date soon
+    date = dt.datetime.now()
+    date = dt.datetime(date.year, date.month, date.day) - dt.timedelta(days=1)
+    print date
+
+    # get a complete circuit list
+    circuits = session.query(Circuit).order_by(Circuit.id)
+    circuits = [c.id for c in circuits]
+
+    print circuits
+
+    #circuits = circuits[0:3]
+
+    #plotDatasForCircuit(70, date, date+dt.timedelta(days=1), introspect=True)
+
+    for cid in circuits:
+        plotDatasForCircuit(cid,
+                            date, date+dt.timedelta(days=1),
+                            titleString=str(cid))
+
+
 if __name__ == "__main__":
+    '''
     vector1 = getAveragedPowerForCircuit(cid,
                                          dt.datetime(2011, 06, 20),
                                          dt.datetime(2011, 06, 27))
@@ -50,3 +77,5 @@ if __name__ == "__main__":
     print vector2
 
     print calculateEuclidianDistance(vector1, vector2)
+    '''
+    dailyReportForAllCircuits()
