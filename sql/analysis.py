@@ -379,6 +379,8 @@ def removeDuplicates(dates, created, data):
     # remove midnight sample from the future
     # by creating a boolean mask and then indexing arrays based on that mask
     mask = []
+    if len(dates)==0:
+        return [],[]
     for i in range(len(dates)):
         if (created[i] - dates[i]).total_seconds() < 3600:
             mask.append(True)
@@ -416,10 +418,13 @@ def inspectDayOfWatthours(circuit_id,
     # mask values with decrease in watthours and adjust for by one offset
     # want to remove drops at midnight which are normal
     decreaseMask = power < 0
+
     np.insert(decreaseMask, 0, False)
     #should be last one per day? (unless there's a drop at 11pm and no report at 12.
-    if decreaseMask[-1] == 1:
-        decreaseMask[-1] = False
+    if len(decreaseMask)>0:
+        if decreaseMask[-1] == 1:
+            decreaseMask[-1] = False
+    else: return []
 
 
     print 'decrease in watthours observed at these', sum(decreaseMask), 'times'
@@ -1138,8 +1143,8 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
         thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
         thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
         thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
-        thisAxes.set_xticklabels(dateList, fontproperties=textFont)
-        thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        thisAxes.set_xticklabels(dateList)  #, fontproperties=textFont)
+        thisAxes.set_yticklabels(yLabels)   #, fontproperties=textFont)
         #thisAxes.xlim(xmin=1)
         thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
 
