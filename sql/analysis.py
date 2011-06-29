@@ -22,13 +22,12 @@ jun_15 = dt.datetime(2011,6,15)
 
 # rcparams ----------------------------
 import matplotlib as mpl
-mpl.rcParams['font.family']='serif'
-mpl.rcParams['font.size']=8
-mpl.rcParams['axes.labelsize']=14
-mpl.rcParams['xtick.labelsize']=12
-mpl.rcParams['ytick.labelsize']=12
-#mpl.rcParams['figure.facecolor']='#ffffff'
-#mpl.rcParams['savefig.facecolor']='#ffffff'
+mpl.rcParams['font.family']     = 'serif'
+mpl.rcParams['font.size']       = 8
+mpl.rcParams['axes.labelsize']  = 14
+mpl.rcParams['axes.titlesize']  = 14
+mpl.rcParams['xtick.labelsize'] = 12
+mpl.rcParams['ytick.labelsize'] = 12
 
 # XFCA to USD
 toUSD = 1.0/500
