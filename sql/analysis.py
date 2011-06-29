@@ -185,6 +185,15 @@ def plotDatasForCircuit(circuit_id,
         thisAxes.set_xlim((matplotlib.dates.date2num(dateStart),
                            matplotlib.dates.date2num(dateEnd)))
 
+    # add annotation on plot of circuit ip and meter name
+    annotation = []
+    circuit = session.query(Circuit).get(circuit_id)
+    annotation.append('circuit_id = ' + str(circuit_id))
+    annotation.append('meter name =' + circuit.meter.name)
+    annotation.append('circuit ip =' + circuit.ip_address)
+    annotation = '\n'.join(annotation)
+
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.autofmt_xdate()
     # if no titleString passed in, use default
     if titleString == None:
