@@ -190,6 +190,7 @@ def plotDatasForCircuit(circuit_id,
     annotation.append('circuit_id = ' + str(circuit_id))
     annotation.append('meter name =' + circuit.meter.name)
     annotation.append('circuit ip =' + circuit.ip_address)
+    annotation.append(dateStart.strftime('%Y-%m-%d') + ' to ' + dateEnd.strftime('%Y-%m-%d'))
     annotation = '\n'.join(annotation)
 
     fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
