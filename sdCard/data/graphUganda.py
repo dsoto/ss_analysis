@@ -86,6 +86,17 @@ def calculateDailyEnergyForCircuit(circuit,
 def calculate_30_day_stats_for_circuit():
     pass
 
+def calculatePower(circuit,
+               timeStart=datetime(2011,6,2),
+               timeEnd=datetime(2011,6,29)):
+    dates, data, credit, watts = getCleanDataForCircuit(circuit, timeStart, timeEnd)
+    print str(circuit) + ',',
+    print str(numpy.max(watts)) + ',',
+    print str(numpy.mean(watts)) + ',',
+    print str(numpy.min(watts)) + ',',
+    print
+
+
 def graphPower(circuit,
                timeStart=datetime(2011,6,2),
                timeEnd=datetime(2011,6,29),
