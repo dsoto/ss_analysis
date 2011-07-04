@@ -13,16 +13,20 @@ def getRawDataForCircuit(circuit,
                          timeEnd=datetime(2011,6,29)):
 
     con = sqlite3.connect(db, detect_types = sqlite3.PARSE_COLNAMES)
-    sql = "select timestamp as 'ts [timestamp]',watthours_today,credit from logs where circuitid=%s and timestamp between '%s' and '%s' order by timestamp asc;" % (circuit, timeStart, timeEnd)
+    sql = """select timestamp as 'ts [timestamp]',watthours_today,credit,watts
+             from logs where circuitid=%s and timestamp between '%s' and '%s'
+             order by timestamp asc;""" % (circuit, timeStart, timeEnd)
 
     dates = []
     data = []
     credit = []
+    watts = []
 
     for i, row in enumerate(con.execute(sql)):
         dates.append(row[0])
         data.append(row[1])
         credit.append(row[2])
+        watts.append(row[3])
     con.close()
 
     # what if no data?
@@ -30,15 +34,15 @@ def getRawDataForCircuit(circuit,
     dates = numpy.array(dates)
     data = numpy.array(data)
     credit = numpy.array(credit)
-
-    return dates, data, credit
+    watts = numpy.array(watts)
+    return dates, data, credit, watts
 
 
 def getCleanDataForCircuit(circuit,
                            timeStart,
                            timeEnd):
-    dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
-
+    #dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
+    dates, data, credit, watts = getDecimatedDataForCircuit(circuit, timeStart, timeEnd)
 
     wh_drops = numpy.diff(data)
     drop_indices = numpy.where(wh_drops < 0)[0]
@@ -47,20 +51,20 @@ def getCleanDataForCircuit(circuit,
 
     # what if no data?
 
-    return dates, data, credit
+    return dates, data, credit, watts
 
 def getDecimatedDataForCircuit(circuit,
                                timeStart,
                                timeEnd,
                                downsample=20):
-    dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
+    dates, data, credit, watts = getRawDataForCircuit(circuit, timeStart, timeEnd)
 
     index = range(0, data.shape[0], downsample)
     dates = dates[index]
     data = data[index]
     credit = credit[index]
-
-    return dates, data, credit
+    watts = watts[index]
+    return dates, data, credit, watts
 
 def calculateDailyEnergyForCircuit(circuit,
                                    timeStart=datetime(2011,6,2),
@@ -88,21 +92,21 @@ def graphPower(circuit,
                plot_file_name=None):
     print 'graphPower', circuit, timeStart, timeEnd
 
-    dates, data, credit = getCleanDataForCircuit(circuit, timeStart, timeEnd)
+    dates, data, credit, watts = getCleanDataForCircuit(circuit, timeStart, timeEnd)
     #dates, data, credit = getDecimatedDataForCircuit(circuit, timeStart, timeEnd)
 
-    data = numpy.diff(data)
+    #data = numpy.diff(data)
 
     # convert dates to seconds
     dates = matplotlib.dates.date2num(dates)
 
-    delta_t = numpy.diff(dates)
+    #delta_t = numpy.diff(dates)
 
-    power = data / (delta_t * 24.0)
+    #power = data / (delta_t * 24.0)
 
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.2,0.8,0.7))
-    ax.plot(power, 'kx')
+    ax.plot_date(dates, watts, 'kx')
     ax.set_ylabel("Power")
     ax.set_xlabel("Time (hours passed)")
     ax.set_title("Circuit %s between %s and %s" % (circuit, timeStart, timeEnd))
