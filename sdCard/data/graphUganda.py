@@ -49,8 +49,18 @@ def getCleanDataForCircuit(circuit,
 
     return dates, data, credit
 
-def getDecimatedDataForCircuit():
-    pass
+def getDecimatedDataForCircuit(circuit,
+                               timeStart,
+                               timeEnd,
+                               downsample=20):
+    dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
+
+    index = range(0, data.shape[0], downsample)
+    dates = dates[index]
+    data = data[index]
+    credit = credit[index]
+
+    return dates, data, credit
 
 def calculateDailyEnergyForCircuit(circuit,
                                    timeStart=datetime(2011,6,2),
