@@ -86,6 +86,32 @@ def graphPower(circuit,
                timeStart=datetime(2011,6,2),
                timeEnd=datetime(2011,6,29),
                plot_file_name=None):
+    print 'graphPower', circuit, timeStart, timeEnd
+
+    dates, data, credit = getCleanDataForCircuit(circuit, timeStart, timeEnd)
+    #dates, data, credit = getDecimatedDataForCircuit(circuit, timeStart, timeEnd)
+
+    data = numpy.diff(data)
+
+    # convert dates to seconds
+    dates = matplotlib.dates.date2num(dates)
+
+    delta_t = numpy.diff(dates)
+
+    power = data / (delta_t * 24.0)
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.2,0.8,0.7))
+    ax.plot(power, 'kx')
+    ax.set_ylabel("Power")
+    ax.set_xlabel("Time (hours passed)")
+    ax.set_title("Circuit %s between %s and %s" % (circuit, timeStart, timeEnd))
+    fig.autofmt_xdate()
+    if plot_file_name==None:
+        plot_file_name = 'power '+str(circuit)+'.pdf'
+    fig.savefig(plot_file_name)
+
+
 
 
 def graphDailyWattHours(circuit,
