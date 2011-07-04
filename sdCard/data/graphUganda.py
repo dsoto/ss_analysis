@@ -118,22 +118,7 @@ def graphDailyWattHours(circuit,
                         timeStart=datetime(2011,6,2),
                         timeEnd=datetime(2011,6,29),
                         plot_file_name=None):
-    print "fetching"
-    '''
-    con = sqlite3.connect(db, detect_types = sqlite3.PARSE_COLNAMES)
-    sql = "select timestamp as 'ts [timestamp]',watthours_sc20,credit from logs where circuitid=%s and timestamp between '%s' and '%s' order by timestamp asc;" % (circuit, timeStart, timeEnd)
 
-    dates = []
-    data = []
-    credit = []
-
-    for i, row in enumerate(con.execute(sql)):
-        if i%100 == 0:
-            dates.append(row[0])
-            data.append(row[1])
-            credit.append(row[2])
-    con.close()
-    '''
     dates, data, credit = getCleanDataForCircuit(circuit, timeStart, timeEnd)
     #dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
     dates = matplotlib.dates.date2num(dates)
