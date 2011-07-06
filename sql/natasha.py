@@ -290,6 +290,8 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             f.write(str(datadiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k]-datadiffs[k])); f.write('\t')
+                            if chours[k]==0 and datadiffs[k]<0:
+                                f.write('\t');f.write('midnight wh drop?'); f.write('\t')
                             f.write('\n')
                         elif datadiffs[k] > (creditdiffs[k] +tol):
                             print 'cct '+ str(c)+' got more wh than paid for on ' + str(dates[k])
