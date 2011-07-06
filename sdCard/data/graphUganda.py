@@ -158,4 +158,6 @@ if __name__ == "__main__":
     cid_list = range(1,22)
     for cid in cid_list:
         #graphDailyWattHours(cid, datetime(2011,6,2), datetime(2011,6,29), plot_file_name='clean'+str(cid)+'.pdf')
-        calculateDailyEnergyForCircuit(cid, datetime(2011,6,2), datetime(2011,6,29))
+        #calculateDailyEnergyForCircuit(cid, datetime(2011,6,2), datetime(2011,6,29))
+        #graphPower(cid)
+        calculatePower(cid)
