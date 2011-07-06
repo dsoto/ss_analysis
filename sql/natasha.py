@@ -197,15 +197,12 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
 def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
     filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
     f = open(filename, 'w')
-    header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm']
+    header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm' , 'size of diff', 'creditjump']
     for i in range(len(header)):
         f.write(header[i])
         f.write('\t')
     f.write('\n')
 
-    # change for meter locations/rates
-    dayrate = 2.0
-    nightrate = 2.5
 
     currentDate=dateStart
     while currentDate < dateEnd:
@@ -213,6 +210,14 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
         for m in range(len(meters)):
             #f.write(getMeterName(meters[m])); f.write('\t')
             circuits = getCircuitsForMeter(meters[m])
+            # meter locations/rates:  currency per watthour
+            dayrate = 2.0
+            nightrate = 2.5
+            #for uganda rates
+            if meters[m] == 6:
+                #print 'using uganda rates'
+                dayrate = 8.0
+                nightrate = 10.0
             for c in circuits:
                 if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
                     circuits.remove(c)
@@ -251,46 +256,19 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                     break
                 #convert credit back to wh
                 chours= [x.hour for x in c_dates]
-                #am = chours.index(6)
-                #am = chours.index(>6)
-                #pm = chours.index(>18)
                 chours = np.array(chours)
                 am = np.where((chours>=6)&(chours<18))
-                #if len(am[0])==0:
-                    #break
-                #print am
-                #print am[0]
-                #print am[0][0]
                 amlist=[]
                 for x in range(len(am[0])):
                     amlist.append(am[0][x])
-                #print amlist
                 pm = np.where((chours<6)|(chours>=18))
-                #print pm
                 pmlist =[]
                 for y in range(len(pm[0])):
                     pmlist.append(pm[0][y])
-                #pm = np.where(chours >= 18)
-                #c_data[am:pm] = [x*(-(1.0/dayrate)) for x in c_data[am:pm]]
-                '''
-                for x in range(len(amlist)):
-                    c_data[amlist[x]] *= -(1.0/dayrate)
-                for x in range(len(pmlist)):
-                    c_data[pmlist[x]] *= -(1.0/nightrate)
-                    '''
-                #c_data[pm] = [x*(-(1.0/nightrate)) for x in c_data[pm]]
-                #night = range(0,am) + range(pm, len(c_dates))
-                #c_data[0:am] = [x*(-(1.0/nightrate)) for x in c_data[0:am]]
-                #c_data[pm:len(c_dates)] = [x*(-(1.0/nightrate)) for x in c_data[pm:len(c_dates)]]
                 datadiffs = np.diff(data)
                 datadiffs=np.insert(datadiffs, 0, 0)
                 creditdiffs = np.diff(c_data)
-                #print creditdiffs
                 creditdiffs=np.insert(creditdiffs, 0, 0)
-                #print c
-                #print creditdiffs
-                #print amlist
-                #print pmlist
                 for x in range(len(amlist)):
                     creditdiffs[amlist[x]] *= -(1.0/dayrate)
                 for x in range(len(pmlist)):
@@ -298,10 +276,9 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                 # catch credit jumps
                 # would be better to check against logged purchases...
                 #cjumps = creditdiffs <0 #negative now that we converted above...
-                #notcjump = creditdiffs>0
                 for k in range(len(datadiffs)):
-                    #if notcjump[k] == True:
-                    if creditdiffs[k] > 0:
+                    # check that it's not a credit jump hour
+                    if creditdiffs[k] >= 0:
                         tol = 2
                         if datadiffs[k] < (creditdiffs[k] - tol):
                             print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
@@ -312,6 +289,7 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             f.write(str(c_data[k])); f.write('\t')
                             f.write(str(datadiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k])); f.write('\t')
+                            f.write(str(creditdiffs[k]-datadiffs[k])); f.write('\t')
                             f.write('\n')
                         elif datadiffs[k] > (creditdiffs[k] +tol):
                             print 'cct '+ str(c)+' got more wh than paid for on ' + str(dates[k])
@@ -322,9 +300,32 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             f.write(str(c_data[k])); f.write('\t')
                             f.write(str(datadiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k])); f.write('\t')
+                            f.write(str(creditdiffs[k]-datadiffs[k])); f.write('\t')
                             f.write('\n')
                         #else:
                             #f.write('\n')
+                    # if a credit jump hour
+                    elif creditdiffs[k] < 0:
+                        # go back and check actual credit jump at that time
+                        creditjump = c_data[k] - c_data[k-1]
+                        if 6<=chours[k] <18:
+                            rate = dayrate
+                        else: rate=nightrate
+                        # check that credit jump is normal range, after adding used credit
+                        # over that very hour
+                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004:
+                            print 'credit jump on cct ' + str(c) + ' at ' + str(dates[k])+ ' of ' + str(creditjump)
+                            f.write(str(dates[k])); f.write('\t')
+                            f.write(getMeterName(meters[m])); f.write('\t')
+                            f.write(str(c));f.write('\t')
+                            f.write(str(data[k])); f.write('\t')
+                            f.write(str(c_data[k])); f.write('\t')
+                            f.write(str(datadiffs[k])); f.write('\t')
+                            f.write(str(creditdiffs[k])); f.write('\t'); f.write('\t')
+                            f.write(str(creditjump)); f.write('\t');
+                            f.write('credit jump outside normal range'); f.write('\t');
+                            f.write('\n')
+
                 #f.write('\n')
         currentDate += dt.timedelta(days=1)
 
