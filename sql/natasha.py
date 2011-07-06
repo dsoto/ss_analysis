@@ -194,6 +194,143 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
         currentDate += dt.timedelta(days=1)
     f.close()
 
+def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+    filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
+    f = open(filename, 'w')
+    header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm']
+    for i in range(len(header)):
+        f.write(header[i])
+        f.write('\t')
+    f.write('\n')
+
+    # change for meter locations/rates
+    dayrate = 2.0
+    nightrate = 2.5
+
+    currentDate=dateStart
+    while currentDate < dateEnd:
+        #f.write(str(currentDate)); f.write('\t')
+        for m in range(len(meters)):
+            #f.write(getMeterName(meters[m])); f.write('\t')
+            circuits = getCircuitsForMeter(meters[m])
+            for c in circuits:
+                if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                    circuits.remove(c)
+            for i,c in enumerate(circuits):
+                dates,data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='watthours')
+                c_dates,c_data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='credit')
+                '''
+                #check if number of wh and credit messages match up
+                if not len(dates) == len(c_dates):
+                    print('extra or missing data...first occuring at: ')
+                    #find outlier
+                    dates_num = matplotlib.dates.date2num(dates)
+                    c_dates_num = matplotlib.dates.date2num(c_dates)
+                    mask = np.setmember1d(dates_num, c_dates_num)
+                    if len(dates_num)>len(cdates_num):
+                        if len(set(dates_num)) == len(c_dates_num):
+                            for i in range(len(dates_num)-1):
+                                if dates_num[i] == dates_num[i+1]:
+                                    ind = i
+                                    break
+                            print 'we have duplicate message/s at ' + matplotlib.dates.num2date(dates_num[ind])
+                        else:
+                            print matplotlib.dates.num2date(dates_num[np.where(mask==False)][0])
+                    elif len(dates_num)<len(c_dates_num):
+                        print matplotlib.dates.num2date(c_dates_num[np.where(mask==False)][0])
+                    else: print matplotlib.dates.num2date(dates_num[np.where(mask==False)])
+                    break
+                    '''
+                #else:
+                '''
+                #remove last report per day?
+                data=np.delete(data,len(data)-1)
+                c_data=np.delete(c_data,len(c_data)-1)
+                '''
+                if len(dates)==0:
+                    break
+                #convert credit back to wh
+                chours= [x.hour for x in c_dates]
+                #am = chours.index(6)
+                #am = chours.index(>6)
+                #pm = chours.index(>18)
+                chours = np.array(chours)
+                am = np.where((chours>=6)&(chours<18))
+                #if len(am[0])==0:
+                    #break
+                #print am
+                #print am[0]
+                #print am[0][0]
+                amlist=[]
+                for x in range(len(am[0])):
+                    amlist.append(am[0][x])
+                #print amlist
+                pm = np.where((chours<6)|(chours>=18))
+                #print pm
+                pmlist =[]
+                for y in range(len(pm[0])):
+                    pmlist.append(pm[0][y])
+                #pm = np.where(chours >= 18)
+                #c_data[am:pm] = [x*(-(1.0/dayrate)) for x in c_data[am:pm]]
+                '''
+                for x in range(len(amlist)):
+                    c_data[amlist[x]] *= -(1.0/dayrate)
+                for x in range(len(pmlist)):
+                    c_data[pmlist[x]] *= -(1.0/nightrate)
+                    '''
+                #c_data[pm] = [x*(-(1.0/nightrate)) for x in c_data[pm]]
+                #night = range(0,am) + range(pm, len(c_dates))
+                #c_data[0:am] = [x*(-(1.0/nightrate)) for x in c_data[0:am]]
+                #c_data[pm:len(c_dates)] = [x*(-(1.0/nightrate)) for x in c_data[pm:len(c_dates)]]
+                datadiffs = np.diff(data)
+                datadiffs=np.insert(datadiffs, 0, 0)
+                creditdiffs = np.diff(c_data)
+                #print creditdiffs
+                creditdiffs=np.insert(creditdiffs, 0, 0)
+                #print c
+                #print creditdiffs
+                #print amlist
+                #print pmlist
+                for x in range(len(amlist)):
+                    creditdiffs[amlist[x]] *= -(1.0/dayrate)
+                for x in range(len(pmlist)):
+                    creditdiffs[pmlist[x]] *= -(1.0/nightrate)
+                # catch credit jumps
+                # would be better to check against logged purchases...
+                #cjumps = creditdiffs <0 #negative now that we converted above...
+                #notcjump = creditdiffs>0
+                for k in range(len(datadiffs)):
+                    #if notcjump[k] == True:
+                    if creditdiffs[k] > 0:
+                        tol = 2
+                        if datadiffs[k] < (creditdiffs[k] - tol):
+                            print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
+                            f.write(str(dates[k])); f.write('\t')
+                            f.write(getMeterName(meters[m])); f.write('\t')
+                            f.write(str(c));f.write('\t')
+                            f.write(str(data[k])); f.write('\t')
+                            f.write(str(c_data[k])); f.write('\t')
+                            f.write(str(datadiffs[k])); f.write('\t')
+                            f.write(str(creditdiffs[k])); f.write('\t')
+                            f.write('\n')
+                        elif datadiffs[k] > (creditdiffs[k] +tol):
+                            print 'cct '+ str(c)+' got more wh than paid for on ' + str(dates[k])
+                            f.write(str(dates[k])); f.write('\t')
+                            f.write(getMeterName(meters[m])); f.write('\t')
+                            f.write(str(c));f.write('\t')
+                            f.write(str(data[k])); f.write('\t')
+                            f.write(str(c_data[k])); f.write('\t')
+                            f.write(str(datadiffs[k])); f.write('\t')
+                            f.write(str(creditdiffs[k])); f.write('\t')
+                            f.write('\n')
+                        #else:
+                            #f.write('\n')
+                #f.write('\n')
+        currentDate += dt.timedelta(days=1)
+
+
+
+
 
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
                         dateEnd=dt.datetime(2011,5,20),
