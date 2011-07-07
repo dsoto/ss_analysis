@@ -52,6 +52,27 @@ class Meter(Base):
         self.communication_interface_id = communication_interface_id
         self.panel_capacity = panel_capacity
 
+
+    def get_circuits(self):
+        session = Session()
+        return list(session.\
+                    query(Circuit).\
+                    filter_by(meter=self).order_by(Circuit.ip_address))
+
+    def getMainCircuit(self):
+        session = Session()
+        return session.query(Circuit).filter_by(meter=self)\
+            .filter_by(ip_address='192.168.1.200').first()
+
+    def getConsumerCircuits(self):
+        session = Session()
+        return session.query(Circuit).filter_by(meter=self).filter(Circuit.ip_address!='192.168.1.200').order_by(Circuit.ip_address)
+
+    def getMainCircuitId(self):
+        main = self.getMainCircuit()
+        if main:
+            return main.id
+
 """
 ORM class for the account
 """
