@@ -37,16 +37,17 @@ def lookForBadSC20(circuit_id,
 
 cid = 25
 
-def dailyReportForAllCircuits():
+def dailyReportForAllCircuits(dateStart=dt.datetime(2011,6,25),
+                              dateEnd=dt.datetime(2011,6,28)):
     '''
     prints a graph for each circuit available to be reviewed manually
     '''
 
     # get yesterdays date
     # this is bad, specify date soon
-    date = dt.datetime.now()
-    date = dt.datetime(date.year, date.month, date.day) - dt.timedelta(days=1)
-    print date
+    #date = dt.datetime.now()
+    #date = dt.datetime(date.year, date.month, date.day) - dt.timedelta(days=1)
+    print dateStart, dateEnd
 
     # get a complete circuit list
     circuits = session.query(Circuit).order_by(Circuit.id)
@@ -60,8 +61,85 @@ def dailyReportForAllCircuits():
 
     for cid in circuits:
         plotDatasForCircuit(cid,
-                            date, date+dt.timedelta(days=1),
+                            dateStart,
+                            dateEnd,
                             titleString=str(cid))
+
+def calculateSelfConsumption(meter_id,
+                             dateStart=dt.datetime(2011, 6, 1),
+                             dateEnd=dt.datetime(2011, 7, 1),
+                             num_samples_threshold=16,
+                             verbose=0):
+    circuit_list = getCircuitsForMeter(meter_id)
+
+    total_energy = 0
+    for cid in circuit_list:
+
+        average_energy = calculateAverageEnergyForCircuit(cid,
+                                         dateStart, dateEnd, verbose=verbose)
+        print average_energy
+        total_energy += average_energy
+    print 'total energy =', total_energy
+
+def plotSelfConsumption(meter_id=8,
+                        dateStart=dt.datetime(2011, 6, 1),
+                        dateEnd=dt.datetime(2011, 7, 4),
+                        num_samples_threshold=16,
+                        verbose=0):
+
+    meter = session.query(Meter).get(meter_id)
+
+    mains_id = meter.getMainCircuit().id
+
+    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    print mains_id
+    print customer_circuit_list
+
+
+    # loop through days
+    # for each day total household consumption and infer mains consumption
+    # create list of dates, household consumption and mains consumption
+    dates = []
+    household_consumption = []
+    mains_consumption = []
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.1,0.8,0.8))
+
+    current_date = dateStart
+    while current_date < dateEnd:
+
+        dates.append(current_date)
+
+        print current_date,
+        mains_energy = getEnergyForCircuitForDayByMax(mains_id, current_date)
+        print mains_energy[0]
+
+        total_energy = 0
+        for cid in customer_circuit_list:
+
+            customer_energy = getEnergyForCircuitForDayByMax(cid,
+                                             current_date)
+            print customer_energy[0]
+            total_energy += customer_energy[0]
+
+        print 'total energy =', total_energy
+
+        mains_consumption.append(mains_energy[0] - total_energy)
+        household_consumption.append(total_energy)
+
+        current_date += dt.timedelta(days=1)
+
+    dates = matplotlib.dates.date2num(dates)
+
+    ax.plot_date(dates, household_consumption)
+    ax.plot_date(dates, mains_consumption)
+    ax.set_ylim((0,2000))
+    plt.show()
+
+
+
 
 
 if __name__ == "__main__":
@@ -78,4 +156,17 @@ if __name__ == "__main__":
 
     print calculateEuclidianDistance(vector1, vector2)
     '''
-    dailyReportForAllCircuits()
+
+    '''
+    calculateSelfConsumption(6,
+                             dateStart=dt.datetime(2011,6,24),
+                             dateEnd=dt.datetime(2011,6,28))
+
+
+    calculateSelfConsumption(7,
+                             dateStart=dt.datetime(2011,6,1),
+                             dateEnd=dt.datetime(2011,6,28),
+                             num_samples_threshold=16,
+                             verbose=1)
+    '''
+    plotSelfConsumption()

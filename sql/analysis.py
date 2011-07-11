@@ -509,7 +509,7 @@ def getDataListForCircuit(circuit_id,
 
     # if data empty return two empty lists
     if len(dates) == 0:
-        print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
+        #print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
         return [],[]
 
     # remove midnight sample from the future
@@ -764,18 +764,6 @@ def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
     ax.set_ylabel('Acumulated Energy (Watthours)')
     fig.savefig(plotFileName)
 
-def getEnergyForCircuit(circuit_id,
-                        dateStart=dateStart,
-                        dateEnd=dateEnd):
-    data = []
-    dates = []
-    currentDate = dateStart
-    while currentDate < dateEnd:
-        data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
-        dates.append(currentDate)
-        currentDate += dt.timedelta(days=1)
-    data = np.array(data)
-    return data, dates
 
 def plotEnergyHistogram(circuit_id_list,
                         dateStart=dateStart,
@@ -809,12 +797,75 @@ def plotEnergyHistogram(circuit_id_list,
 
 def getEnergyForCircuitForDayByMax(circuit_id,
                                    day=dt.datetime(2011,6,8)):
-    dates, data = getDataListForCircuit(circuit_id, day, day+dt.timedelta(days=1))
-    #print circuit_id, day
-    #inspectDayOfWatthours(circuit_id, day, day+dt.timedelta(days=1))
-    #print max(data)
-    #print
-    return max(data)
+    '''
+    needs to check for sufficient number of data samples
+    needs to check for watthour drops
+    '''
+    dates, watthours = getDataListForCircuit(circuit_id,
+                                             day,
+                                             day+dt.timedelta(days=1),
+                                             quantity='watthours')
+    if len(watthours) > 0:
+        energy = max(watthours)
+    else:
+        energy = 0
+    power = np.diff(watthours)
+    num_decreases = len(np.extract(power < 0, power))
+
+    return energy, len(watthours), num_decreases
+
+def calculateAverageEnergyForCircuit(circuit_id=70,
+                                     dateStart=dt.datetime(2011,6,1),
+                                     dateEnd=dt.datetime(2011,7,7),
+                                     verbose=0,
+                                     num_drop_threshold=1,
+                                     num_samples_threshold=18):
+    '''
+    calculates average energy for circuit over daterange
+    rejecting samples with watthour drops and too few samples as specified
+    by num_drop_threshold and num_samples_threshold
+    '''
+    data = []
+    dates = []
+    currentDate = dateStart
+    average_energy = 0
+    rejected_samples = 0
+    average_energy_samples = 0
+    while currentDate < dateEnd:
+        energy, num_samples, num_drops = getEnergyForCircuitForDayByMax(circuit_id, currentDate)
+        if verbose > 1:
+            print currentDate,
+            print energy, num_samples, num_drops
+        if num_drops <= num_drop_threshold and num_samples >= num_samples_threshold:
+            average_energy += energy
+            average_energy_samples += 1
+        else:
+            rejected_samples += 1
+        currentDate += dt.timedelta(days=1)
+    if average_energy_samples > 0:
+        average_energy /= average_energy_samples
+    else:
+        average_energy = 0
+
+    if verbose > 0:
+        print 'circuit =', circuit_id
+        print 'average energy =', average_energy
+        print 'number of samples =', average_energy_samples
+        print 'rejected samples =', rejected_samples
+    return average_energy
+
+def getEnergyForCircuit(circuit_id,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd):
+    data = []
+    dates = []
+    currentDate = dateStart
+    while currentDate < dateEnd:
+        data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
+        dates.append(currentDate)
+        currentDate += dt.timedelta(days=1)
+    data = np.array(data)
+    return data, dates
 
 def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
                            dateEnd=dt.datetime(2011,6,8)):
