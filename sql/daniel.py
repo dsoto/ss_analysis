@@ -2,6 +2,8 @@ from sql.analysis import *
 
 import datetime as dt
 
+tw.log.info('loading daniel.py')
+
 def calculateEuclidianDistance(powerVector1, powerVector2):
     return sum((powerVector2 - powerVector1)**2)**(0.5)
 
@@ -42,24 +44,16 @@ def dailyReportForAllCircuits(dateStart=dt.datetime(2011,6,25),
     '''
     prints a graph for each circuit available to be reviewed manually
     '''
-
-    # get yesterdays date
-    # this is bad, specify date soon
-    #date = dt.datetime.now()
-    #date = dt.datetime(date.year, date.month, date.day) - dt.timedelta(days=1)
-    print dateStart, dateEnd
+    tw.log.info('running dailyReportForAllCircuits')
+    tw.log.info('date start = ' + str(dateStart))
+    tw.log.info('date end   = ' + str(dateEnd))
 
     # get a complete circuit list
     circuits = session.query(Circuit).order_by(Circuit.id)
     circuits = [c.id for c in circuits]
 
-    print circuits
-
-    #circuits = circuits[0:3]
-
-    #plotDatasForCircuit(70, date, date+dt.timedelta(days=1), introspect=True)
-
     for cid in circuits:
+        tw.log.info('generating plot for circuit ' + str(cid))
         plotDatasForCircuit(cid,
                             dateStart,
                             dateEnd,
@@ -82,20 +76,20 @@ def calculateSelfConsumption(meter_id,
     print 'total energy =', total_energy
 
 def plotSelfConsumption(meter_id=8,
-                        dateStart=dt.datetime(2011, 6, 1),
+                        dateStart=dt.datetime(2011, 7, 1),
                         dateEnd=dt.datetime(2011, 7, 4),
+                        num_drop_threshold=1,
                         num_samples_threshold=16,
                         verbose=0):
 
+    tw.log.info('entering plotSelfConsumption')
+
     meter = session.query(Meter).get(meter_id)
-
     mains_id = meter.getMainCircuit().id
-
     customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
 
-    print mains_id
-    print customer_circuit_list
-
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(customer_circuit_list))
 
     # loop through days
     # for each day total household consumption and infer mains consumption
@@ -110,39 +104,52 @@ def plotSelfConsumption(meter_id=8,
     current_date = dateStart
     while current_date < dateEnd:
 
-        dates.append(current_date)
-
-        print current_date,
+        print current_date
         mains_energy = getEnergyForCircuitForDayByMax(mains_id, current_date)
-        print mains_energy[0]
+        print 'mains energy =', mains_energy[0]
 
         total_energy = 0
         for cid in customer_circuit_list:
 
             customer_energy = getEnergyForCircuitForDayByMax(cid,
                                              current_date)
-            print customer_energy[0]
+            #print customer_energy[0]
             total_energy += customer_energy[0]
 
         print 'total energy =', total_energy
 
-        mains_consumption.append(mains_energy[0] - total_energy)
-        household_consumption.append(total_energy)
+
+        if mains_energy[1] > num_samples_threshold and mains_energy[2] < num_drop_threshold:
+            dates.append(current_date)
+            mains_consumption.append(mains_energy[0] - total_energy)
+            household_consumption.append(total_energy)
+            tw.log.info(str(current_date))
+            tw.log.info('mains energy for day ' + str(mains_energy[0] - total_energy))
+            tw.log.info('household consumpition ' + str(total_energy))
+        else:
+            tw.log.info('rejecting date ' + str(current_date))
+            if mains_energy[1] <= num_samples_threshold:
+                tw.log.info('rejected for too few samples')
+            if mains_energy[2] >= num_drop_threshold:
+                tw.log.info('rejected for too many watthour drops')
 
         current_date += dt.timedelta(days=1)
 
     dates = matplotlib.dates.date2num(dates)
 
-    ax.plot_date(dates, household_consumption)
-    ax.plot_date(dates, mains_consumption)
+    ax.plot_date(dates, household_consumption, label='Household Total')
+    ax.plot_date(dates, mains_consumption, label='Meter Consumption')
+    ax.legend()
     ax.set_ylim((0,2000))
-    plt.show()
-
+    ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
+    fig.savefig('selfconsumption.pdf')
+    tw.log.info('exiting plotSelfConsumption')
 
 
 
 
 if __name__ == "__main__":
+    tw.log.info('entering __main__ of daniel.py')
     '''
     vector1 = getAveragedPowerForCircuit(cid,
                                          dt.datetime(2011, 06, 20),
@@ -170,3 +177,5 @@ if __name__ == "__main__":
                              verbose=1)
     '''
     plotSelfConsumption()
+    #dailyReportForAllCircuits(dt.datetime(2011, 6, 4), dt.datetime(2011, 6, 11))
+    tw.log.info('exiting __main__ of daniel.py')

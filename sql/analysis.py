@@ -5,7 +5,10 @@ import matplotlib.dates           # version 1.0.1
 import matplotlib.pyplot as plt   # version 1.0.1
 import datetime as dt
 
-
+# setup logging
+import twiggy as tw
+tw.quickSetup(file='sql_analysis.log')
+tw.log.info('loading analysis.py')
 
 # circuit id's for quick and dirty lists
 mali001 = range(13,25)
@@ -494,13 +497,14 @@ def getDataListForCircuit(circuit_id,
         dateStart - datetime object for day of data.  data returned dateStart < date <= dateEnd
         dateEnd - datetime object specifying end of data
         quantity - 'watthours' or 'credit'
-        verbose - 1 gives an output to console of the data list
+        verbose - 1 gives an output to logging of the data list
                 - 0 no output
     output:
         dates - list of date stamps corresponding to data list
         data - list of reported data
     '''
     # get numpy arrays of dates, timestamps, and data
+    tw.log.info('running getDataListForCircuit on ' + str(circuit_id) + ' for quantity = ' + quantity)
     dates, created, data = getRawDataListForCircuit(circuit_id,
                                                     dateStart,
                                                     dateEnd,
@@ -509,6 +513,7 @@ def getDataListForCircuit(circuit_id,
 
     # if data empty return two empty lists
     if len(dates) == 0:
+        tw.log.info('returning empty lists')
         #print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
         return [],[]
 
@@ -520,7 +525,9 @@ def getDataListForCircuit(circuit_id,
             mask.append(True)
         else:
             mask.append(False)
+
     mask = np.array(mask)
+    tw.log.info('removing ' + str(mask.sum()) + ' sample(s) from the future')
     dates = dates[mask]
     data = data[mask]
 
@@ -535,7 +542,7 @@ def getDataListForCircuit(circuit_id,
 
     if verbose > 0:
         for d in dataList:
-            print d
+            tw.log.info(str(d))
 
     return dates, data
 
@@ -801,6 +808,7 @@ def getEnergyForCircuitForDayByMax(circuit_id,
     needs to check for sufficient number of data samples
     needs to check for watthour drops
     '''
+    tw.log.info('entering getEnergyForCircuitForDayByMax for circuit ' + str(circuit_id))
     dates, watthours = getDataListForCircuit(circuit_id,
                                              day,
                                              day+dt.timedelta(days=1),
@@ -808,10 +816,14 @@ def getEnergyForCircuitForDayByMax(circuit_id,
     if len(watthours) > 0:
         energy = max(watthours)
     else:
+        tw.log.info('no data')
         energy = 0
     power = np.diff(watthours)
     num_decreases = len(np.extract(power < 0, power))
-
+    tw.log.info('samples of watthour data = ' + str(len(watthours)))
+    tw.log.info('number of watthour drops = ' + str(num_decreases))
+    tw.log.info('reporting ' + str(energy) + ' watthours')
+    tw.log.info('-------')
     return energy, len(watthours), num_decreases
 
 def calculateAverageEnergyForCircuit(circuit_id=70,
