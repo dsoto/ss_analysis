@@ -525,9 +525,10 @@ def getDataListForCircuit(circuit_id,
             mask.append(True)
         else:
             mask.append(False)
+            tw.log.info('removing sample at ' + str(dates[1]) + ' from the future')
 
     mask = np.array(mask)
-    tw.log.info('removing ' + str(mask.sum()) + ' sample(s) from the future')
+
     dates = dates[mask]
     data = data[mask]
 
