@@ -378,6 +378,153 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
         currentDate += dt.timedelta(days=1)
     f.close()
 
+def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.timedelta(days=1)):
+
+    currentDate = dateStart
+    print dateStart
+    print dateEnd
+    #actual=[[],[]]
+    actual=[]
+    predicted=[]
+    # meter locations/rates:  currency per watthour
+    dayrate = 2.0
+    nightrate = 2.5
+    #for uganda rates
+    if circuit_id in uganda002:
+        print 'using uganda rates'
+        dayrate = 8.0
+        nightrate = 10.0
+    hourList=[]
+    dayhrs = range(1,24)+[0]
+    while currentDate < dateEnd:
+        #hourList.append([dayhrs[x] for x in range(len(dayhrs))])
+        for x in range(len(dayhrs)):
+            hourList.append(dayhrs[x])
+        adates, adata = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='credit')
+        whdates, whdata = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='watthours')
+        if len(adates)==0:
+            print 'no data on '+str(currentDate)
+            break
+        #actual[0].append(adates)
+        actual.append([adata[x] for x in range(len(adata))])
+        hours= [x.hour for x in adates]
+        hours = np.array(hours)
+        am = np.where((hours>=6)&(hours<18))
+        amlist=[]
+        for x in range(len(am[0])):
+            amlist.append(am[0][x])
+        pm = np.where((hours<6)|(hours>=18))
+        pmlist =[]
+        for y in range(len(pm[0])):
+            pmlist.append(pm[0][y])
+        # insert zero at beginning of watthour data
+        whdata = np.insert(whdata, 0, 0)
+        # insert previous midnight's data at beginning of credit data
+        prev_cdate, prev_cdata = getDataListForCircuit(circuit_id, currentDate+dt.timedelta(days=-1), currentDate, quantity='credit')
+        if len(prev_cdata) > 0:
+            prevdayshrs = [x.hour for x in prev_cdate]
+            if  prevdayshrs[-1] == 0 or 23:
+                adata = np.insert(adata, 0,prev_cdata[len(prev_cdata)-1])
+            else:
+                adata = np.insert(adata, 0, c_data[0])
+        else:
+            adata = np.insert(adata, 0, c_data[0])
+        datadiffs = np.diff(whdata)
+        #set up converted datadiffs:
+        conv_datadiffs = datadiffs
+        creditdiffs = np.diff(adata)
+        for x in range(len(amlist)):
+            conv_datadiffs[amlist[x]] /= -(1.0/dayrate)
+        for x in range(len(pmlist)):
+            conv_datadiffs[pmlist[x]] /= -(1.0/nightrate)
+        # start predicted data with first credit value
+        pdata = []
+        #data.append(adata[0])
+        for k in range(len(datadiffs)):
+            # check for credit jumps
+            cjump = 0
+            if creditdiffs[k]>0:
+                creditjump = adata[k+1] - adata[k]
+                print 'should be equal: '+str(creditdiffs[k])+', and '+str(creditjump)
+                if 6<= hours[k] <18:
+                    rate = dayrate
+                else: rate=nightrate
+                # check that credit jump is normal range, after adding used credit
+                for i,j in enumerate([500,1000,1500,2000,2500,4000,5000,10000]):
+                    if 0.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j:
+                        cjump = j
+                        print cjump
+            #add credit jump to predicted data
+            conv_datadiffs[k] += cjump
+            # convert converted datadiffs back to non-diff form for predicted data line
+            #if k>0:
+                #pdata.append(pdata[k-1]+conv_datadiffs[k-1])
+            if k==0:
+                pdata.append(adata[0])
+            else: pdata.append(pdata[k-1]+conv_datadiffs[k])
+        print adata
+        print pdata
+        print conv_datadiffs
+        #predicted[0].append(adates)
+        predicted.append([pdata[x] for x in range(len(pdata))])
+
+        currentDate += dt.timedelta(days=1)
+
+    # plot
+    fig = plt.figure()
+    ax = fig.add_axes((.1,.3,.8,.6))
+    dates = matplotlib.dates.date2num(adates)
+    if len(dates)==0:
+        print 'no data...'
+    print len(dates)
+    print actual
+    print predicted
+    ax.plot_date(dates, actual[0], 'x-', ms=8, color='blue', label='actual')
+    ax.plot_date(dates, predicted[0], 'o-', ms=3, color='r', label='predicted')
+    ax.legend(loc=0)
+    titleString = 'actual_and_predicted_credit_on_'+str(circuit_id)+'-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(titleString)
+    ax.set_ylabel("credit")
+    ax.set_xlabel("time")
+    #ax.set_xticklabels([adates[x].hour for x in range(len(adates))], fontproperties=textFont, rotation=45)
+    #ax.set_xticklabels(ax.get_xticklabels(), fontproperties=textFont, rotation=45)
+    plt.setp(ax.get_xticklabels(), fontproperties=textFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotActualAndPredictedCredit.__name__)
+    annotation.append('circuit = ' + str(circuit_id))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    plotFileName = titleString + '.pdf'
+    fig.savefig(plotFileName, transparent=True)
+
+    #plot difference
+    fig2 = plt.figure()
+    ax2 = fig2.add_axes((.1,.3,.8,.6))
+    act_pred_diff=[]
+    for a in range(len(datadiffs)):
+        act_pred_diff.append(datadiffs[a]-creditdiffs[a])
+    print act_pred_diff
+    ax2.plot_date(dates, act_pred_diff, '*-', ms=5, color='b', label='difference')
+    titleString2 = 'actual-predicted_credit_diff_on_'+str(circuit_id)+'-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax2.set_title(titleString2)
+    ax2.set_ylabel("credit difference")
+    ax2.set_xlabel("time")
+    plt.setp(ax2.get_xticklabels(), fontproperties=textFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotActualAndPredictedCredit.__name__)
+    annotation.append('circuit = ' + str(circuit_id))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig2.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    plotFileName2 = titleString2 + '.pdf'
+    fig2.savefig(plotFileName2, transparent=True)
 
 
 
