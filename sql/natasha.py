@@ -361,7 +361,8 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                         else: rate=nightrate
                         # check that credit jump is normal range, after adding used credit
                         # over that very hour
-                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004:
+                        #if not [.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j for j in range(len([500,1000,1500,2000,2500,4000,5000,7500,10000]))]:
+                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
                             print 'credit jump on cct ' + str(c) + ' at ' + str(dates[k])+ ' of ' + str(creditjump)
                             f.write(str(dates[k])); f.write('\t')
                             f.write(getMeterName(meters[m])); f.write('\t')
@@ -527,8 +528,6 @@ def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.tim
     fig2.savefig(plotFileName2, transparent=True)
 
 
-
-
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
                         dateEnd=dt.datetime(2011,5,20),
                             verbose = 0, introspect=False, showMains=False):
@@ -556,33 +555,33 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
     fig = plt.figure()
 
     # create figure and axes with subplots
-    if len(circuits) > 12:
+    numPlotsX = 4
+    numPlotsY = 3
+    if len(circuits)> 12:
         numPlotsX = 4
         numPlotsY = 5
-    else:
-        numPlotsX = 4
-        numPlotsY = 3
+    # need for uganda
+    if len(circuits)>20:
+        numPlotsX = 5
+        numPlotsY = 5
 
     for i,c in enumerate(circuits):
         calculatedCredits = calculateCreditJumps(c, dateStart, dateEnd, verbose)
         loggedPurchases = calculateCreditPurchase(c, dateStart, dateEnd, verbose)
 
         dates = np.union1d(calculatedCredits[0], loggedPurchases[0])
+        print c
         print dates
         dates = matplotlib.dates.date2num(dates)
-        print dates
-        #dates = list(set(dates))
-        #dates.sort()
         calculatedCreditDates = matplotlib.dates.date2num(calculatedCredits[0])
         mask1 = []
         for l in range(len(calculatedCreditDates)):
             ind = np.where(dates==calculatedCreditDates[l])
             #print ind
             mask1.append(int(ind[0]))       #because ind was an array of arrays!
-        print mask1
         #mask1 = np.where(dates,calculatedCredits[0])
         #mask1 = np.setmember1d(dates, calculatedCredits[0])    #mergesort not avail for type
-        data1 = [-100]*len(dates)
+        data1 = [-1000]*len(dates)
         for k in range(len(mask1)):
             data1[mask1[k]] = calculatedCredits[1][k]
         #data1[np.invert(mask1)] = 0
@@ -596,7 +595,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
             ind = np.where(dates==purchaseDates[l])
             #print ind
             mask2.append(int(ind[0]))
-        data2 = [-100]*len(dates)
+        data2 = [-1000]*len(dates)
         for j in range(len(mask2)):
             data2[mask2[j]] = loggedPurchases[1][j]
         #data2[mask2] = loggedPurchases[1]
@@ -610,13 +609,34 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
         '''
         # how to make xlabels & ylabels smaller?
         # how to make room for xlabels on all graphs?
-        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
+        #thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
+        data12 = []
+        if len(data1)>0:
+            for x in range(len(data1)):
+                data12.append(data1[x])
+        if len(data2)>0:
+            for x in range(len(data2)):
+                data12.append(data2[x])
+        if len(data12)>0:
+            ymax = max(data12)
+            #ymax = max(data1.extend([data2[x] for x in range(len(data2))]))
+        else: ymax = 1100
+        ymax = max(ymax, 1100)
+        if 1100<ymax<2100:
+            ymax = 2100
+        if 2100<ymax<2600:
+            ymax = 2600
+        if 2600<ymax<1300:
+            ymax=3100
+
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,ymax))
         thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
         thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
         #from matplotlib import font_manager
         #smallsize = font_manager.FontProperties(size=mpl.rcParams['font.size'])
         thisAxes.set_xticklabels(dateList, fontproperties=textFont)
-        thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        #thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        plt.setp(thisAxes.get_yticklabels(), fontproperties=textFont)
         #thisAxes.xlim(xmin=1)
         thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
 
@@ -633,12 +653,14 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
                           verbose=0):
 
     #meters = [4,6,7,8]
-    circuit_id_list=[]
-    for m in range(len(meters)):
-        ccts = getCircuitsForMeter(meters[m])
-        #print ccts
-        for x in range(len(ccts)):
-            circuit_id_list.append(ccts[x])
+    if isinstance(meters, int) is False:
+        circuit_id_list=[]
+        for m in range(len(meters)):
+            ccts = getCircuitsForMeter(meters[m])
+            #print ccts
+            for x in range(len(ccts)):
+                circuit_id_list.append(ccts[x])
+    else: circuit_id_list = getCircuitsForMeter(meters)
     print circuit_id_list
     cctdates = [[]*len(circuit_id_list) for x in xrange(len(circuit_id_list))]
     # break up time period into days
@@ -662,3 +684,71 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
         if cctdates[i]:                 #if there are entries for that cct
             for k in range(len(cctdates[i])):
                 plotDatasForCircuit(c, cctdates[i][k], cctdates[i][k] + dt.timedelta(days=1), titleString='whdrops/cct '+str(c)+'on'+str(cctdates[i][k].date()))
+
+def flashlight():
+
+    voltage = np.flipud(np.arange(1.0,3.3,0.1))
+    voltage = np.delete(voltage, [2,16])  # take out 3. and 1.6 that didnt have direct data
+    current = [129,109, 90, 73, 60, 50.5, 45.75, 45.5, 46.1, 45.8, 44.8, 42.8, 40, 37.4, 35.1, 33.25, 32.5, 33.6, 32.1, 23.5, 10.4]
+    lux = [2700,2500,2290,2000,1705,1444,1272,1218,1186,1134,1065,982,891,800,715,642,571,459,253,95,12]
+    distance = np.arange(0,24,1)
+    lux_at_d = [2570,2020,1270,563,282,180,120,86,67,55,48,41,37,33,30,28,24,18,11,8,6,4,2,0]
+
+    fig=plt.figure()
+    fig,axs = plt.subplots(3,1)
+    axs[0].plot(voltage, current)
+    axs[0].invert_xaxis()
+    axs[0].set_title('I-V curve')
+    axs[1].plot(voltage, lux)
+    axs[1].invert_xaxis()
+    axs[1].set_title('lux vs. voltage')
+    axs[2].plot(distance, lux_at_d)
+    axs[2].set_title('lux vs. horizontal distance, at 25cm height')
+    fig.savefig('flashlight.pdf')
+
+def powerReadings():
+
+    circuits = [201,202,203,204]
+    res = [5000, 2500, 1000, 500]
+    res_watts = [(np.square(120.0)/res[x]) for x in range(len(res))]
+    loads = [0] + res_watts
+
+    main_read = np.zeros((len(circuits), len(res_watts)))
+    main_noload = [38.05,37.8,37.95,38.05]
+    main_read[0] = [41.4,44.65,54.45,70.6]
+    main_read[1] = [41.0,44.3,54.0,70.4]
+    main_read[2] = [41.35,44.6,54.25,70.55]
+    main_read[3] = [41.35,44.65,54.25,70.6]
+    for i in range(len(main_read)):
+        main_read[i] = main_read[i] - main_noload
+    print main_read
+    cct_read = np.zeros((len(circuits), len(res_watts)))
+    cct_read[0] = [2.2,5.55,15.25,32]
+    cct_read[1] = [2.85,6.1,15.75,31.9]
+    cct_read[2] = [2.85,6.2,15.85,32.25]
+    cct_read[3] = [2.75,6.1,15.85,32.1]
+    #cctreads = np.zeros((len(circuits), len(loads)))
+    for i in range(len(loads)):
+        cctreads = np.insert(cct_read, 0, 0, 1)
+    print cctreads
+    fig=plt.figure()
+    ax = fig.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(main_read)):
+        ax.plot(main_read[i], cct_read[i], 'x-', label=str(circuits[i]))
+    ax.legend(loc=0)
+    ax.set_xlabel("main (watts)")
+    ax.set_ylabel("circuit (watts)")
+    ax.set_title("circuit vs. main meter readings")
+    fig.savefig('powerReadings.pdf')
+    fig2=plt.figure()
+    ax2 = fig2.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    circuits2 = [0]+circuits
+    for i in range(len(cctreads)):
+        ax2.plot(loads, cctreads[i], 'x-', label=str(circuits2[i]))
+    ax2.legend(loc=0)
+    ax2.set_xlabel("loads (watts)")
+    ax2.set_ylabel("circuit (watts)")
+    ax2.set_title("measured vs. real power")
+    fig2.savefig('readings.pdf')
