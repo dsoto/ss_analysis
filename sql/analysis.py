@@ -575,10 +575,17 @@ def calculatePowerListForCircuit(circuit_id,
     pulls watthour data list and creates a report of the power consumed over that hour
     returns numpy arrays of power_dates, and power_data
     '''
+    tw.log.info('running calculatePowerListForCircuit on ' + str(circuit_id))
     dates, data = getDataListForCircuit(circuit_id, dateStart, dateEnd, quantity='watthours')
 
     power_dates = []
     power_data = []
+    num_decreases = 0
+    # if data empty return two empty lists
+    if len(dates) == 0:
+        tw.log.info('returning empty lists')
+        #print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
+        return [],[]
     for i in range(len(dates)):
         # if 1am energy sample is energy over last hour
         if dates[i].hour == 1:
@@ -589,11 +596,12 @@ def calculatePowerListForCircuit(circuit_id,
             if (data[i] - data[i-1]) >= 0:
                 power_dates.append(dates[i])
                 power_data.append(data[i] - data[i-1])
+            else: num_decreases += 1
 
     power_dates = np.array(power_dates)
     power_data = np.array(power_data)
 
-    return power_dates, power_data
+    return power_dates, power_data, num_decreases
 
 def printEnergyGridForCircuits(circuit_id_list,
                         dateStart = dateStart,
