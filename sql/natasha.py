@@ -361,7 +361,8 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                         else: rate=nightrate
                         # check that credit jump is normal range, after adding used credit
                         # over that very hour
-                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004:
+                        #if not [.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j for j in range(len([500,1000,1500,2000,2500,4000,5000,7500,10000]))]:
+                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
                             print 'credit jump on cct ' + str(c) + ' at ' + str(dates[k])+ ' of ' + str(creditjump)
                             f.write(str(dates[k])); f.write('\t')
                             f.write(getMeterName(meters[m])); f.write('\t')
@@ -527,8 +528,6 @@ def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.tim
     fig2.savefig(plotFileName2, transparent=True)
 
 
-
-
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
                         dateEnd=dt.datetime(2011,5,20),
                             verbose = 0, introspect=False, showMains=False):
@@ -556,33 +555,33 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
     fig = plt.figure()
 
     # create figure and axes with subplots
-    if len(circuits) > 12:
+    numPlotsX = 4
+    numPlotsY = 3
+    if len(circuits)> 12:
         numPlotsX = 4
         numPlotsY = 5
-    else:
-        numPlotsX = 4
-        numPlotsY = 3
+    # need for uganda
+    if len(circuits)>20:
+        numPlotsX = 5
+        numPlotsY = 5
 
     for i,c in enumerate(circuits):
         calculatedCredits = calculateCreditJumps(c, dateStart, dateEnd, verbose)
         loggedPurchases = calculateCreditPurchase(c, dateStart, dateEnd, verbose)
 
         dates = np.union1d(calculatedCredits[0], loggedPurchases[0])
+        print c
         print dates
         dates = matplotlib.dates.date2num(dates)
-        print dates
-        #dates = list(set(dates))
-        #dates.sort()
         calculatedCreditDates = matplotlib.dates.date2num(calculatedCredits[0])
         mask1 = []
         for l in range(len(calculatedCreditDates)):
             ind = np.where(dates==calculatedCreditDates[l])
             #print ind
             mask1.append(int(ind[0]))       #because ind was an array of arrays!
-        print mask1
         #mask1 = np.where(dates,calculatedCredits[0])
         #mask1 = np.setmember1d(dates, calculatedCredits[0])    #mergesort not avail for type
-        data1 = [-100]*len(dates)
+        data1 = [-1000]*len(dates)
         for k in range(len(mask1)):
             data1[mask1[k]] = calculatedCredits[1][k]
         #data1[np.invert(mask1)] = 0
@@ -596,7 +595,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
             ind = np.where(dates==purchaseDates[l])
             #print ind
             mask2.append(int(ind[0]))
-        data2 = [-100]*len(dates)
+        data2 = [-1000]*len(dates)
         for j in range(len(mask2)):
             data2[mask2[j]] = loggedPurchases[1][j]
         #data2[mask2] = loggedPurchases[1]
@@ -610,13 +609,34 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
         '''
         # how to make xlabels & ylabels smaller?
         # how to make room for xlabels on all graphs?
-        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
+        #thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,1100)) #to keep all plots even, assuming 1100 is enough
+        data12 = []
+        if len(data1)>0:
+            for x in range(len(data1)):
+                data12.append(data1[x])
+        if len(data2)>0:
+            for x in range(len(data2)):
+                data12.append(data2[x])
+        if len(data12)>0:
+            ymax = max(data12)
+            #ymax = max(data1.extend([data2[x] for x in range(len(data2))]))
+        else: ymax = 1100
+        ymax = max(ymax, 1100)
+        if 1100<ymax<2100:
+            ymax = 2100
+        if 2100<ymax<2600:
+            ymax = 2600
+        if 2600<ymax<1300:
+            ymax=3100
+
+        thisAxes = fig.add_subplot(numPlotsX, numPlotsY, i+1, xlim=(dateStart, dateEnd), ylim=(0,ymax))
         thisAxes.plot_date(dates, data1, ls=' ', ms=7, marker='o', c='b')
         thisAxes.plot_date(dates, data2, ls=' ', ms=12, marker='x', c='r')
         #from matplotlib import font_manager
         #smallsize = font_manager.FontProperties(size=mpl.rcParams['font.size'])
         thisAxes.set_xticklabels(dateList, fontproperties=textFont)
-        thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        #thisAxes.set_yticklabels(yLabels, fontproperties=textFont)
+        plt.setp(thisAxes.get_yticklabels(), fontproperties=textFont)
         #thisAxes.xlim(xmin=1)
         thisAxes.text(0.7,0.7,str(c),size="x-small", transform = thisAxes.transAxes)
 
@@ -633,12 +653,14 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
                           verbose=0):
 
     #meters = [4,6,7,8]
-    circuit_id_list=[]
-    for m in range(len(meters)):
-        ccts = getCircuitsForMeter(meters[m])
-        #print ccts
-        for x in range(len(ccts)):
-            circuit_id_list.append(ccts[x])
+    if isinstance(meters, int) is False:
+        circuit_id_list=[]
+        for m in range(len(meters)):
+            ccts = getCircuitsForMeter(meters[m])
+            #print ccts
+            for x in range(len(ccts)):
+                circuit_id_list.append(ccts[x])
+    else: circuit_id_list = getCircuitsForMeter(meters)
     print circuit_id_list
     cctdates = [[]*len(circuit_id_list) for x in xrange(len(circuit_id_list))]
     # break up time period into days
@@ -662,3 +684,322 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
         if cctdates[i]:                 #if there are entries for that cct
             for k in range(len(cctdates[i])):
                 plotDatasForCircuit(c, cctdates[i][k], cctdates[i][k] + dt.timedelta(days=1), titleString='whdrops/cct '+str(c)+'on'+str(cctdates[i][k].date()))
+
+def flashlight():
+
+    voltage = np.flipud(np.arange(1.0,3.3,0.1))
+    voltage = np.delete(voltage, [2,16])  # take out 3. and 1.6 that didnt have direct data
+    current = [129,109, 90, 73, 60, 50.5, 45.75, 45.5, 46.1, 45.8, 44.8, 42.8, 40, 37.4, 35.1, 33.25, 32.5, 33.6, 32.1, 23.5, 10.4]
+    lux = [2700,2500,2290,2000,1705,1444,1272,1218,1186,1134,1065,982,891,800,715,642,571,459,253,95,12]
+    distance = np.arange(0,24,1)
+    lux_at_d = [2570,2020,1270,563,282,180,120,86,67,55,48,41,37,33,30,28,24,18,11,8,6,4,2,0]
+
+    fig=plt.figure()
+    fig,axs = plt.subplots(3,1)
+    axs[0].plot(voltage, current)
+    axs[0].invert_xaxis()
+    axs[0].set_title('I-V curve')
+    axs[1].plot(voltage, lux)
+    axs[1].invert_xaxis()
+    axs[1].set_title('lux vs. voltage')
+    axs[2].plot(distance, lux_at_d)
+    axs[2].set_title('lux vs. horizontal distance, at 25cm height')
+    fig.savefig('flashlight.pdf')
+
+def powerReadings():
+
+    circuits = [201,202,203,204]
+    res = [5000, 2500, 1000, 500]
+    res_watts = [(np.square(120.0)/res[x]) for x in range(len(res))]
+    loads = [0] + res_watts
+
+    main_read = np.zeros((len(circuits), len(res_watts)))
+    main_noload = [38.05,37.8,37.95,38.05]
+    main_read[0] = [41.4,44.65,54.45,70.6]
+    main_read[1] = [41.0,44.3,54.0,70.4]
+    main_read[2] = [41.35,44.6,54.25,70.55]
+    main_read[3] = [41.35,44.65,54.25,70.6]
+    for i in range(len(main_read)):
+        main_read[i] = main_read[i] - main_noload
+    print main_read
+    cct_read = np.zeros((len(circuits), len(res_watts)))
+    cct_read[0] = [2.2,5.55,15.25,32]
+    cct_read[1] = [2.85,6.1,15.75,31.9]
+    cct_read[2] = [2.85,6.2,15.85,32.25]
+    cct_read[3] = [2.75,6.1,15.85,32.1]
+    #cctreads = np.zeros((len(circuits), len(loads)))
+    for i in range(len(loads)):
+        cctreads = np.insert(cct_read, 0, 0, 1)
+    print cctreads
+    fig=plt.figure()
+    ax = fig.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(main_read)):
+        ax.plot(res_watts, main_read[i]-cct_read[i], 'x-', label=str(circuits[i]))
+    ax.legend(loc=0)
+    ax.set_xlabel("load (watts)")
+    ax.set_ylabel("difference (watts)")
+    ax.set_title("difference between circuit and main meter readings")
+    fig.savefig('powerReadingDiffs.pdf')
+    fig2=plt.figure()
+    ax2 = fig2.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(cctreads)):
+        ax2.plot(loads, cctreads[i]-loads, 'x-', label=str(circuits[i]))
+    ax2.legend(loc=0)
+    ax2.set_xlabel("loads (watts)")
+    ax2.set_ylabel("difference (watts)")
+    ax2.set_title("difference between measured and real power")
+    fig2.savefig('readingdiffs.pdf')
+
+def plotSelfConsumption(meter_id=8,
+                        dateStart=dt.datetime(2011, 7, 1),
+                        dateEnd=dt.datetime(2011, 7, 8),
+                        num_drop_threshold=1,
+                        num_samples_threshold=16,
+                        verbose=0):
+
+    tw.log.info('entering plotSelfConsumption')
+
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(customer_circuit_list))
+    print 'total # of circuits = ',len(customer_circuit_list)
+    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
+    expectedMainsWatthours_allon = expectedMainsWatts_allon*24
+    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
+    expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
+    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
+    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
+    print 'mains expected to consume between ', expectedMainsWatthours_allon, ' and ', expectedMainsWatthours_alloff, ' wh per day'
+
+    # loop through days
+    # for each day total household consumption and infer mains consumption
+    # create list of dates, household consumption and mains consumption
+    dates = []
+    household_consumption = []
+    mains_consumption = []
+    perc_ccts_off=[]
+    number_ccts_off=[]
+
+    fig = plt.figure()
+    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax = fig.add_axes((.1,.3,.8,.6))
+
+    current_date = dateStart
+    while current_date < dateEnd:
+
+        print current_date
+        mains_energy = getEnergyForCircuitForDayByMax(mains_id, current_date)
+        print 'mains energy =', mains_energy[0]
+
+        total_energy = 0
+        num_ccts_off=0
+        for cid in customer_circuit_list:
+
+            customer_energy = getEnergyForCircuitForDayByMax(cid,
+                                             current_date)
+            #print customer_energy[0]
+            if customer_energy[0]==0:
+                # better to check if credit is 0 at same time
+                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
+                if np.average(credit)<1:
+                    num_ccts_off +=1
+            total_energy += customer_energy[0]
+
+        print 'total energy =', total_energy
+        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
+        number_ccts_off.append(num_ccts_off)
+
+
+        if mains_energy[1] > num_samples_threshold and mains_energy[2] < num_drop_threshold and mains_energy[0]>total_energy:
+            dates.append(current_date)
+            mains_consumption.append(mains_energy[0] - total_energy)
+            household_consumption.append(total_energy)
+            tw.log.info(str(current_date))
+            tw.log.info('mains energy for day ' + str(mains_energy[0] - total_energy))
+            tw.log.info('household consumpition ' + str(total_energy))
+        else:
+            tw.log.info('rejecting date ' + str(current_date))
+            if mains_energy[1] <= num_samples_threshold:
+                tw.log.info('rejected for too few samples')
+            if mains_energy[2] >= num_drop_threshold:
+                tw.log.info('rejected for too many watthour drops')
+            if mains_energy[0] < total_energy:
+                tw.log.info('rejected for mains < household consumption')
+
+        current_date += dt.timedelta(days=1)
+
+    print mains_consumption
+    print 'average mains consumption = ', np.average(mains_consumption)
+    dates = matplotlib.dates.date2num(dates)
+    expMainsOn = np.ones(len(dates))*expectedMainsWatthours_allon
+    expMainsOff = np.ones(len(dates))*expectedMainsWatthours_alloff
+    expMains = []
+    for i in range(len(dates)):
+        expMains.append(24*(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35)))
+
+    ax.plot_date(dates, household_consumption, 'o-', label='Household Total')
+    ax.plot_date(dates, mains_consumption, 'x-', label='Meter Consumption')
+    ax.plot_date(dates, expMainsOn, '-', color='0.9')
+    ax.plot_date(dates, expMainsOff, '-', color='0.75')
+    ax.plot_date(dates, expMains, '-', color='k', label='expected Mains consumption')
+    ax.legend()
+    ax.set_ylim((0,2000))
+    ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy Consumption (watthours)')
+    fileNameString = 'selfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(fileNameString)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotSelfConsumption.__name__)
+    annotation.append('meter = ' + str(getMeterName(meter_id)))
+    annotation.append('# circuits = ' + str(len(customer_circuit_list)))
+    annotation.append('mains expected to consume between ' + str(expectedMainsWatthours_allon) +' and '+str(expectedMainsWatthours_alloff)+ ' wh daily')
+    annotation.append('number of circuits off each day = ' + str(number_ccts_off))
+    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(fileNameString+'.pdf')
+    tw.log.info('exiting plotSelfConsumption')
+
+def plotHourlySelfConsumption(meter_id=8,
+                        dateStart=dt.datetime(2011, 7, 1),
+                        dateEnd=dt.datetime(2011, 7, 8),
+                        num_drop_threshold=1,
+                        num_samples_threshold=23,
+                        verbose=0):
+
+    tw.log.info('entering plotHourlySelfConsumption')
+
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(customer_circuit_list))
+    print 'total # of circuits = ',len(customer_circuit_list)
+    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
+    #expectedMainsWatthours_allon = expectedMainsWatts_allon*24
+    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
+    #expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
+    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
+    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
+    print 'mains expected to consume between ', expectedMainsWatts_allon, ' and ', expectedMainsWatts_alloff, ' wh per day'
+
+    # loop through days
+    # for each day total household consumption and infer mains consumption
+    # create list of dates, household consumption and mains consumption
+    dates = []
+    dates2 = []
+    household_consumption = []
+    mains_consumption = []
+    perc_ccts_off=[]
+    number_ccts_off=[]
+
+
+    fig = plt.figure()
+    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax = fig.add_axes((.1,.3,.8,.6))
+
+    current_date = dateStart
+    while current_date < dateEnd:
+
+        print current_date
+        mains_power = calculatePowerListForCircuit(mains_id, current_date, current_date+dt.timedelta(days=1))
+        print 'mains energy =', mains_power[1]
+
+        # add 24 hours for each fully reported day of power
+        #allcustomers_power = np.append(allcustomers_power,np.zeros(24))
+        allcustomers_power = np.zeros(24)
+        num_ccts_off=np.zeros(24)
+        for cid in customer_circuit_list:
+
+            customer_power = calculatePowerListForCircuit(cid, current_date, current_date+dt.timedelta(days=1))
+            if len(customer_power[1])==24:
+                # better to check if credit is 0 at same time
+                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
+                #add cct to 'off' category
+                for k in range(len(customer_power[1])):
+                    if customer_power[1][k]<0.1 and credit[k]<0.1:
+                            num_ccts_off[k] +=1
+                            #print 'circuit ', cid, ' is off at ', customer_power[0][k]
+
+                # add to allcustomer power array
+                for h in range(24):
+                    allcustomers_power[h] += customer_power[1][h]
+
+        #print 'total energy =', total_energy
+        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
+        #number_ccts_off.append(num_ccts_off)
+
+
+        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold and np.sum(mains_power[1])>np.sum(allcustomers_power):
+            dates.append(current_date)
+            for x in range(len(num_ccts_off)):
+                number_ccts_off=np.append(number_ccts_off, num_ccts_off[x])
+            #print number_ccts_off, ' ccts off'
+                mains_consumption=np.append(mains_consumption,(mains_power[1] - allcustomers_power)[x])
+                household_consumption=np.append(household_consumption,allcustomers_power[x])
+                dates2=np.append(dates2,mains_power[0][x])
+            tw.log.info(str(current_date))
+            tw.log.info('mains energy for day ' + str(mains_power[1] - allcustomers_power))
+            tw.log.info('household consumpition ' + str(allcustomers_power))
+        else:
+            tw.log.info('rejecting date ' + str(current_date))
+            if len(mains_power[1]) <= num_samples_threshold:
+                tw.log.info('rejected for too few samples')
+            if mains_power[2] >= num_drop_threshold:
+                tw.log.info('rejected for too many watthour drops')
+            if np.sum(mains_power[1]) < np.sum(allcustomers_power):
+                tw.log.info('rejected for mains < household consumption')
+
+        current_date += dt.timedelta(days=1)
+
+
+    print mains_consumption
+    print 'average mains consumption = ', np.average(mains_consumption)
+    hours = []
+    for d in range(len(dates)):
+        hours = np.append(hours,np.append(np.arange(1,24),0))
+    dates = matplotlib.dates.date2num(dates)
+    #dates2 = matplotlib.dates.date2num(dates2)
+    expMainsOn = np.ones(len(hours))*expectedMainsWatts_allon
+    expMainsOff = np.ones(len(hours))*expectedMainsWatts_alloff
+    expMains = []
+    for i in range(len(hours)):
+        expMains.append(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
+
+    ax.plot(dates2, household_consumption, 'o-', label='Household Total')
+    ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
+    ax.plot(dates2, expMainsOn, '-', color='0.9')
+    ax.plot(dates2, expMainsOff, '-', color='0.75')
+    ax.plot(dates2, expMains, '-', color='k', label='expected Mains consumption')
+    ax.legend()
+    ax.set_ylim((0,200))
+    #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Power Consumption (watts)')
+    fileNameString = 'hourlyselfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(fileNameString)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotHourlySelfConsumption.__name__)
+    annotation.append('meter = ' + str(getMeterName(meter_id)) + ' with ' + str(len(customer_circuit_list)) + ' # of circuits')
+    annotation.append('mains expected to consume between ' + str(expectedMainsWatts_allon) +' and '+str(expectedMainsWatts_alloff)+ ' watts hourly')
+    #annotation.append('number of circuits off each day = ' + str(number_ccts_off))
+    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(fileNameString+'.pdf')
+    tw.log.info('exiting plotHourlySelfConsumption')
