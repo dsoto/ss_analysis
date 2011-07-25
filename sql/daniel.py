@@ -2,6 +2,17 @@ from sql.analysis import *
 
 import datetime as dt
 
+wk_26 = dt.datetime(2011, 6, 27)
+wk_27 = dt.datetime(2011, 7, 4)
+wk_28 = dt.datetime(2011, 7, 11)
+wk_29 = dt.datetime(2011, 7, 18)
+wk_30 = dt.datetime(2011, 7, 25)
+
+
+may_1 = dt.datetime(2011, 5, 1)
+jun_1 = dt.datetime(2011, 6, 1)
+jul_1 = dt.datetime(2011, 7, 1)
+
 tw.log.info('loading daniel.py')
 
 def calculateEuclidianDistance(powerVector1, powerVector2):
