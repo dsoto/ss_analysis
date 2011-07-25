@@ -50,7 +50,7 @@ def lookForBadSC20(circuit_id,
 
 cid = 25
 
-def dailyReportForAllCircuits(dateStart=dt.datetime(2011,6,25),
+def plot_watthours_credit_for_all_circuits(dateStart=dt.datetime(2011,6,25),
                               dateEnd=dt.datetime(2011,6,28)):
     '''
     prints a graph for each circuit available to be reviewed manually
