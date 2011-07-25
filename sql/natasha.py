@@ -901,13 +901,14 @@ def plotHourlySelfConsumption(meter_id=8,
     dates2 = []
     household_consumption = []
     mains_consumption = []
+    total_consumption = []
     perc_ccts_off=[]
     number_ccts_off=[]
 
 
     fig = plt.figure()
     #ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax = fig.add_axes((.1,.3,.8,.6))
+    ax = fig.add_axes((.1,.25,.8,.65))    # used to be (.1, .3, .8, .6)
 
     current_date = dateStart
     while current_date < dateEnd:
@@ -941,12 +942,13 @@ def plotHourlySelfConsumption(meter_id=8,
         #number_ccts_off.append(num_ccts_off)
 
 
-        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold and np.sum(mains_power[1])>np.sum(allcustomers_power):
+        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold: # and np.sum(mains_power[1])>np.sum(allcustomers_power):
             dates.append(current_date)
             for x in range(len(num_ccts_off)):
                 number_ccts_off=np.append(number_ccts_off, num_ccts_off[x])
             #print number_ccts_off, ' ccts off'
                 mains_consumption=np.append(mains_consumption,(mains_power[1] - allcustomers_power)[x])
+                total_consumption=np.append(total_consumption,(mains_power[1][x]))
                 household_consumption=np.append(household_consumption,allcustomers_power[x])
                 dates2=np.append(dates2,mains_power[0][x])
             tw.log.info(str(current_date))
@@ -979,11 +981,13 @@ def plotHourlySelfConsumption(meter_id=8,
 
     ax.plot(dates2, household_consumption, 'o-', label='Household Total')
     ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
+    ax.plot(dates2, total_consumption, '*-', label='Total Consumption')
     ax.plot(dates2, expMainsOn, '-', color='0.9')
     ax.plot(dates2, expMainsOff, '-', color='0.75')
     ax.plot(dates2, expMains, '-', color='k', label='expected Mains consumption')
-    ax.legend()
-    ax.set_ylim((0,200))
+    ax.legend(loc=0)
+    y_high = max(total_consumption)
+    ax.set_ylim((0,y_high))
     #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
     ax.set_xlabel('Date')
     ax.set_ylabel('Power Consumption (watts)')
