@@ -2,6 +2,17 @@ from sql.analysis import *
 
 import datetime as dt
 
+wk_26 = dt.datetime(2011, 6, 27)
+wk_27 = dt.datetime(2011, 7, 4)
+wk_28 = dt.datetime(2011, 7, 11)
+wk_29 = dt.datetime(2011, 7, 18)
+wk_30 = dt.datetime(2011, 7, 25)
+
+
+may_1 = dt.datetime(2011, 5, 1)
+jun_1 = dt.datetime(2011, 6, 1)
+jul_1 = dt.datetime(2011, 7, 1)
+
 tw.log.info('loading daniel.py')
 
 def calculateEuclidianDistance(powerVector1, powerVector2):
@@ -39,7 +50,7 @@ def lookForBadSC20(circuit_id,
 
 cid = 25
 
-def dailyReportForAllCircuits(dateStart=dt.datetime(2011,6,25),
+def plot_watthours_credit_for_all_circuits(dateStart=dt.datetime(2011,6,25),
                               dateEnd=dt.datetime(2011,6,28)):
     '''
     prints a graph for each circuit available to be reviewed manually
@@ -145,7 +156,17 @@ def plotSelfConsumption(meter_id=8,
     fig.savefig('selfconsumption.pdf')
     tw.log.info('exiting plotSelfConsumption')
 
-
+def generate_ictd_figures():
+    print 'generating averagePower.pdf'
+    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
+    print 'generating consumptionHistogram.pdf'
+    plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
+    print 'creditHistogram.pdf'
+    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
+    print 'generating scatter.pdf'
+    plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
+    print 'generating energy histogram'
+    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
 
 
 if __name__ == "__main__":
@@ -164,18 +185,24 @@ if __name__ == "__main__":
     print calculateEuclidianDistance(vector1, vector2)
     '''
 
-    '''
+
     calculateSelfConsumption(6,
-                             dateStart=dt.datetime(2011,6,24),
-                             dateEnd=dt.datetime(2011,6,28))
+                             dateStart=dt.datetime(2011,7,13),
+                             dateEnd=dt.datetime(2011,7,14))
 
-
+    '''
     calculateSelfConsumption(7,
                              dateStart=dt.datetime(2011,6,1),
                              dateEnd=dt.datetime(2011,6,28),
                              num_samples_threshold=16,
                              verbose=1)
     '''
-    plotSelfConsumption()
+    #plotSelfConsumption()
     #dailyReportForAllCircuits(dt.datetime(2011, 6, 4), dt.datetime(2011, 6, 11))
+    #plotEnergyHistogram(mali001,
+    #                     dt.datetime(2011,6,1),
+    #                     jun_15, bins=[0,1]+range(5,105,5), plotFileName='ictd/ml01Histogram.pdf')
+    #plotHistogramCreditConsumed(mali001, may_15, jun_15,
+    #                            bins = range(0, 21, 2), plotFileName='ictd/ml01_consumptionHistogram.pdf')
+
     tw.log.info('exiting __main__ of daniel.py')

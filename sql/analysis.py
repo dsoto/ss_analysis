@@ -12,6 +12,7 @@ tw.log.info('loading analysis.py')
 
 # circuit id's for quick and dirty lists
 mali001 = range(13,25)
+ml01 = range(13, 25)
 ml05 = [56, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 76, 77, 93, 95]
 #ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97, 98, 99, 100]
 ml06 = [78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 96, 97]
@@ -504,7 +505,9 @@ def getDataListForCircuit(circuit_id,
         data - list of reported data
     '''
     # get numpy arrays of dates, timestamps, and data
-    tw.log.info('running getDataListForCircuit on ' + str(circuit_id) + ' for quantity = ' + quantity)
+    tw.log.info('->->-> getDataListForCircuit')
+    tw.log.info('       circuit  = ' + str(circuit_id))
+    tw.log.info('       quantity = ' + quantity)
     dates, created, data = getRawDataListForCircuit(circuit_id,
                                                     dateStart,
                                                     dateEnd,
@@ -525,9 +528,11 @@ def getDataListForCircuit(circuit_id,
             mask.append(True)
         else:
             mask.append(False)
-            tw.log.info('removing sample at ' + str(dates[i]) + ' from the future')
+            #tw.log.info('removing sample at ' + str(dates[i]) + ' from the future')
+
 
     mask = np.array(mask)
+    tw.log.info('removing ' + str(len(np.extract(mask==False,mask))) + ' samples from the future')
 
     dates = dates[mask]
     data = data[mask]
@@ -536,7 +541,11 @@ def getDataListForCircuit(circuit_id,
     dataList = []
     for i in range(len(dates)):
         dataList.append((dates[i], data[i]))
+    num_raw_samples = len(dataList)
+    tw.log.info('number of raw samples    = ' + str(num_raw_samples))
     dataList = list(set(dataList))
+    num_unique_samples = len(dataList)
+    tw.log.info('number of unique samples = ' + str(num_unique_samples))
     dataList.sort()
     dates = [d[0] for d in dataList]
     data = [d[1] for d in dataList]
@@ -544,7 +553,7 @@ def getDataListForCircuit(circuit_id,
     if verbose > 0:
         for d in dataList:
             tw.log.info(str(d))
-
+    tw.log.info('<-<-<- getDataListForCircuit')
     return dates, data
 
 def getRawDataListForCircuit(circuit_id,
@@ -784,19 +793,25 @@ def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
 def plotEnergyHistogram(circuit_id_list,
                         dateStart=dateStart,
                         dateEnd=dateEnd,
-                        bins=10,
+                        bins=None,
                         plotFileName='energyHistogram.pdf'):
+    tw.log.info('entering plotEnergyHistogram')
+
     dataList = np.array([])
     for i,c in enumerate(circuit_id_list):
         # grab energy data for circuit
         data, dates = getEnergyForCircuit(c, dateStart, dateEnd)
+        tw.log.info('number of energy readings = ' + str(len(data)))
         # append data onto master list of energy
         dataList = np.append(dataList, data)
+        tw.log.info('len dataList = ' + str(len(dataList)))
     fig = plt.figure()
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
     # range depends on data
-    high = int(np.ceil(max(dataList)) + 5)
-    bins = [0,1] + range(5,high,5)
+    if bins == None:
+        high = int(np.ceil(max(dataList)) + 5)
+        #bins = [0,1] + range(5,high,5)
+        bins = range(0, high, 5)
     ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
     ax.set_xlabel("Daily Watthours")    #, fontproperties=labelFont)
     ax.set_ylabel("Days of Usage")  #, fontproperties=labelFont)
@@ -806,7 +821,10 @@ def plotEnergyHistogram(circuit_id_list,
     annotation.append('circuits = ' + str(circuit_id_list))
     annotation.append('date start = ' + str(dateStart))
     annotation.append('date end = ' + str(dateEnd))
+    for ann in annotation:
+        tw.log.info(ann)
     annotation = '\n'.join(annotation)
+
     #plt.show()
     fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.savefig(plotFileName, transparent=True)
@@ -817,7 +835,9 @@ def getEnergyForCircuitForDayByMax(circuit_id,
     needs to check for sufficient number of data samples
     needs to check for watthour drops
     '''
-    tw.log.info('entering getEnergyForCircuitForDayByMax for circuit ' + str(circuit_id))
+    tw.log.info('->->-> getEnergyForCircuitForDayByMax')
+    tw.log.info('       circuit = ' + str(circuit_id))
+    tw.log.info('          date = ' + str(day))
     dates, watthours = getDataListForCircuit(circuit_id,
                                              day,
                                              day+dt.timedelta(days=1),
@@ -830,9 +850,11 @@ def getEnergyForCircuitForDayByMax(circuit_id,
     power = np.diff(watthours)
     num_decreases = len(np.extract(power < 0, power))
     tw.log.info('samples of watthour data = ' + str(len(watthours)))
+    if len(watthours) > 24:
+        tw.log.error('too many watthour samples for one day')
     tw.log.info('number of watthour drops = ' + str(num_decreases))
     tw.log.info('reporting ' + str(energy) + ' watthours')
-    tw.log.info('-------')
+    tw.log.info('<-<-<- getEnergyForCircuitForDayByMax')
     return energy, len(watthours), num_decreases
 
 def calculateAverageEnergyForCircuit(circuit_id=70,
@@ -878,14 +900,24 @@ def calculateAverageEnergyForCircuit(circuit_id=70,
 def getEnergyForCircuit(circuit_id,
                         dateStart=dateStart,
                         dateEnd=dateEnd):
+    '''
+    gets energy for circuit over date range specified by dateStart and dateEnd
+    if no data, does not append to list
+    '''
+    tw.log.info('->->-> getEnergyForCircuit')
     data = []
     dates = []
     currentDate = dateStart
     while currentDate < dateEnd:
-        data.append(getEnergyForCircuitForDayByMax(circuit_id, currentDate))
-        dates.append(currentDate)
+        result = getEnergyForCircuitForDayByMax(circuit_id, currentDate)
+        if result[1] >= 24 and result[0] != 0.0:
+            data.append(result[0])
+            dates.append(currentDate)
+        else:
+            tw.log.info('rejected data for ' + str(currentDate))
         currentDate += dt.timedelta(days=1)
     data = np.array(data)
+    tw.log.info('<-<-<- getEnergyForCircuit')
     return data, dates
 
 def energyTest(circuit_id_list, dateStart=dt.datetime(2011,6,5),
@@ -1009,15 +1041,16 @@ def plotHistogramTimeWithCreditForCircuitList(circuit_id_list,
 def plotHistogramCreditConsumed(circuit_id_list,
                                 dateStart=dateStart,
                                 dateEnd=dateEnd,
+                                bins=None,
                                 plotFileName='consumptionHistogram.pdf'):
 
     consumptionList = printReportOfCreditConsumedForCircuitList(circuit_id_list, dateStart, dateEnd)
     # convert to USD
     consumptionList = [x*toUSD for x in consumptionList]
 
-    high = np.ceil(max(consumptionList)) + 0.5
-    bins = np.arange(0, high, 0.5)
-    print bins
+    if bins==None:
+        high = np.ceil(max(consumptionList)) + 0.5
+        bins = np.arange(0, high, 0.5)
     fig = plt.figure()
 
     ax = fig.add_axes((0.1,0.3,0.8,0.6))
@@ -1036,19 +1069,6 @@ def plotHistogramCreditConsumed(circuit_id_list,
 
     fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.savefig(plotFileName, transparent=True)
-
-
-def generate_ictd_figures():
-    print 'generating averagePower.pdf'
-    plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
-    print 'generating consumptionHistogram.pdf'
-    plotHistogramCreditConsumed(ml06, may_15, jun_15, plotFileName='ictd/consumptionHistogram.pdf')
-    print 'creditHistogram.pdf'
-    plotHistogramTimeWithCreditForCircuitList(ml05+ml06, may_15, jun_15, plotFileName='ictd/creditHistogram.pdf')
-    print 'generating scatter.pdf'
-    plotEnergyHistogram(ml06, dt.datetime(2011,6,1), jun_15, plotFileName='ictd/ml06Histogram.pdf')
-    print 'generating energy histogram'
-    plotScatterCreditConsumedVsTimeWithCreditForCircuitList(ml06, may_15, jun_15, plotFileName='ictd/scatterCreditHistogram.pdf')
 
 def calculateCreditConsumedForCircuit(circuit_id,
                             dateStart=dateStart,
