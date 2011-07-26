@@ -97,8 +97,10 @@ def plotMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today):
     #fig.legend()
     titleString = 'meters-messages received ' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
     ax.set_title(titleString)
+    ax.set_ylim((0,1.1))
     ax.set_ylabel("% messages received")
-    ax.set_xlabel("Date")
+    #ax.set_xlabel("Date")
+    plt.setp(ax.get_xticklabels(), rotation=30)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotMessageRateOfMeters.__name__)
@@ -886,9 +888,9 @@ def plotHourlySelfConsumption(meter_id=8,
     tw.log.info('mains circuit = ' + str(mains_id))
     tw.log.info('customer circuits = ' + str(customer_circuit_list))
     print 'total # of circuits = ',len(customer_circuit_list)
-    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
+    expectedMainsWatts_allon = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6-1.35))
     #expectedMainsWatthours_allon = expectedMainsWatts_allon*24
-    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
+    expectedMainsWatts_alloff = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6))
     #expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
     #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
     #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
@@ -977,7 +979,7 @@ def plotHourlySelfConsumption(meter_id=8,
     expMainsOff = np.ones(len(hours))*expectedMainsWatts_alloff
     expMains = []
     for i in range(len(hours)):
-        expMains.append(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
+        expMains.append(7.3+(2*2.6)+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
 
     ax.plot(dates2, household_consumption, 'o-', label='Household Total')
     ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
@@ -989,8 +991,9 @@ def plotHourlySelfConsumption(meter_id=8,
     y_high = max(total_consumption)
     ax.set_ylim((0,y_high))
     #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
-    ax.set_xlabel('Date')
+    #ax.set_xlabel('Date')
     ax.set_ylabel('Power Consumption (watts)')
+    plt.setp(ax.get_xticklabels(), rotation=30)
     fileNameString = 'hourlyselfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
     ax.set_title(fileNameString)
     annotation = []
