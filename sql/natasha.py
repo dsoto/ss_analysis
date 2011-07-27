@@ -1053,3 +1053,30 @@ def plotPowerConsumptionError():
     #plt.show()
     fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.savefig(fileNameString+'.pdf')
+    plt.close(fig)
+
+
+    sc20_mains_error = np.round(np.abs(sc20_mains - pred_power)*100/pred_power,2)
+    sc20_1_error = np.round(np.abs(sc20_1 - pred_power)*100/pred_power,2)
+    sc20_2_error = np.round(np.abs(sc20_2 - pred_power)*100/pred_power,2)
+    fig2 = plt.figure()
+    ax2 = fig2.add_axes((.1,.3,.8,.6))
+    ax2.plot(pred_power, sc20_mains_error, 'x-', color='r', label='mains')
+    ax2.plot(pred_power, sc20_1_error, '^-', color='b', label='sc20_1')
+    ax2.plot(pred_power, sc20_2_error, '^-', color='g', label='sc20_2')
+    ax2.legend(loc=0)
+    #ax2.set_ylim((0,35))
+    ax2.set_xlim((0,35))
+    ax2.set_xlabel('predicted power (watts)')
+    ax2.set_ylabel('precentage error (%)')
+    #ax.set_xticklabels(np.exp(
+    fileNameString2 = 'plot of power measurement error'
+    ax2.set_title(fileNameString2)
+    annotation2 = []
+    annotation2.append('plot generated ' + today.__str__() )
+    annotation2.append('function = ' + plotPowerConsumptionError.__name__)
+    annotation2.append('data points at predicted power of: ' + str(np.round(pred_power,2)))
+    annotation2 = '\n'.join(annotation2)
+    #plt.show()
+    fig2.text(0.01,0.01, annotation2) #, fontproperties=textFont)
+    fig2.savefig(fileNameString2+'.pdf')
