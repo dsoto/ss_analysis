@@ -196,7 +196,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
         currentDate += dt.timedelta(days=1)
     f.close()
 
-def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(2011,6,1), dateEnd=today):
     filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
     f = open(filename, 'w')
     header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm' , 'size of diff', 'creditjump', 'notes']
@@ -207,11 +207,19 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
 
 
     currentDate=dateStart
+    num_days = dateEnd - dateStart
+    max_ccts = 25   #to cover all possible circuits on meter
+    cct_whdrops = np.zeros((len(meters),max_ccts))
+    cct_wrongrate = np.zeros((len(meters),max_ccts))
+    meter_midnightdrop = np.zeros((len(meters),num_days.days))
+    cct_creditjump = np.zeros((len(meters),max_ccts))
+
     while currentDate < dateEnd:
         #f.write(str(currentDate)); f.write('\t')
         for m in range(len(meters)):
-            #f.write(getMeterName(meters[m])); f.write('\t')
-            circuits = getCircuitsForMeter(meters[m])
+            meter = session.query(Meter).get(meters[m])
+            mains_id = meter.getMainCircuit().id
+            circuits = [c.id for c in meter.getConsumerCircuits()]
             # meter locations/rates:  currency per watthour
             dayrate = 2.0
             nightrate = 2.5
@@ -220,9 +228,6 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                 #print 'using uganda rates'
                 dayrate = 8.0
                 nightrate = 10.0
-            for c in circuits:
-                if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
-                    circuits.remove(c)
             for i,c in enumerate(circuits):
                 dates,data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='watthours')
                 c_dates,c_data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='credit')
@@ -297,7 +302,7 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                         break   #don't bother with bad/late starts after 6am
                     # check that it's not a credit jump hour
                     if creditdiffs[k] >= 0:
-                        tol = 2
+                        tol = 0.1
                         if datadiffs[k] < (creditdiffs[k] - tol):
                             print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
                             f.write(str(dates[k])); f.write('\t')
@@ -309,7 +314,10 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             f.write(str(creditdiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k]-datadiffs[k])); f.write('\t')
                             if chours[k]==0 and datadiffs[k]<0:
+                                print 'midnight drop?'
                                 f.write('\t');f.write('midnight wh drop?'); f.write('\t')
+                                d = (currentDate-dateStart).days
+                                meter_midnightdrop[m][d] +=1
                             else:
                                 if 6<=chours[k]<18:
                                     rate = dayrate
@@ -317,12 +325,17 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                                 else:
                                     rate = nightrate
                                     wrongrate = dayrate
-                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and datadiffs[k]-0.1<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
+                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<((c_data[k+1]-c_data[k])*(-1.0/wrongrate))<(datadiffs[k]+0.1):
                                     print 'wrong rate used'
                                     f.write('\t');f.write('wrong rate used!')
+                                    cct_wrongrate[m][i] +=1
                                 elif datadiffs[k]==0 and k==0:
                                     print 'most likely late start report error'
                                     f.write('\t');f.write('late start report error?')
+                                elif datadiffs[k]<0:
+                                    print 'wh drop'
+                                    f.write('\t');f.write('watthour drop')
+                                    cct_whdrops[m][i] +=1
                                 else:
                                     f.write('\t');f.write('original credit diff: ' + str(c_data[k+1]-c_data[k])+' at hour '+str(chours[k])); f.write('\t')
                                     #f.write('hour: ' + str(chours[k])); f.write('\t')
@@ -347,6 +360,7 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
                                 print 'wrong rate used'
                                 f.write('\t');f.write('wrong rate used!')
+                                cct_wrongrate[m][i] +=1
                             else:
                                 f.write('\t');f.write('original credit diff: ' + str(c_data[k+1]-c_data[k])+' at hour '+str(chours[k])); f.write('\t')
                             #f.write('\t');f.write('original credit diff: ' + str(c_data[k]-c_data[k-1])); f.write('\t')
@@ -375,11 +389,185 @@ def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), 
                             f.write(str(creditdiffs[k])); f.write('\t'); f.write('\t')
                             f.write(str(creditjump)); f.write('\t');
                             f.write('credit jump outside normal range'); f.write('\t');
+                            cct_creditjump[m][i]+=1
                             f.write('\n')
 
-                #f.write('\n')
         currentDate += dt.timedelta(days=1)
+    f.write('\n')
+    for y in range(len(meters)):
+        meter = session.query(Meter).get(meters[y])
+        mains_id = meter.getMainCircuit().id
+        circuits = [c.id for c in meter.getConsumerCircuits()]
+        f.write(str(getMeterName(meters[y])));f.write('\n')
+        f.write('circuits:');f.write('\t')
+        for c in range(len(circuits)):
+            f.write(str(circuits[c]));f.write('\t')
+        f.write('\n')
+        f.write('whdrops:');f.write('\t')
+        for ct in range(len(circuits)):
+            f.write(str(cct_whdrops[y][ct]));f.write('\t')
+        f.write('\n')
+        f.write('wrongrate:');f.write('\t')
+        for crt in range(len(circuits)):
+            f.write(str(cct_wrongrate[y][crt]));f.write('\t')
+        f.write('\n')
+        f.write('odd credit jump:');f.write('\t')
+        for cj in range(len(circuits)):
+            f.write(str(cct_creditjump[y][cj]));f.write('\t')
+        f.write('\n')
+        if np.sum(meter_midnightdrop[y])>0:
+            f.write('midnight drops:');f.write('\t')
+            for d in range(num_days.days):
+                if meter_midnightdrop[y][d]>0:
+                    # add 1 to date only because first day starts at 1am, so first day's midnight is already next day!
+                    f.write(str(int(meter_midnightdrop[y][d]))+' ccts on '+str(dateStart+dt.timedelta(days=d+1)));f.write('\t')
+            f.write('\n')
+        f.write('\n')
+        '''
+        for z in range(max_ccts):
+            if cct_whdrops[y][z] >0:
+                f.write('circuit ' + str(circuits[z])+' had '+ str(cct_whdrops[y][z])+' non-midnight watthour drops');f.write('\n')
+            if cct_wrongrate[y][z] >0:
+                f.write('circuit ' +str(circuits[z])+' had wrong rate charged '+str(int(cct_wrongrate[y][z]))+' times');f.write('\n')
+        if np.sum(meter_midnightdrop[y])>0:     #if there are any midnight drops on meter over all days
+            f.write('meter '+str(getMeterName(meters[y]))+' had midnight wh drops on:');f.write('\n')
+            for d in range(num_days.days):
+                if meter_midnightdrop[y][d]>0:
+                    f.write(str(dateStart+dt.timedelta(days=d)));f.write('\t')
+            f.write('\n')
+        '''
     f.close()
+
+def getCctsWhDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+
+    currentDate=dateStart
+    max_ccts = 25   #to cover all possible circuits on meter
+    allcircuits = np.zeros((len(meters),max_ccts))
+    while currentDate < dateEnd:
+        for m in range(len(meters)):
+            dayrate = 2.0
+            nightrate = 2.5
+            #for uganda rates
+            if meters[m] == 6:
+                dayrate = 8.0
+                nightrate = 10.0
+            '''
+            circuits = getCircuitsForMeter(meters[m])
+            for c in circuits:
+                if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                    circuits.remove(c)
+            '''
+            meter = session.query(Meter).get(meters[m])
+            mains_id = meter.getMainCircuit().id
+            circuits = [c.id for c in meter.getConsumerCircuits()]
+            for i,c in enumerate(circuits):
+                dates,data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='watthours')
+                c_dates,c_data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='credit')
+                if len(dates)<12:   #do not run script on days with less than 12 reports...
+                    break
+                #convert credit back to wh
+                chours= [x.hour for x in c_dates]
+                chours = np.array(chours)
+                #insert zero at beginning............
+                #chours = np.insert(chours, 0, 0)
+                am = np.where((chours>=6)&(chours<18))
+                amlist=[]
+                for x in range(len(am[0])):
+                    amlist.append(am[0][x])
+                pm = np.where((chours<6)|(chours>=18))
+                pmlist =[]
+                for y in range(len(pm[0])):
+                    pmlist.append(pm[0][y])
+                # insert zero at beginning of watthour data
+                data = np.insert(data, 0, 0)
+                # insert previous midnight's data at beginning of credit data
+                prev_cdate, prev_cdata = getDataListForCircuit(c, currentDate+dt.timedelta(days=-1), currentDate, quantity='credit')
+                if len(prev_cdata) > 1:
+                    prevdayshrs = [x.hour for x in prev_cdate]
+                    if  prevdayshrs[-1] == 0 or 23:
+                        c_data = np.insert(c_data, 0,prev_cdata[len(prev_cdata)-1])
+                    else:
+                        c_data = np.insert(c_data, 0, c_data[0])
+                else:
+                    c_data = np.insert(c_data, 0, c_data[0])
+                datadiffs = np.diff(data)
+                #datadiffs=np.insert(datadiffs, 0, 0)
+                creditdiffs = np.diff(c_data)
+                #creditdiffs=np.insert(creditdiffs, 0, 0)
+                for x in range(len(amlist)):
+                    creditdiffs[amlist[x]] *= -(1.0/dayrate)
+                for x in range(len(pmlist)):
+                    creditdiffs[pmlist[x]] *= -(1.0/nightrate)
+                # catch credit jumps
+                # would be better to check against logged purchases...
+                #cjumps = creditdiffs <0 #negative now that we converted above...
+                for k in range(len(datadiffs)):
+                    if k==0 and chours[k]>6:
+                        break   #don't bother with bad/late starts after 6am
+                    # check that it's not a credit jump hour
+                    if creditdiffs[k] >= 0:
+                        tol = 0.1
+                        if datadiffs[k] < (creditdiffs[k] - tol):
+                            print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
+                            if chours[k]==0 and datadiffs[k]<0:
+                                print 'midnight wh drop?'
+                            else:
+                                if 6<=chours[k]<18:
+                                    rate = dayrate
+                                    wrongrate = nightrate
+                                else:
+                                    rate = nightrate
+                                    wrongrate = dayrate
+                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and datadiffs[k]-0.1<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
+                                    print 'wrong rate used'
+                                elif datadiffs[k]==0 and k==0:
+                                    print 'most likely late start report error'
+                                elif datadiffs[k]<0:
+                                    print 'wh drop'
+                                    allcircuits[m][i] +=1
+                                else:
+                                    print 'original credit diff: ', str(c_data[k+1]-c_data[k]), ' at hour ', str(chours[k])
+                        elif datadiffs[k] > (creditdiffs[k] +tol):
+                            print 'cct '+ str(c)+' got more wh than paid for on ' + str(dates[k])
+                            if 6<=chours[k]<18:
+                                rate = dayrate
+                                wrongrate = nightrate
+                            else:
+                                rate = nightrate
+                                wrongrate = dayrate
+                            if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
+                                print 'wrong rate used'
+                            else:
+                                print 'original credit diff: ', str(c_data[k+1]-c_data[k]), ' at hour ', str(chours[k])
+                    # if a credit jump hour
+                    elif creditdiffs[k] < 0:
+                        # go back and check actual credit jump at that time
+                        creditjump = c_data[k] - c_data[k-1]
+                        if 6<=chours[k] <18:
+                            rate = dayrate
+                        else: rate=nightrate
+                        # check that credit jump is normal range, after adding used credit
+                        # over that very hour
+                        #if not [.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j for j in range(len([500,1000,1500,2000,2500,4000,5000,7500,10000]))]:
+                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
+                            print 'credit jump on cct ', str(c), ' at ', str(dates[k]), ' of ', str(creditjump)
+        currentDate += dt.timedelta(days=1)
+    for y in range(len(meters)):
+        for z in range(max_ccts):
+            if allcircuits[y][z] >0:
+                '''
+                #first cct on meters 6&8 are mains, 2nd cct on 7, last cct on 4
+                if 5<meters[y]<9:
+                    cct = getCircuitsForMeter(meters[y])[z+1]
+                elif meters[y]==4:
+                    cct = getCircuitsForMeter(meters[y])[z]
+                '''
+                meter = session.query(Meter).get(meters[y])
+                mains_id = meter.getMainCircuit().id
+                circuits = [c.id for c in meter.getConsumerCircuits()]
+                print 'circuit ', str(circuits[z]),' had ', str(allcircuits[y][z]),' watthour drops'
+
+
 
 def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.timedelta(days=1)):
 
