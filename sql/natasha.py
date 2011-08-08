@@ -165,7 +165,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
 
     filename = 'sql/' + str(circuit_id_list) + 'etc_issues.txt'
     f = open(filename, 'w')
-    header = ['date', 'created', 'watthours', 'credit', 'billing']
+    header = ['circuit', 'date', 'created', 'watthours', 'credit', 'billing']
     '''
     for m in range(len(circuit_id_list)):
         header.append(str(circuit_id_list[m]))
@@ -178,7 +178,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
     currentDate = dateStart
     while currentDate <dateEnd:
         f.write(str(currentDate))
-        f.write('\t')
+        f.write('\n')
         for i, c in enumerate(circuit_id_list):
             dates,created,data=getRawDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1),quantity='watthours')
             c_dates,c_created,c_data=getRawDataListForCircuit(c,currentDate, currentDate+dt.timedelta(days=1),quantity='credit')
@@ -190,7 +190,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
                 f.write(str(created[k]));f.write('\t')
                 f.write(str(data[k]));f.write('\t')
                 f.write(str(c_data[k]));f.write('\t')
-                if k <= l:
+                if k < l and l>0:
                     f.write(str(loggedPurchases[k]))
                 f.write('\n')
         currentDate += dt.timedelta(days=1)
@@ -567,8 +567,6 @@ def getCctsWhDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=to
                 circuits = [c.id for c in meter.getConsumerCircuits()]
                 print 'circuit ', str(circuits[z]),' had ', str(allcircuits[y][z]),' watthour drops'
 
-
-
 def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.timedelta(days=1)):
 
     currentDate = dateStart
@@ -717,7 +715,6 @@ def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.tim
     plotFileName2 = titleString2 + '.pdf'
     fig2.savefig(plotFileName2, transparent=True)
 
-
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
                         dateEnd=dt.datetime(2011,5,20),
                             verbose = 0, introspect=False, showMains=False):
@@ -837,8 +834,6 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
     if introspect:
         plt.show()
     fig.savefig(fileNameString)
-
-
 
 def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24), dateEnd=dt.datetime(2011,6,28),
                           verbose=0):
@@ -1268,3 +1263,52 @@ def plotPowerConsumptionError():
     #plt.show()
     fig2.text(0.01,0.01, annotation2) #, fontproperties=textFont)
     fig2.savefig(fileNameString2+'.pdf')
+
+def plotLoadConsumption():
+
+    import scipy.integrate as sint
+
+    d = np.loadtxt('sql/csv/NewFile1.csv',skiprows=2,usecols=[0,1,2],delimiter=',')
+
+    t = d[:, 0]
+    v_divider = 100
+    v = d[:, 2] * v_divider
+    Rs = 10 #ohms
+    i = d[:, 1] / Rs
+    p = v * i
+
+    # integrate power over one full cycle --> find zero-crosspts
+    e = sint.trapz(p[50:216],t[50:216])
+    print 'average power is ', e * 60, ' watts'
+
+    '''
+    e = sint.trapz(p[:417],t[:417])
+    print e * 60
+    '''
+    plt.plot(t,i, label='current in amps')
+    plt.plot(t,v/1000, label='voltage in kV')
+    plt.plot(t,p, label='power in watts')
+    plt.plot(t, np.ones(len(t))*e*60, c='k', lw='2', label='average power in watts')
+    plt.legend(loc=0)
+    plt.show()
+
+def tripplite():
+
+    v_in = 12.0
+    v_out = 230.0
+    i_in_noload = 0.55
+    p_in_noload = v_in * i_in_noload
+    print 'no load power is ', p_in_noload, ' watts'
+    r = [10000, 5000, 2500]
+    i_in = [0.95, 1.36, 2.22]
+    p_in = [v_in * i_in[x] for x in range(len(i_in))]
+    print 'power in = ', p_in, ' watts'
+    p_out = np.square(v_out) / r
+    print 'power out = ', p_out, 'watts'
+    eff = p_out / p_in
+    print 'efficiency = ', eff
+    plt.plot(p_out, eff, label='efficiency')
+    plt.ylabel('efficiency')
+    plt.xlabel('load (watts)')
+    plt.legend(loc=0)
+    plt.show()
