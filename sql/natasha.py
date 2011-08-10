@@ -1375,16 +1375,25 @@ def plotPowerHistogram(meter_id=8,
 
 
     print 'circuits'
-    print circuit_list
-    print high_circuits
+    for item in range(len(circuit_list)):
+        print repr(circuit_list[item]).rjust(3),
+    print '\n'
+    for item in range(len(high_circuits)):
+        print repr(int(high_circuits[item])).rjust(3),
+    print '\n'
     high_cs = np.nonzero(high_circuits>0)
     print high_cs
     if len(high_cs)>0:
         print 'circuits with high power: ',[circuit_list[list(high_cs[0])[x]] for x in range(len(list(high_cs[0])))]
 
     print 'hours of day'
-    print np.arange(0,24)
-    print high_hours
+    hrs = np.arange(0,24)
+    for hour in range(len(hrs)):
+        print repr(hrs[hour]).rjust(2),
+    print '\n'
+    for hour in range(len(high_hours)):
+        print repr(int(high_hours[hour])).rjust(2),
+    print '\n'
     #print max(high_hours)
 
     fig = plt.figure()
