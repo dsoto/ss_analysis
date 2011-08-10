@@ -1312,3 +1312,152 @@ def tripplite():
     plt.xlabel('load (watts)')
     plt.legend(loc=0)
     plt.show()
+
+def plotPowerHistogram(meter_id=8,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        bins=None):
+
+    tw.log.info('entering plotPowerHistogram')
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(circuit_list))
+
+    powerList = np.array([])
+    high_times_list = np.array([])
+    high_circuits = np.zeros(len(circuit_list))
+    high_hours = np.zeros(24)
+    current_date = dateStart
+    while current_date < dateEnd:
+        for i,c in enumerate(circuit_list):
+            tw.log.info('current_date = ' + str(current_date))
+            power=[]
+            # grab energy data for circuit
+            '''
+            dates, watthours = getDataListForCircuit(c, current_date,
+                                             current_date+dt.timedelta(days=1),
+                                             quantity='watthours')
+            # convert energy data to hourly power
+            watthours = np.insert(watthours, 0, 0)
+            if len(watthours)>1:
+                power = np.append(power,np.diff(watthours))
+            else: power = np.append(power,watthours[0])
+            #make watthour drops = zero
+            '''
+            '''
+            for p in range(len(power)):
+                if power[p]<0:
+                    power[p]=0
+                    '''
+            '''
+            # append power data onto master list of power
+            for p in range(len(power)):
+                if power[p]>0:
+                    powerList = np.append(powerList, power[p])
+            #tw.log.info('len dataList = ' + str(len(dataList)))
+            '''
+            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
+            # find times and log circuits of high power
+            high_mask = np.nonzero(power>15)
+            if len(high_mask)>0:
+                high_times = times[high_mask]
+                high_circuits[i] += len(high_times)
+                for h in range(len(high_times)):
+                    high_times_list = np.append(high_times_list, high_times[h].hour)
+                    high_hours[high_times[h].hour] += 1
+            # remove zeros
+            powerList = np.append(powerList, np.take(power,np.nonzero(power)))
+
+        current_date += dt.timedelta(days=1)
+
+
+    print 'circuits'
+    print circuit_list
+    print high_circuits
+    high_cs = np.nonzero(high_circuits>0)
+    print high_cs
+    if len(high_cs)>0:
+        print 'circuits with high power: ',[circuit_list[list(high_cs[0])[x]] for x in range(len(list(high_cs[0])))]
+
+    print 'hours of day'
+    print np.arange(0,24)
+    print high_hours
+    #print max(high_hours)
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    # range depends on data
+    if bins == None:
+        high = int(np.ceil(max(powerList)) + 5)
+        #bins = [0,1] + range(5,high,5)
+        bins = range(0, high, 5)
+        if high < 65:
+            bins = range(0, high, 2)
+    ax.hist(powerList, bins=bins, normed=False, facecolor='#dddddd')
+    ax.set_xlabel("Hourly Power Consumption")    #, fontproperties=labelFont)
+    ax.set_ylabel("Hours of Usage")  #, fontproperties=labelFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotPowerHistogram.__name__)
+    annotation.append('circuits = ' + str(circuit_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    for ann in annotation:
+        tw.log.info(ann)
+    annotation = '\n'.join(annotation)
+
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    titleString = 'powerHistogram-meter' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(titleString)
+    fig.savefig('power/' + titleString + '.pdf', transparent=True)
+
+    fig0 = plt.figure()
+    ax0 = fig0.add_axes((0.1,0.3,0.8,0.6))
+    ax0.hist(high_times_list, bins=range(0,25,1), normed=False, facecolor='#dddddd')
+    ax0.set_ylabel('number of instances of high power')
+    ax0.set_xlabel('hour of day')
+    y_increment =1
+    if max(high_hours) >=10:
+        rem = np.remainder(int(max(high_hours)+1)/5,5)
+        if rem == 0:
+            y_increment *= int(max(high_hours)+1)/5
+        elif rem>0 and (int(max(high_hours)+1)/5) > 5:
+            y_increment *= ((int(max(high_hours)+1)/5) - rem)
+        else: y_increment *= ((int(max(high_hours)+1)/5) - (5-rem))
+    yticks = np.arange(0,int(max(high_hours))+1,y_increment)
+    ax0.set_yticks(yticks, minor=False)
+    ax0.set_xticks(np.arange(0,24,1), minor=False)
+    titleString0 = 'hours_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax0.set_title(titleString0)
+    fig0.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig0.savefig( 'power/' + titleString0 + '.pdf', transparent=True)
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_axes((0.1,0.3,0.8,0.6))
+    #ax1.hist(high_cs, bins=range(0,len(circuit_list)+1,1), normed=False, facecolor='#dddddd')
+    ax1.bar(np.arange(0,len(circuit_list),1), high_circuits, width=0.8, bottom=0)
+    ax1.set_ylabel('number of instances of high power')
+    ax1.set_xlabel('circuits on meter '+str(meter_id))
+    maxytick = 1
+    if len(high_cs[0])>0:
+        maxytick = int(max(high_circuits))+1
+    y_increment = 1
+    if maxytick >= 10:
+        remain = np.remainder(maxytick/5, 5)
+        if remain == 0:
+            y_increment *= (maxytick/5)
+        elif remain>0 and (maxytick/5)>5:
+            y_increment *= ((maxytick/5) - remain)
+        else: y_increment *= ((maxytick/5) + (5-remain))
+    yticks = np.arange(0, maxytick, y_increment)
+    ax1.set_yticks(yticks, minor=False)
+    ax1.set_xticks(np.arange(0,len(circuit_list)+1,1), minor=False)
+    ax1.set_xticklabels(circuit_list, ha='left')
+    fig1.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    titleString1 = 'ccts_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax1.set_title(titleString1)
+    fig1.savefig( 'power/' + titleString1 + '.pdf', transparent=True)
