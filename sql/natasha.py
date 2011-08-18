@@ -938,6 +938,78 @@ def powerReadings():
     ax2.set_title("difference between measured and real power")
     fig2.savefig('readingdiffs.pdf')
 
+def enmetricReadings():
+
+    circuits = [1,2,3,4]
+    res = [10000, 5000, 2500, 1000, 500]
+    res_watts = [(np.square(120.0)/res[x]) for x in range(len(res))]
+    loads = [0] + res_watts
+
+    belkin_read = np.zeros((len(circuits), len(res_watts)))
+    # belkin readings without loads as circuits turned 'on' from 0 to 4 ccts
+    belkin_noload = [0.9, 1.1, 1.3, 1.6, 1.9]
+    belkin_read[0] = [2.6,4.0,7.0,15.7,30.2]
+    belkin_read[1] = [2.6,4.0,7.0,15.7,30.6]
+    belkin_read[2] = [2.6,4.1,7.0,15.9,30.6]
+    belkin_read[3] = [2.6,4.1,7.0,15.8,30.6]
+    # take off belkin_noload for 1 circuit 'on'
+    for i in range(len(belkin_read)):
+        belkin_read[i] = [(belkin_read[i][x] - belkin_noload[1]) for x in range(belkin_read.shape[1])]
+    print belkin_read
+    cct_read = np.zeros((len(circuits), len(res_watts)))
+    cct_read[0] = [1.12,2.61,5.69,14.63, 29.44]
+    cct_read[1] = [1.50,3.0,6.03,15.02, 30.26]
+    cct_read[2] = [1.48,2.99,6.05,15.18, 30.4]
+    cct_read[3] = [1.47,2.96,6.01,14.98, 30.2]
+    cct_read_avg = np.average(cct_read,0)
+    print cct_read_avg
+
+    fig=plt.figure()
+    ax = fig.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(belkin_read)):
+        shade = 0.1 + (0.25*i)
+        #print shade
+        ax.plot(res_watts, res_watts, '-', c='0.5', lw=3)
+        ax.plot(res_watts, belkin_read[i], 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
+        ax.plot(res_watts, cct_read[i], 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
+    ax.legend(loc=0)
+    ax.set_xlabel("load (watts)")
+    ax.set_ylabel("readings (watts)")
+    ax.set_title("circuit and belkin meter readings")
+    fig.savefig('enmetricReadings.pdf')
+
+    # all switches on
+    # 6 tests
+    belkin_read2 = [6.3, 10.7, 22.5, 12.2, 25.4, 26.9]
+    belkin_read2 = [(belkin_read2[x] - belkin_noload[4]) for x in range(len(belkin_read2))]
+    cct_read2 = np.zeros((6, len(circuits)))
+    cct_read2[0] = [1.28, 3.03, 0, 0]
+    cct_read2[1] = [0, 3.05, 6.07, 0]
+    cct_read2[2] = [0, 0, 6.07, 15.02]
+    cct_read2[3] = [1.26, 3.04, 6.07, 0]
+    cct_read2[4] = [0, 3.04, 6.09, 15.02]
+    cct_read2[5] = [1.33, 3.05, 6.11, 15.03]
+    # get average reading for each load
+    #cct_read_avg2 = np.average(cct_read2,0)
+    cct_read_avg2 = np.zeros(cct_read2.shape[1])
+    # remove zeros from cct_read2
+    for i in range(len(cct_read_avg2)):
+        #print cct_read2[:,i]
+        cct_read_avg2[i] = np.average(np.take(cct_read2[:,i],np.nonzero(cct_read2[:,i]>0)))
+    cct_read_avg2 = np.append(cct_read_avg2,0)
+    fig2=plt.figure()
+    ax2 = fig2.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    ax2.plot(res_watts, res_watts, '-', c='k', label='ideal')
+    ax2.plot(res_watts, cct_read_avg, 'x-', label='single circuit')
+    ax2.plot(res_watts, cct_read_avg2, 'o-', label='cross talk?')
+    ax2.legend(loc=0)
+    ax2.set_xlabel("loads (watts)")
+    ax2.set_ylabel("average power (watts)")
+    ax2.set_title("average measured power with and without possible crosstalk")
+    fig2.savefig('enmetricCrossTalk.pdf')
+
 def plotSelfConsumption(meter_id=8,
                         dateStart=dt.datetime(2011, 7, 1),
                         dateEnd=dt.datetime(2011, 7, 8),
@@ -1470,3 +1542,70 @@ def plotPowerHistogram(meter_id=8,
     titleString1 = 'ccts_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
     ax1.set_title(titleString1)
     fig1.savefig( 'power/' + titleString1 + '.pdf', transparent=True)
+
+def maxMeterPower(meter_id=[4,6,7,8,9,12,15],
+                        dateStart=dt.datetime(2011,6,1),
+                        dateEnd=today,
+                        bins=None):
+
+    tw.log.info('entering maxMeterPower')
+    meters = []
+    for m in range(len(meter_id)):
+        meter = session.query(Meter).get(meter_id[m])
+        mains_id = meter.getMainCircuit().id
+        #print mains_id
+        meters.append(mains_id)
+    print meters
+    #circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('meter ids = ' + str(meters))
+    #tw.log.info('customer circuits = ' + str(circuit_list))
+
+    maxpowerList = np.zeros(len(meters))
+    max_times_list = np.ndarray((len(meters)), dtype=object)
+    high_circuits = np.zeros(len(meters))
+    power200 = np.zeros(len(meters))
+    max_hours = np.zeros(24)
+    current_date = dateStart
+    while current_date < dateEnd:
+        for i,c in enumerate(meters):
+            tw.log.info('current_date = ' + str(current_date))
+            power=[]
+            max_power = 0
+            # grab energy data for circuit
+            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
+            # find times and log circuits of high power
+            if len(power)>0:
+                max_power = np.max(power)
+            print max_power
+            max_mask = np.nonzero(power==max_power)
+            print max_mask
+            if max_power>0:
+                max_time = times[max_mask[0]]
+                if max_power > 200:
+                    power200[i] += 1
+            # adjust max power for circuit
+            if max_power > maxpowerList[i]:
+                maxpowerList[i] = max_power
+                if max_time:
+                    print max_time
+                    max_times_list[i] = max_time[0]
+
+        current_date += dt.timedelta(days=1)
+
+
+    print 'meters (circuit id) - max power (watts) - date - # times above 200W'
+    for item in range(len(meters)):
+        '''
+        if maxpowerList[item]>0:
+            maxpowerList[item] = np.round(maxpowerList[item],decimals=1)
+        '''
+        #maxpowerList[item] = np.round(maxpowerList[item], decimals=1)
+        maxpowerList[item] = np.rint(maxpowerList[item])
+        if max_times_list[item] is not None:
+            max_time = max_times_list[item].strftime("%m/%d/%y/ %I:%M%p")
+            #max_time = max_time.replace("'", "")
+        else: max_time = max_times_list[item]
+        print repr(meters[item]).rjust(5), repr(int(maxpowerList[item])).rjust(7), '  ',repr(max_time).rjust(5), repr(int(power200[item])).rjust(5)
+    print '\n'
+
