@@ -977,7 +977,37 @@ def enmetricReadings():
     ax.set_xlabel("load (watts)")
     ax.set_ylabel("readings (watts)")
     ax.set_title("circuit and belkin meter readings")
-    fig.savefig('enmetricReadings.pdf')
+    fig.savefig('enmetric/enmetricReadings.pdf')
+
+    fig1=plt.figure()
+    ax1 = fig1.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(belkin_read)):
+        shade = 0.1 + (0.25*i)
+        #print shade
+        ax1.plot(res_watts, [res_watts[x]-res_watts[x] for x in range(len(res_watts))], '-', c='0.5', lw=3)
+        ax1.plot(res_watts, belkin_read[i]-res_watts, 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
+        ax1.plot(res_watts, cct_read[i]-res_watts, 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
+    ax1.legend(loc=0)
+    ax1.set_xlabel("load (watts)")
+    ax1.set_ylabel("readings' differences (watts)")
+    ax1.set_title("circuit meter readings difference from actual load")
+    fig1.savefig('enmetric/enmetricDiff.pdf')
+
+    fig1b=plt.figure()
+    ax1b = fig1b.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(belkin_read)):
+        shade = 0.1 + (0.25*i)
+        #print shade
+        ax1b.plot(res_watts, [((res_watts[x]-res_watts[x])/res_watts[x]) for x in range(len(res_watts))], '-', c='0.5', lw=3)
+        ax1b.plot(res_watts, (belkin_read[i]-res_watts)/res_watts, 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
+        ax1b.plot(res_watts, (cct_read[i]-res_watts)/res_watts, 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
+    ax1b.legend(loc=0)
+    ax1b.set_xlabel("load (watts)")
+    ax1b.set_ylabel("readings' percent differences (watts)")
+    ax1b.set_title("circuit meter readings percent difference from actual load")
+    fig1b.savefig('enmetric/enmetricPercentDiff.pdf')
 
     # all switches on
     # 6 tests
@@ -1008,7 +1038,27 @@ def enmetricReadings():
     ax2.set_xlabel("loads (watts)")
     ax2.set_ylabel("average power (watts)")
     ax2.set_title("average measured power with and without possible crosstalk")
-    fig2.savefig('enmetricCrossTalk.pdf')
+    fig2.savefig('enmetric/enmetricCrossTalk.pdf')
+
+def victronInverter():
+    res = [10000, 5000, 2500, 1000, 500]
+    loads = [(np.square(240.0)/res[x]) for x in range(len(res))]
+    loads = [0] + loads
+    voltage = 48.0
+    current = [0.25, 0.36, 0.47, 0.7, 1.37, 2.56]
+    power = [(current[x]*voltage) for x in range(len(current))]
+
+    fig = plt.figure()
+    ax = fig.add_axes((.1, .3, .8, .6))
+    ax.plot(loads, power, 'x-', label='total power consumed')
+    ax.plot(loads, loads, '-', c='0.5', lw=3, label='loads')
+    ax.plot(loads, [(power[x]-loads[x]) for x in range(len(power))], 'o-', label='inverter consumption')
+    ax.legend(loc=0)
+    ax.set_xlabel("load (watts)")
+    ax.set_ylabel("power consumed (watts)")
+    ax.set_title("power consumed vs. load power")
+    fig.savefig('inverterPowerConsumption.pdf')
+
 
 def plotSelfConsumption(meter_id=8,
                         dateStart=dt.datetime(2011, 7, 1),
