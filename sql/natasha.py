@@ -977,7 +977,7 @@ def sc20readings():
     ax1.legend(loc=0)
     ax1.set_xlabel("loads (watts)")
     ax1.set_ylabel("difference (watts)")
-    ax1.set_title("difference between measured and real power")
+    ax1.set_title("difference between sc20 measured and real power")
     fig1.savefig('sc20readingdiffs.pdf')
 
     fig2=plt.figure()
@@ -1004,7 +1004,7 @@ def sc20readings():
     ax2.legend(loc=0)
     ax2.set_xlabel("loads (watts)")
     ax2.set_ylabel("difference (% watts)")
-    ax2.set_title("percent difference between measured and real power")
+    ax2.set_title("percent difference between sc20 measured and real power")
     fig2.savefig('sc20percentDiffs.pdf')
 
 def enmetricReadings():
@@ -1045,7 +1045,7 @@ def enmetricReadings():
     ax.legend(loc=0)
     ax.set_xlabel("load (watts)")
     ax.set_ylabel("readings (watts)")
-    ax.set_title("circuit and belkin meter readings")
+    ax.set_title("enmetric circuit and belkin meter readings")
     fig.savefig('enmetric/enmetricReadings.pdf')
 
     fig1=plt.figure()
@@ -1060,7 +1060,7 @@ def enmetricReadings():
     ax1.legend(loc=0)
     ax1.set_xlabel("load (watts)")
     ax1.set_ylabel("readings' differences (watts)")
-    ax1.set_title("circuit meter readings difference from actual load")
+    ax1.set_title("enmetric circuit meter readings difference from actual load")
     fig1.savefig('enmetric/enmetricDiff.pdf')
 
     fig1b=plt.figure()
@@ -1075,7 +1075,7 @@ def enmetricReadings():
     ax1b.legend(loc=0)
     ax1b.set_xlabel("load (watts)")
     ax1b.set_ylabel("readings' percent differences (watts)")
-    ax1b.set_title("circuit meter readings percent difference from actual load")
+    ax1b.set_title("enmetric circuit meter readings percent difference from actual load")
     fig1b.savefig('enmetric/enmetricPercentDiff.pdf')
 
     # all switches on
@@ -1106,7 +1106,7 @@ def enmetricReadings():
     ax2.legend(loc=0)
     ax2.set_xlabel("loads (watts)")
     ax2.set_ylabel("average power (watts)")
-    ax2.set_title("average measured power with and without possible crosstalk")
+    ax2.set_title("enmetric average measured power with and without possible crosstalk")
     fig2.savefig('enmetric/enmetricCrossTalk.pdf')
 
 def victronInverter():
@@ -1459,7 +1459,7 @@ def plotPowerConsumptionError():
     ax.set_xlabel('predicted power (watts)')
     ax.set_ylabel('measured power (watts)')
     #ax.set_xticklabels(np.exp(
-    fileNameString = 'log-log plot of power measurement error'
+    fileNameString = 'log-log plot of power measurement error on sc20 circuits and mains'
     ax.set_title(fileNameString)
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
@@ -1486,7 +1486,7 @@ def plotPowerConsumptionError():
     ax2.set_xlabel('predicted power (watts)')
     ax2.set_ylabel('precentage error (%)')
     #ax.set_xticklabels(np.exp(
-    fileNameString2 = 'plot of power measurement error'
+    fileNameString2 = 'plot of power measurement error on sc20 circuits and mains'
     ax2.set_title(fileNameString2)
     annotation2 = []
     annotation2.append('plot generated ' + today.__str__() )
