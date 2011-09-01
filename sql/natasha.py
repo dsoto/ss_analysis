@@ -67,8 +67,9 @@ def writeMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today, fu
             currentDate += dt.timedelta(days=1)
     f.close()
 
-def plotMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today):
-    meters = [4,6,7,8]
+def plotMessageRateOfMeters(meters = [4,6,7,8,9,12,15,16,17,20], dateStart=dt.datetime(2011,6,24), dateEnd=today):
+
+    tw.log.info('entering plotMessageRateOfMeters')
     currentDate=dateStart
     dateList = []
     d = dateStart
@@ -77,6 +78,7 @@ def plotMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today):
         d += dt.timedelta(days=1)
     mrate=[[]*len(meters) for x in xrange(len(meters))]
     while currentDate < dateEnd:
+        tw.log.info('date = ' + str(currentDate))
         for m in range(len(meters)):
             cct_mrate =[]
             circuit_id_list = getCircuitsForMeter(meters[m])
@@ -87,31 +89,71 @@ def plotMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today):
             mrate[m].append(sum(cct_mrate)/len(cct_mrate))
         currentDate += dt.timedelta(days=1)
     print mrate
-    fig = plt.figure()
-    ax = fig.add_axes((.1,.3,.8,.6))
-    for m in range(len(meters)):
-        ax.plot(dateList, mrate[m], 'x-', label=getMeterName(meters[m]))
-        #ax.legend(getMeterName(meters[m]), loc=(0.9,0.9-(0.1*m)))
-        #fig.text(0.85,(0.01+0.05*m),getMeterName(meters[m]))
-    ax.legend(loc=0)
-    #fig.legend()
-    titleString = 'meters-messages received ' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax.set_title(titleString)
-    ax.set_ylim((0,1.1))
-    ax.set_ylabel("% messages received")
-    #ax.set_xlabel("Date")
-    plt.setp(ax.get_xticklabels(), rotation=30)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotMessageRateOfMeters.__name__)
-    annotation.append('meters = ' + str(meters))
-    annotation.append('date start = ' + str(dateStart))
-    annotation.append('date end = ' + str(dateEnd))
-    annotation = '\n'.join(annotation)
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    plotFileName = titleString + '.pdf'
-    fig.savefig(plotFileName, transparent=True)
+    if len(meters)>5:
+        fig, ax = plt.subplots(len(meters), 1, sharex = True, figsize=(8.5,11))
+        for i,m in enumerate(meters):
+            thisAxes = ax[i]
+            thisAxes.plot(dateList, [mrate[i][x] for x in range(len(mrate[i]))], ls='-', ms=3, marker='o', mfc=None)
+            thisAxes.text(1.01,0.5,str(m)+' ('+str(getMeterName(m))+')',transform = thisAxes.transAxes)
+            thisAxes.set_ylim((-0.1,1.1))
+            thisAxes.set_yticks((0,0.5,1))
+        fileNameString = str(meters)+str(dateStart)+'to'+str(dateEnd) + 'messageRates'
+        fig.suptitle(fileNameString)
+        fig.autofmt_xdate()
+        fig.savefig(fileNameString+'.pdf', transparent=True)
+    else:
+        fig = plt.figure()
+        ax = fig.add_axes((.1,.3,.8,.6))
+        colormap = ['b','g','r','c','m','y','k','brown', 'deeppink','darkslateblue','dimgray','indigo','lightseagreen']
+        mkr = ['.',',','o','v','^','<','>','1','2','3','4','s','p','*','h','H','+','x','D','d','|','_']
+        for m in range(len(meters)):
+            ax.plot(dateList, mrate[m], 'x-', c=colormap[m], mkr=mr[m], label=getMeterName(meters[m]))
+            #ax.legend(getMeterName(meters[m]), loc=(0.9,0.9-(0.1*m)))
+            #fig.text(0.85,(0.01+0.05*m),getMeterName(meters[m]))
+        ax.legend(loc=0)
+        #fig.legend()
+        ax.set_title(titleString)
+        ax.set_ylim((-0.1,1.1))
+        ax.set_ylabel("% messages received")
+        #ax.set_xlabel("Date")
+        plt.setp(ax.get_xticklabels(), rotation=30)
+        annotation = []
+        annotation.append('plot generated ' + today.__str__() )
+        annotation.append('function = ' + plotMessageRateOfMeters.__name__)
+        annotation.append('meters = ' + str(meters))
+        annotation.append('date start = ' + str(dateStart))
+        annotation.append('date end = ' + str(dateEnd))
+        annotation = '\n'.join(annotation)
+        #plt.show()
+        fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+        titleString = 'meters-messages received ' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+        plotFileName = titleString + '.pdf'
+        fig.savefig(plotFileName, transparent=True)
+
+def augustMessages():
+    mrate = [[0.0, 0.0, 0.0, 0.0, 0.5833333333333333, 0.16666666666666666, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5416666666666667, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.39962121212121215, 0.1666666666666666, 0.125, 0.125, 0.4393939393939393, 0.3162878787878789, 0.625, 0.7083333333333335, 0.4412878787878787, 0.5416666666666665, 0.375, 0.1666666666666666, 0.5624999999999998, 0.1666666666666666, 0.0, 0.20833333333333337, 0.0, 0.375, 0.7083333333333335, 0.625, 0.5, 0.1666666666666666, 0.0, 0.7916666666666665, 0.2727272727272727, 0.18939393939393934, 0.35984848484848475, 0.25, 0.0], [0.4583333333333333, 0.41666666666666674, 0.25, 0.3333333333333332, 0.0, 0.3333333333333332, 0.75, 0.29166666666666674, 0.0, 0.25, 0.3333333333333332, 0.0, 0.32142857142857145, 0.5, 0.0, 0.0, 0.4583333333333333, 0.3115079365079365, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.4583333333333333, 1.0, 1.0, 0.7083333333333335, 0.8333333333333335, 1.0, 1.0, 0.375, 1.0, 0.8333333333333335, 1.0, 1.0, 1.0, 0.1666666666666666, 0.0, 0.0, 0.20833333333333337, 0.4583333333333333, 0.8571428571428571, 0.5833333333333335, 0.125, 0.0, 0.0, 0.0, 0.0, 0.375, 1.0, 0.5833333333333335, 0.0], [0.0, 0.25, 1.0, 0.875, 0.875, 0.5416666666666666, 1.0, 1.0, 0.0833333333333333, 0.0, 0.0, 0.0, 0.375, 0.9583333333333334, 0.5734126984126983, 0.3373015873015872, 0.21230158730158732, 0.75, 0.0833333333333333, 0.6666666666666664, 1.0, 0.4583333333333333, 1.0, 0.0, 0.3333333333333332, 1.0, 1.0, 0.5833333333333335, 0.0], [1.0, 1.0, 0.4583333333333333, 0.9404761904761907, 1.0, 1.0, 1.0, 0.375, 1.0, 0.8174603174603173, 1.0, 1.0, 0.375, 1.0, 0.8214285714285714, 0.7916666666666665, 0.0, 0.5833333333333335, 1.0, 0.0833333333333333, 0.0, 0.7083333333333335, 1.0, 1.0, 1.0, 1.0, 1.0, 0.875, 0.0], [0.9523809523809523, 0.9523809523809523, 0.9424603174603173, 0.8432539682539681, 0.6646825396825395, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2718253968253968, 0.7361111111111113, 0.5674603174603172, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.3333333333333332, 1.0, 1.0, 0.875, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8333333333333335, 1.0, 1.0, 1.0, 1.0, 0.9007936507936507, 1.0, 1.0, 0.75, 0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 0.1666666666666666, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.29166666666666663, 0.5555555555555555, 0.0, 0.0, 0.06944444444444443, 0.0, 0.0, 0.14583333333333331, 0.4930555555555556, 0.7291666666666666, 0.5208333333333334, 0.48611111111111116, 0.13888888888888887, 0.7083333333333334, 0.25, 0.6666666666666666, 0.9166666666666666, 0.625, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.45833333333333337, 0.0, 0.125, 0.9166666666666667, 0.625, 0.0]]
+    meters = [4,6,7,8,9,12,15,16,17,20]
+    dateList = []
+    dateStart = dt.datetime(2011,8,1)
+    dateEnd = dt.datetime(2011,8,29)
+    d = dateStart
+    while d <= dateEnd:  #-dt.timedelta(days=1):
+        dateList.append(d)
+        d += dt.timedelta(days=1)
+    #print len(dateList)
+    #print len(mrate[1])
+    fig, ax = plt.subplots(len(meters), 1, sharex = True, figsize=(8.5,11))
+    for i,m in enumerate(meters):
+        thisAxes = ax[i]
+        thisAxes.plot(dateList, [mrate[i][x] for x in range(len(mrate[i]))], ls='-', ms=3, marker='o', mfc=None)
+        thisAxes.text(1.01,0.5,str(m)+' ('+str(getMeterName(m))+')',transform = thisAxes.transAxes)
+        thisAxes.set_ylim((-0.1,1.1))
+        thisAxes.set_yticks((0,0.5,1))
+
+    fileNameString = str(meters)+str(dateStart)+'to'+str(dateEnd) + 'messageRates.pdf'
+    fig.suptitle(fileNameString)
+    fig.autofmt_xdate()
+    fig.savefig(fileNameString)
 
 #plotMessageRateOfMeters()
 
@@ -196,7 +238,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
         currentDate += dt.timedelta(days=1)
     f.close()
 
-def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+def watthourCreditMismatches(meters=[4,6,7,8,9,12,15,16,17,20], dateStart=dt.datetime(2011,6,1), dateEnd=today):
     filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
     f = open(filename, 'w')
     header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm' , 'size of diff', 'creditjump', 'notes']
@@ -204,7 +246,6 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
         f.write(header[i])
         f.write('\t')
     f.write('\n')
-
 
     currentDate=dateStart
     num_days = dateEnd - dateStart
@@ -224,7 +265,7 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
             dayrate = 2.0
             nightrate = 2.5
             #for uganda rates
-            if meters[m] == 6:
+            if "ug" in getMeterName(meters[m]):
                 #print 'using uganda rates'
                 dayrate = 8.0
                 nightrate = 10.0
@@ -378,7 +419,7 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                         # check that credit jump is normal range, after adding used credit
                         # over that very hour
                         #if not [.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j for j in range(len([500,1000,1500,2000,2500,4000,5000,7500,10000]))]:
-                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
+                        if not 248<(creditjump+(rate*datadiffs[k]))<252 and not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
                             print 'credit jump on cct ' + str(c) + ' at ' + str(dates[k])+ ' of ' + str(creditjump)
                             f.write(str(dates[k])); f.write('\t')
                             f.write(getMeterName(meters[m])); f.write('\t')
@@ -892,7 +933,7 @@ def flashlight():
     axs[2].set_title('lux vs. horizontal distance, at 25cm height')
     fig.savefig('flashlight.pdf')
 
-def powerReadings():
+def sc20readings():
 
     circuits = [201,202,203,204]
     res = [5000, 2500, 1000, 500]
@@ -926,17 +967,45 @@ def powerReadings():
     ax.set_xlabel("load (watts)")
     ax.set_ylabel("difference (watts)")
     ax.set_title("difference between circuit and main meter readings")
-    fig.savefig('powerReadingDiffs.pdf')
+    fig.savefig('sc20powerReadingDiffs.pdf')
+
+    fig1=plt.figure()
+    ax1 = fig1.add_axes((.1,.3,.8,.6))
+    #fig,axs = plt.subplots(2,1)
+    for i in range(len(cctreads)):
+        ax1.plot(loads, cctreads[i]-loads, 'x-', label=str(circuits[i]))
+    ax1.legend(loc=0)
+    ax1.set_xlabel("loads (watts)")
+    ax1.set_ylabel("difference (watts)")
+    ax1.set_title("difference between measured and real power")
+    fig1.savefig('sc20readingdiffs.pdf')
+
     fig2=plt.figure()
     ax2 = fig2.add_axes((.1,.3,.8,.6))
     #fig,axs = plt.subplots(2,1)
+
+    #perc = np.array((len(cctreads),len(loads)))
+    #perc = np.zeros((len(circuits),len(loads)))
+    perc = [[]*len(loads)]*len(cctreads)
+    #print perc
+    for i in range(len(circuits)):
+        perc[i] = (cct_read[i]-res_watts)/res_watts
+    #for i in range(len(circuits)):
+        perc[i] = np.insert(perc[i],0,0)
+    print perc
+    '''
+    perc = [[]*len(loads)]*len(cctreads)
     for i in range(len(cctreads)):
-        ax2.plot(loads, cctreads[i]-loads, 'x-', label=str(circuits[i]))
+        perc[i] = [0] + ((cct_read[i]-res_watts)/res_watts)
+    '''
+    print perc
+    for i in range(len(cctreads)):
+        ax2.plot(loads, perc[i], 'x-', label=str(circuits[i]))
     ax2.legend(loc=0)
     ax2.set_xlabel("loads (watts)")
-    ax2.set_ylabel("difference (watts)")
-    ax2.set_title("difference between measured and real power")
-    fig2.savefig('readingdiffs.pdf')
+    ax2.set_ylabel("difference (% watts)")
+    ax2.set_title("percent difference between measured and real power")
+    fig2.savefig('sc20percentDiffs.pdf')
 
 def enmetricReadings():
 
@@ -1059,6 +1128,48 @@ def victronInverter():
     ax.set_title("power consumed vs. load power")
     fig.savefig('inverterPowerConsumption.pdf')
 
+    fig1 = plt.figure()
+    ax1 = fig1.add_axes((.1, .3, .8, .6))
+    #ax1.plot(loads, power, 'x-', label='total power consumed')
+    #ax1.plot(loads, loads, '-', c='0.5', lw=3, label='loads')
+    ax1.plot(loads, [(loads[x]/power[x]) for x in range(len(power))], 'o-', label='pf = 1.0')
+    ax1.plot(20, .41, 'x', ms=10, label='pf = 0.44')
+    ax1.plot(44, .636, 'x', ms=10, label='pf = 0.38')
+    ax1.legend(loc=0)
+    ax1.set_xlabel("load (watts)")
+    ax1.set_ylabel("efficiency")
+    ax1.grid(True)
+    ax1.set_title("victron inverter efficiency vs. load power, for 3 power factors")
+    fig1.savefig('inverterEfficiency.pdf')
+
+def PCUefficiency():
+    Vbattery = [48.12, 48.02, 48.7, 48.7, 48.1, 48.1, 48.9, 48.1, 48.05, 47.89, 48.86, 48.9, 49.19, 51.52, 54.2]
+    Ibattery = [6.8, 7.7, 5.8, 5.5, 4.8, 3.4, 3.6, 3.5, 4.1, 6.9, 4.9, 8.7, 2.9, 2.1, 2.5]
+    VA = [Vbattery[x]*Ibattery[x] for x in range(len(Vbattery))]
+    print VA
+    Wmains = [177.6, 221.5, 138.6, 126.1, 98.8, 38.9, 43.1, 37.3, 66.2, 189.3, 108.4, 269.8, 0, 0, 0]
+
+    fig = plt.figure()
+    ax = fig.add_axes((.1,.3,.8,.6))
+    ax.plot(VA, Wmains, 'x', c='r', ms=10)
+    ax.plot(VA, VA, '-', lw=3, c='0.85')
+    ax.set_xlim((0,450))
+    ax.set_xlabel("power entering PCU")
+    ax.set_ylabel("power leaving PCU")
+    ax.grid(True)
+    ax.set_title("PCU efficiency")
+    fig.savefig('PCUefficiency.pdf')
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_axes((.1,.3,.8,.6))
+    ax1.plot(Wmains, [Wmains[x]/VA[x] for x in range(len(VA))], 'o', c='r', ms=10)
+    #ax1.plot(VA, VA, '-', lw=3, c='0.85')
+    #ax1.set_xlim((0,450))
+    ax1.set_xlabel("power load")
+    ax1.set_ylabel("PCU efficiency")
+    ax1.grid(True)
+    ax1.set_title("PCU efficiency")
+    fig1.savefig('PCUefficiencyPercent.pdf')
 
 def plotSelfConsumption(meter_id=8,
                         dateStart=dt.datetime(2011, 7, 1),
