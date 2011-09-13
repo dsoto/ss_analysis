@@ -97,10 +97,8 @@ def plotMessageRateOfMeters(dateStart=dt.datetime(2011,6,24), dateEnd=today):
     #fig.legend()
     titleString = 'meters-messages received ' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
     ax.set_title(titleString)
-    ax.set_ylim((0,1.1))
     ax.set_ylabel("% messages received")
-    #ax.set_xlabel("Date")
-    plt.setp(ax.get_xticklabels(), rotation=30)
+    ax.set_xlabel("Date")
     annotation = []
     annotation.append('plot generated ' + today.__str__() )
     annotation.append('function = ' + plotMessageRateOfMeters.__name__)
@@ -165,7 +163,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
 
     filename = 'sql/' + str(circuit_id_list) + 'etc_issues.txt'
     f = open(filename, 'w')
-    header = ['circuit', 'date', 'created', 'watthours', 'credit', 'billing']
+    header = ['date', 'created', 'watthours', 'credit', 'billing']
     '''
     for m in range(len(circuit_id_list)):
         header.append(str(circuit_id_list[m]))
@@ -178,7 +176,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
     currentDate = dateStart
     while currentDate <dateEnd:
         f.write(str(currentDate))
-        f.write('\n')
+        f.write('\t')
         for i, c in enumerate(circuit_id_list):
             dates,created,data=getRawDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1),quantity='watthours')
             c_dates,c_created,c_data=getRawDataListForCircuit(c,currentDate, currentDate+dt.timedelta(days=1),quantity='credit')
@@ -190,13 +188,13 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
                 f.write(str(created[k]));f.write('\t')
                 f.write(str(data[k]));f.write('\t')
                 f.write(str(c_data[k]));f.write('\t')
-                if k < l and l>0:
+                if k <= l:
                     f.write(str(loggedPurchases[k]))
                 f.write('\n')
         currentDate += dt.timedelta(days=1)
     f.close()
 
-def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+def watthourCreditMismatches(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
     filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
     f = open(filename, 'w')
     header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm' , 'size of diff', 'creditjump', 'notes']
@@ -207,19 +205,11 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
 
 
     currentDate=dateStart
-    num_days = dateEnd - dateStart
-    max_ccts = 25   #to cover all possible circuits on meter
-    cct_whdrops = np.zeros((len(meters),max_ccts))
-    cct_wrongrate = np.zeros((len(meters),max_ccts))
-    meter_midnightdrop = np.zeros((len(meters),num_days.days))
-    cct_creditjump = np.zeros((len(meters),max_ccts))
-
     while currentDate < dateEnd:
         #f.write(str(currentDate)); f.write('\t')
         for m in range(len(meters)):
-            meter = session.query(Meter).get(meters[m])
-            mains_id = meter.getMainCircuit().id
-            circuits = [c.id for c in meter.getConsumerCircuits()]
+            #f.write(getMeterName(meters[m])); f.write('\t')
+            circuits = getCircuitsForMeter(meters[m])
             # meter locations/rates:  currency per watthour
             dayrate = 2.0
             nightrate = 2.5
@@ -228,6 +218,9 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                 #print 'using uganda rates'
                 dayrate = 8.0
                 nightrate = 10.0
+            for c in circuits:
+                if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
+                    circuits.remove(c)
             for i,c in enumerate(circuits):
                 dates,data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='watthours')
                 c_dates,c_data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='credit')
@@ -302,7 +295,7 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                         break   #don't bother with bad/late starts after 6am
                     # check that it's not a credit jump hour
                     if creditdiffs[k] >= 0:
-                        tol = 0.1
+                        tol = 2
                         if datadiffs[k] < (creditdiffs[k] - tol):
                             print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
                             f.write(str(dates[k])); f.write('\t')
@@ -314,10 +307,7 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                             f.write(str(creditdiffs[k])); f.write('\t')
                             f.write(str(creditdiffs[k]-datadiffs[k])); f.write('\t')
                             if chours[k]==0 and datadiffs[k]<0:
-                                print 'midnight drop?'
                                 f.write('\t');f.write('midnight wh drop?'); f.write('\t')
-                                d = (currentDate-dateStart).days
-                                meter_midnightdrop[m][d] +=1
                             else:
                                 if 6<=chours[k]<18:
                                     rate = dayrate
@@ -325,17 +315,12 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                                 else:
                                     rate = nightrate
                                     wrongrate = dayrate
-                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<((c_data[k+1]-c_data[k])*(-1.0/wrongrate))<(datadiffs[k]+0.1):
+                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and datadiffs[k]-0.1<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
                                     print 'wrong rate used'
                                     f.write('\t');f.write('wrong rate used!')
-                                    cct_wrongrate[m][i] +=1
                                 elif datadiffs[k]==0 and k==0:
                                     print 'most likely late start report error'
                                     f.write('\t');f.write('late start report error?')
-                                elif datadiffs[k]<0:
-                                    print 'wh drop'
-                                    f.write('\t');f.write('watthour drop')
-                                    cct_whdrops[m][i] +=1
                                 else:
                                     f.write('\t');f.write('original credit diff: ' + str(c_data[k+1]-c_data[k])+' at hour '+str(chours[k])); f.write('\t')
                                     #f.write('hour: ' + str(chours[k])); f.write('\t')
@@ -360,7 +345,6 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                             if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
                                 print 'wrong rate used'
                                 f.write('\t');f.write('wrong rate used!')
-                                cct_wrongrate[m][i] +=1
                             else:
                                 f.write('\t');f.write('original credit diff: ' + str(c_data[k+1]-c_data[k])+' at hour '+str(chours[k])); f.write('\t')
                             #f.write('\t');f.write('original credit diff: ' + str(c_data[k]-c_data[k-1])); f.write('\t')
@@ -389,183 +373,11 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15], dateStart=dt.datetime(201
                             f.write(str(creditdiffs[k])); f.write('\t'); f.write('\t')
                             f.write(str(creditjump)); f.write('\t');
                             f.write('credit jump outside normal range'); f.write('\t');
-                            cct_creditjump[m][i]+=1
                             f.write('\n')
 
+                #f.write('\n')
         currentDate += dt.timedelta(days=1)
-    f.write('\n')
-    for y in range(len(meters)):
-        meter = session.query(Meter).get(meters[y])
-        mains_id = meter.getMainCircuit().id
-        circuits = [c.id for c in meter.getConsumerCircuits()]
-        f.write(str(getMeterName(meters[y])));f.write('\n')
-        f.write('circuits:');f.write('\t')
-        for c in range(len(circuits)):
-            f.write(str(circuits[c]));f.write('\t')
-        f.write('\n')
-        f.write('whdrops:');f.write('\t')
-        for ct in range(len(circuits)):
-            f.write(str(cct_whdrops[y][ct]));f.write('\t')
-        f.write('\n')
-        f.write('wrongrate:');f.write('\t')
-        for crt in range(len(circuits)):
-            f.write(str(cct_wrongrate[y][crt]));f.write('\t')
-        f.write('\n')
-        f.write('odd credit jump:');f.write('\t')
-        for cj in range(len(circuits)):
-            f.write(str(cct_creditjump[y][cj]));f.write('\t')
-        f.write('\n')
-        if np.sum(meter_midnightdrop[y])>0:
-            f.write('midnight drops:');f.write('\t')
-            for d in range(num_days.days):
-                if meter_midnightdrop[y][d]>0:
-                    # add 1 to date only because first day starts at 1am, so first day's midnight is already next day!
-                    f.write(str(int(meter_midnightdrop[y][d]))+' ccts on '+str(dateStart+dt.timedelta(days=d+1)));f.write('\t')
-            f.write('\n')
-        f.write('\n')
-        '''
-        for z in range(max_ccts):
-            if cct_whdrops[y][z] >0:
-                f.write('circuit ' + str(circuits[z])+' had '+ str(cct_whdrops[y][z])+' non-midnight watthour drops');f.write('\n')
-            if cct_wrongrate[y][z] >0:
-                f.write('circuit ' +str(circuits[z])+' had wrong rate charged '+str(int(cct_wrongrate[y][z]))+' times');f.write('\n')
-        if np.sum(meter_midnightdrop[y])>0:     #if there are any midnight drops on meter over all days
-            f.write('meter '+str(getMeterName(meters[y]))+' had midnight wh drops on:');f.write('\n')
-            for d in range(num_days.days):
-                if meter_midnightdrop[y][d]>0:
-                    f.write(str(dateStart+dt.timedelta(days=d)));f.write('\t')
-            f.write('\n')
-        '''
     f.close()
-
-def getCctsWhDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,1), dateEnd=today):
-
-    currentDate=dateStart
-    max_ccts = 25   #to cover all possible circuits on meter
-    allcircuits = np.zeros((len(meters),max_ccts))
-    while currentDate < dateEnd:
-        for m in range(len(meters)):
-            dayrate = 2.0
-            nightrate = 2.5
-            #for uganda rates
-            if meters[m] == 6:
-                dayrate = 8.0
-                nightrate = 10.0
-            '''
-            circuits = getCircuitsForMeter(meters[m])
-            for c in circuits:
-                if session.query(Circuit).filter(Circuit.id == c)[0].ip_address == '192.168.1.200':
-                    circuits.remove(c)
-            '''
-            meter = session.query(Meter).get(meters[m])
-            mains_id = meter.getMainCircuit().id
-            circuits = [c.id for c in meter.getConsumerCircuits()]
-            for i,c in enumerate(circuits):
-                dates,data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='watthours')
-                c_dates,c_data=getDataListForCircuit(c,currentDate,currentDate+dt.timedelta(days=1), quantity='credit')
-                if len(dates)<12:   #do not run script on days with less than 12 reports...
-                    break
-                #convert credit back to wh
-                chours= [x.hour for x in c_dates]
-                chours = np.array(chours)
-                #insert zero at beginning............
-                #chours = np.insert(chours, 0, 0)
-                am = np.where((chours>=6)&(chours<18))
-                amlist=[]
-                for x in range(len(am[0])):
-                    amlist.append(am[0][x])
-                pm = np.where((chours<6)|(chours>=18))
-                pmlist =[]
-                for y in range(len(pm[0])):
-                    pmlist.append(pm[0][y])
-                # insert zero at beginning of watthour data
-                data = np.insert(data, 0, 0)
-                # insert previous midnight's data at beginning of credit data
-                prev_cdate, prev_cdata = getDataListForCircuit(c, currentDate+dt.timedelta(days=-1), currentDate, quantity='credit')
-                if len(prev_cdata) > 1:
-                    prevdayshrs = [x.hour for x in prev_cdate]
-                    if  prevdayshrs[-1] == 0 or 23:
-                        c_data = np.insert(c_data, 0,prev_cdata[len(prev_cdata)-1])
-                    else:
-                        c_data = np.insert(c_data, 0, c_data[0])
-                else:
-                    c_data = np.insert(c_data, 0, c_data[0])
-                datadiffs = np.diff(data)
-                #datadiffs=np.insert(datadiffs, 0, 0)
-                creditdiffs = np.diff(c_data)
-                #creditdiffs=np.insert(creditdiffs, 0, 0)
-                for x in range(len(amlist)):
-                    creditdiffs[amlist[x]] *= -(1.0/dayrate)
-                for x in range(len(pmlist)):
-                    creditdiffs[pmlist[x]] *= -(1.0/nightrate)
-                # catch credit jumps
-                # would be better to check against logged purchases...
-                #cjumps = creditdiffs <0 #negative now that we converted above...
-                for k in range(len(datadiffs)):
-                    if k==0 and chours[k]>6:
-                        break   #don't bother with bad/late starts after 6am
-                    # check that it's not a credit jump hour
-                    if creditdiffs[k] >= 0:
-                        tol = 0.1
-                        if datadiffs[k] < (creditdiffs[k] - tol):
-                            print 'cct ' + str(c)+' did not get as many wh as paid on ' + str(dates[k])
-                            if chours[k]==0 and datadiffs[k]<0:
-                                print 'midnight wh drop?'
-                            else:
-                                if 6<=chours[k]<18:
-                                    rate = dayrate
-                                    wrongrate = nightrate
-                                else:
-                                    rate = nightrate
-                                    wrongrate = dayrate
-                                if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and datadiffs[k]-0.1<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
-                                    print 'wrong rate used'
-                                elif datadiffs[k]==0 and k==0:
-                                    print 'most likely late start report error'
-                                elif datadiffs[k]<0:
-                                    print 'wh drop'
-                                    allcircuits[m][i] +=1
-                                else:
-                                    print 'original credit diff: ', str(c_data[k+1]-c_data[k]), ' at hour ', str(chours[k])
-                        elif datadiffs[k] > (creditdiffs[k] +tol):
-                            print 'cct '+ str(c)+' got more wh than paid for on ' + str(dates[k])
-                            if 6<=chours[k]<18:
-                                rate = dayrate
-                                wrongrate = nightrate
-                            else:
-                                rate = nightrate
-                                wrongrate = dayrate
-                            if (c_data[k+1]-c_data[k])*(-1.0/rate) == creditdiffs[k] and (datadiffs[k]-0.1)<(c_data[k+1]-c_data[k])*(-1.0/wrongrate)<(datadiffs[k]+0.1):
-                                print 'wrong rate used'
-                            else:
-                                print 'original credit diff: ', str(c_data[k+1]-c_data[k]), ' at hour ', str(chours[k])
-                    # if a credit jump hour
-                    elif creditdiffs[k] < 0:
-                        # go back and check actual credit jump at that time
-                        creditjump = c_data[k] - c_data[k-1]
-                        if 6<=chours[k] <18:
-                            rate = dayrate
-                        else: rate=nightrate
-                        # check that credit jump is normal range, after adding used credit
-                        # over that very hour
-                        #if not [.996*j<(creditjump+(rate*datadiffs[k]))<1.004*j for j in range(len([500,1000,1500,2000,2500,4000,5000,7500,10000]))]:
-                        if not 498<(creditjump+(rate*datadiffs[k]))<502 and not 996<(creditjump+(rate*datadiffs[k]))<1004 and not 1996<(creditjump+(rate*datadiffs[k]))<2004 and not 2496<(creditjump+(rate*datadiffs[k]))<2504 and not 3996<(creditjump+(rate*datadiffs[k]))<4004 and not 4996<(creditjump+(rate*datadiffs[k]))<5004 and not 9996<(creditjump+(rate*datadiffs[k]))<10004:
-                            print 'credit jump on cct ', str(c), ' at ', str(dates[k]), ' of ', str(creditjump)
-        currentDate += dt.timedelta(days=1)
-    for y in range(len(meters)):
-        for z in range(max_ccts):
-            if allcircuits[y][z] >0:
-                '''
-                #first cct on meters 6&8 are mains, 2nd cct on 7, last cct on 4
-                if 5<meters[y]<9:
-                    cct = getCircuitsForMeter(meters[y])[z+1]
-                elif meters[y]==4:
-                    cct = getCircuitsForMeter(meters[y])[z]
-                '''
-                meter = session.query(Meter).get(meters[y])
-                mains_id = meter.getMainCircuit().id
-                circuits = [c.id for c in meter.getConsumerCircuits()]
-                print 'circuit ', str(circuits[z]),' had ', str(allcircuits[y][z]),' watthour drops'
 
 def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.timedelta(days=1)):
 
@@ -715,6 +527,7 @@ def plotActualAndPredictedCredit(circuit_id, dateStart, dateEnd=dateStart+dt.tim
     plotFileName2 = titleString2 + '.pdf'
     fig2.savefig(plotFileName2, transparent=True)
 
+
 def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
                         dateEnd=dt.datetime(2011,5,20),
                             verbose = 0, introspect=False, showMains=False):
@@ -835,6 +648,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
         plt.show()
     fig.savefig(fileNameString)
 
+
 def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24), dateEnd=dt.datetime(2011,6,28),
                           verbose=0):
 
@@ -937,128 +751,6 @@ def powerReadings():
     ax2.set_ylabel("difference (watts)")
     ax2.set_title("difference between measured and real power")
     fig2.savefig('readingdiffs.pdf')
-
-def enmetricReadings():
-
-    circuits = [1,2,3,4]
-    res = [10000, 5000, 2500, 1000, 500]
-    res_watts = [(np.square(120.0)/res[x]) for x in range(len(res))]
-    loads = [0] + res_watts
-
-    belkin_read = np.zeros((len(circuits), len(res_watts)))
-    # belkin readings without loads as circuits turned 'on' from 0 to 4 ccts
-    belkin_noload = [0.9, 1.1, 1.3, 1.6, 1.9]
-    belkin_read[0] = [2.6,4.0,7.0,15.7,30.2]
-    belkin_read[1] = [2.6,4.0,7.0,15.7,30.6]
-    belkin_read[2] = [2.6,4.1,7.0,15.9,30.6]
-    belkin_read[3] = [2.6,4.1,7.0,15.8,30.6]
-    # take off belkin_noload for 1 circuit 'on'
-    for i in range(len(belkin_read)):
-        belkin_read[i] = [(belkin_read[i][x] - belkin_noload[1]) for x in range(belkin_read.shape[1])]
-    print belkin_read
-    cct_read = np.zeros((len(circuits), len(res_watts)))
-    cct_read[0] = [1.12,2.61,5.69,14.63, 29.44]
-    cct_read[1] = [1.50,3.0,6.03,15.02, 30.26]
-    cct_read[2] = [1.48,2.99,6.05,15.18, 30.4]
-    cct_read[3] = [1.47,2.96,6.01,14.98, 30.2]
-    cct_read_avg = np.average(cct_read,0)
-    print cct_read_avg
-
-    fig=plt.figure()
-    ax = fig.add_axes((.1,.3,.8,.6))
-    #fig,axs = plt.subplots(2,1)
-    for i in range(len(belkin_read)):
-        shade = 0.1 + (0.25*i)
-        #print shade
-        ax.plot(res_watts, res_watts, '-', c='0.5', lw=3)
-        ax.plot(res_watts, belkin_read[i], 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
-        ax.plot(res_watts, cct_read[i], 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
-    ax.legend(loc=0)
-    ax.set_xlabel("load (watts)")
-    ax.set_ylabel("readings (watts)")
-    ax.set_title("circuit and belkin meter readings")
-    fig.savefig('enmetric/enmetricReadings.pdf')
-
-    fig1=plt.figure()
-    ax1 = fig1.add_axes((.1,.3,.8,.6))
-    #fig,axs = plt.subplots(2,1)
-    for i in range(len(belkin_read)):
-        shade = 0.1 + (0.25*i)
-        #print shade
-        ax1.plot(res_watts, [res_watts[x]-res_watts[x] for x in range(len(res_watts))], '-', c='0.5', lw=3)
-        ax1.plot(res_watts, belkin_read[i]-res_watts, 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
-        ax1.plot(res_watts, cct_read[i]-res_watts, 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
-    ax1.legend(loc=0)
-    ax1.set_xlabel("load (watts)")
-    ax1.set_ylabel("readings' differences (watts)")
-    ax1.set_title("circuit meter readings difference from actual load")
-    fig1.savefig('enmetric/enmetricDiff.pdf')
-
-    fig1b=plt.figure()
-    ax1b = fig1b.add_axes((.1,.3,.8,.6))
-    #fig,axs = plt.subplots(2,1)
-    for i in range(len(belkin_read)):
-        shade = 0.1 + (0.25*i)
-        #print shade
-        ax1b.plot(res_watts, [((res_watts[x]-res_watts[x])/res_watts[x]) for x in range(len(res_watts))], '-', c='0.5', lw=3)
-        ax1b.plot(res_watts, (belkin_read[i]-res_watts)/res_watts, 'x-', c= ((shade, 0, shade)), label='belkin '+str(circuits[i]))
-        ax1b.plot(res_watts, (cct_read[i]-res_watts)/res_watts, 'o-', c=((0,shade,shade)), label='circuit '+str(circuits[i]))
-    ax1b.legend(loc=0)
-    ax1b.set_xlabel("load (watts)")
-    ax1b.set_ylabel("readings' percent differences (watts)")
-    ax1b.set_title("circuit meter readings percent difference from actual load")
-    fig1b.savefig('enmetric/enmetricPercentDiff.pdf')
-
-    # all switches on
-    # 6 tests
-    belkin_read2 = [6.3, 10.7, 22.5, 12.2, 25.4, 26.9]
-    belkin_read2 = [(belkin_read2[x] - belkin_noload[4]) for x in range(len(belkin_read2))]
-    cct_read2 = np.zeros((6, len(circuits)))
-    cct_read2[0] = [1.28, 3.03, 0, 0]
-    cct_read2[1] = [0, 3.05, 6.07, 0]
-    cct_read2[2] = [0, 0, 6.07, 15.02]
-    cct_read2[3] = [1.26, 3.04, 6.07, 0]
-    cct_read2[4] = [0, 3.04, 6.09, 15.02]
-    cct_read2[5] = [1.33, 3.05, 6.11, 15.03]
-    # get average reading for each load
-    #cct_read_avg2 = np.average(cct_read2,0)
-    cct_read_avg2 = np.zeros(cct_read2.shape[1])
-    # remove zeros from cct_read2
-    for i in range(len(cct_read_avg2)):
-        #print cct_read2[:,i]
-        cct_read_avg2[i] = np.average(np.take(cct_read2[:,i],np.nonzero(cct_read2[:,i]>0)))
-    cct_read_avg2 = np.append(cct_read_avg2,0)
-    fig2=plt.figure()
-    ax2 = fig2.add_axes((.1,.3,.8,.6))
-    #fig,axs = plt.subplots(2,1)
-    ax2.plot(res_watts, res_watts, '-', c='k', label='ideal')
-    ax2.plot(res_watts, cct_read_avg, 'x-', label='single circuit')
-    ax2.plot(res_watts, cct_read_avg2, 'o-', label='cross talk?')
-    ax2.legend(loc=0)
-    ax2.set_xlabel("loads (watts)")
-    ax2.set_ylabel("average power (watts)")
-    ax2.set_title("average measured power with and without possible crosstalk")
-    fig2.savefig('enmetric/enmetricCrossTalk.pdf')
-
-def victronInverter():
-    res = [10000, 5000, 2500, 1000, 500]
-    loads = [(np.square(240.0)/res[x]) for x in range(len(res))]
-    loads = [0] + loads
-    voltage = 48.0
-    current = [0.25, 0.36, 0.47, 0.7, 1.37, 2.56]
-    power = [(current[x]*voltage) for x in range(len(current))]
-
-    fig = plt.figure()
-    ax = fig.add_axes((.1, .3, .8, .6))
-    ax.plot(loads, power, 'x-', label='total power consumed')
-    ax.plot(loads, loads, '-', c='0.5', lw=3, label='loads')
-    ax.plot(loads, [(power[x]-loads[x]) for x in range(len(power))], 'o-', label='inverter consumption')
-    ax.legend(loc=0)
-    ax.set_xlabel("load (watts)")
-    ax.set_ylabel("power consumed (watts)")
-    ax.set_title("power consumed vs. load power")
-    fig.savefig('inverterPowerConsumption.pdf')
-
 
 def plotSelfConsumption(meter_id=8,
                         dateStart=dt.datetime(2011, 7, 1),
@@ -1194,9 +886,9 @@ def plotHourlySelfConsumption(meter_id=8,
     tw.log.info('mains circuit = ' + str(mains_id))
     tw.log.info('customer circuits = ' + str(customer_circuit_list))
     print 'total # of circuits = ',len(customer_circuit_list)
-    expectedMainsWatts_allon = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6-1.35))
+    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
     #expectedMainsWatthours_allon = expectedMainsWatts_allon*24
-    expectedMainsWatts_alloff = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6))
+    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
     #expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
     #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
     #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
@@ -1209,14 +901,13 @@ def plotHourlySelfConsumption(meter_id=8,
     dates2 = []
     household_consumption = []
     mains_consumption = []
-    total_consumption = []
     perc_ccts_off=[]
     number_ccts_off=[]
 
 
     fig = plt.figure()
     #ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax = fig.add_axes((.1,.25,.8,.65))    # used to be (.1, .3, .8, .6)
+    ax = fig.add_axes((.1,.3,.8,.6))
 
     current_date = dateStart
     while current_date < dateEnd:
@@ -1250,13 +941,12 @@ def plotHourlySelfConsumption(meter_id=8,
         #number_ccts_off.append(num_ccts_off)
 
 
-        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold: # and np.sum(mains_power[1])>np.sum(allcustomers_power):
+        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold and np.sum(mains_power[1])>np.sum(allcustomers_power):
             dates.append(current_date)
             for x in range(len(num_ccts_off)):
                 number_ccts_off=np.append(number_ccts_off, num_ccts_off[x])
             #print number_ccts_off, ' ccts off'
                 mains_consumption=np.append(mains_consumption,(mains_power[1] - allcustomers_power)[x])
-                total_consumption=np.append(total_consumption,(mains_power[1][x]))
                 household_consumption=np.append(household_consumption,allcustomers_power[x])
                 dates2=np.append(dates2,mains_power[0][x])
             tw.log.info(str(current_date))
@@ -1285,21 +975,18 @@ def plotHourlySelfConsumption(meter_id=8,
     expMainsOff = np.ones(len(hours))*expectedMainsWatts_alloff
     expMains = []
     for i in range(len(hours)):
-        expMains.append(7.3+(2*2.6)+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
+        expMains.append(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
 
     ax.plot(dates2, household_consumption, 'o-', label='Household Total')
     ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
-    ax.plot(dates2, total_consumption, '*-', label='Total Consumption')
     ax.plot(dates2, expMainsOn, '-', color='0.9')
     ax.plot(dates2, expMainsOff, '-', color='0.75')
     ax.plot(dates2, expMains, '-', color='k', label='expected Mains consumption')
-    ax.legend(loc=0)
-    y_high = max(total_consumption)
-    ax.set_ylim((0,y_high))
+    ax.legend()
+    ax.set_ylim((0,200))
     #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
-    #ax.set_xlabel('Date')
+    ax.set_xlabel('Date')
     ax.set_ylabel('Power Consumption (watts)')
-    plt.setp(ax.get_xticklabels(), rotation=30)
     fileNameString = 'hourlyselfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
     ax.set_title(fileNameString)
     annotation = []
@@ -1316,346 +1003,3 @@ def plotHourlySelfConsumption(meter_id=8,
     fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
     fig.savefig(fileNameString+'.pdf')
     tw.log.info('exiting plotHourlySelfConsumption')
-
-def plotPowerConsumptionError():
-    R = [4980, 9950, 19900, 14200, 2490, 994, 500]
-    R = np.flipud(np.sort(R))
-    Vrms = 125.0
-    pred_power = [np.square(Vrms)/R[x] for x in range(len(R))]
-    print pred_power
-    belkin = [3.2, 1.6, 0.8, 1.1, 6.3, 15.6, 31.0]
-    belkin = np.sort(belkin)
-    sc20_1 = [2.3, 0.8, 0, 0, 5.5, 14.8, 30.4]
-    sc20_2 = [2.7, 1.1, 0, 0, 5.8, 15.2, 30.8]
-    sc20_1 = np.sort(sc20_1)
-    sc20_2 = np.sort(sc20_2)
-    mains_measured = [31.0, 29.4, 28.6, 29, 34.1, 43.6, 59.5]
-    mains_measured = np.sort(mains_measured)
-    baseline = np.ones(len(R)) * 27.9
-    sc20_mains = mains_measured - baseline
-
-    fig = plt.figure()
-    ax = fig.add_axes((.1,.3,.8,.6))
-    ax.loglog(pred_power, sc20_mains, 'x-', color='r', label='Mains')
-    ax.loglog(pred_power, pred_power, '-', color='k', label='ideal')
-    ax.loglog(pred_power, [pred_power[x]*.9 for x in range(len(pred_power))], '-', color='0.75', label='-10%')
-    ax.loglog(pred_power, [pred_power[x]*1.1 for x in range(len(pred_power))], '-', color='0.75', label='+10%')
-    ax.loglog(pred_power, sc20_1, '^-', color='b', label='sc20_1')
-    ax.loglog(pred_power, sc20_2, '^-', color='g', label='sc20_2')
-    ax.legend(loc=0)
-    ax.set_ylim((0,35))
-    ax.set_xlim((0,35))
-    ax.set_xlabel('predicted power (watts)')
-    ax.set_ylabel('measured power (watts)')
-    #ax.set_xticklabels(np.exp(
-    fileNameString = 'log-log plot of power measurement error'
-    ax.set_title(fileNameString)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotPowerConsumptionError.__name__)
-    annotation.append('data points at predicted power of: ' + str(np.round(pred_power,2)))
-    annotation = '\n'.join(annotation)
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    fig.savefig(fileNameString+'.pdf')
-    plt.close(fig)
-
-
-    sc20_mains_error = np.round(np.abs(sc20_mains - pred_power)*100/pred_power,2)
-    sc20_1_error = np.round(np.abs(sc20_1 - pred_power)*100/pred_power,2)
-    sc20_2_error = np.round(np.abs(sc20_2 - pred_power)*100/pred_power,2)
-    fig2 = plt.figure()
-    ax2 = fig2.add_axes((.1,.3,.8,.6))
-    ax2.plot(pred_power, sc20_mains_error, 'x-', color='r', label='mains')
-    ax2.plot(pred_power, sc20_1_error, '^-', color='b', label='sc20_1')
-    ax2.plot(pred_power, sc20_2_error, '^-', color='g', label='sc20_2')
-    ax2.legend(loc=0)
-    #ax2.set_ylim((0,35))
-    ax2.set_xlim((0,35))
-    ax2.set_xlabel('predicted power (watts)')
-    ax2.set_ylabel('precentage error (%)')
-    #ax.set_xticklabels(np.exp(
-    fileNameString2 = 'plot of power measurement error'
-    ax2.set_title(fileNameString2)
-    annotation2 = []
-    annotation2.append('plot generated ' + today.__str__() )
-    annotation2.append('function = ' + plotPowerConsumptionError.__name__)
-    annotation2.append('data points at predicted power of: ' + str(np.round(pred_power,2)))
-    annotation2 = '\n'.join(annotation2)
-    #plt.show()
-    fig2.text(0.01,0.01, annotation2) #, fontproperties=textFont)
-    fig2.savefig(fileNameString2+'.pdf')
-
-def plotLoadConsumption():
-
-    import scipy.integrate as sint
-
-    d = np.loadtxt('sql/csv/NewFile1.csv',skiprows=2,usecols=[0,1,2],delimiter=',')
-
-    t = d[:, 0]
-    v_divider = 100
-    v = d[:, 2] * v_divider
-    Rs = 10 #ohms
-    i = d[:, 1] / Rs
-    p = v * i
-
-    # integrate power over one full cycle --> find zero-crosspts
-    e = sint.trapz(p[50:216],t[50:216])
-    print 'average power is ', e * 60, ' watts'
-
-    '''
-    e = sint.trapz(p[:417],t[:417])
-    print e * 60
-    '''
-    plt.plot(t,i, label='current in amps')
-    plt.plot(t,v/1000, label='voltage in kV')
-    plt.plot(t,p, label='power in watts')
-    plt.plot(t, np.ones(len(t))*e*60, c='k', lw='2', label='average power in watts')
-    plt.legend(loc=0)
-    plt.show()
-
-def tripplite():
-
-    v_in = 12.0
-    v_out = 230.0
-    i_in_noload = 0.55
-    p_in_noload = v_in * i_in_noload
-    print 'no load power is ', p_in_noload, ' watts'
-    r = [10000, 5000, 2500]
-    i_in = [0.95, 1.36, 2.22]
-    p_in = [v_in * i_in[x] for x in range(len(i_in))]
-    print 'power in = ', p_in, ' watts'
-    p_out = np.square(v_out) / r
-    print 'power out = ', p_out, 'watts'
-    eff = p_out / p_in
-    print 'efficiency = ', eff
-    plt.plot(p_out, eff, label='efficiency')
-    plt.ylabel('efficiency')
-    plt.xlabel('load (watts)')
-    plt.legend(loc=0)
-    plt.show()
-
-def plotPowerHistogram(meter_id=8,
-                        dateStart=dateStart,
-                        dateEnd=dateEnd,
-                        bins=None):
-
-    tw.log.info('entering plotPowerHistogram')
-    meter = session.query(Meter).get(meter_id)
-    mains_id = meter.getMainCircuit().id
-    circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('mains circuit = ' + str(mains_id))
-    tw.log.info('customer circuits = ' + str(circuit_list))
-
-    powerList = np.array([])
-    high_times_list = np.array([])
-    high_circuits = np.zeros(len(circuit_list))
-    high_hours = np.zeros(24)
-    current_date = dateStart
-    while current_date < dateEnd:
-        for i,c in enumerate(circuit_list):
-            tw.log.info('current_date = ' + str(current_date))
-            power=[]
-            # grab energy data for circuit
-            '''
-            dates, watthours = getDataListForCircuit(c, current_date,
-                                             current_date+dt.timedelta(days=1),
-                                             quantity='watthours')
-            # convert energy data to hourly power
-            watthours = np.insert(watthours, 0, 0)
-            if len(watthours)>1:
-                power = np.append(power,np.diff(watthours))
-            else: power = np.append(power,watthours[0])
-            #make watthour drops = zero
-            '''
-            '''
-            for p in range(len(power)):
-                if power[p]<0:
-                    power[p]=0
-                    '''
-            '''
-            # append power data onto master list of power
-            for p in range(len(power)):
-                if power[p]>0:
-                    powerList = np.append(powerList, power[p])
-            #tw.log.info('len dataList = ' + str(len(dataList)))
-            '''
-            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
-            # find times and log circuits of high power
-            high_mask = np.nonzero(power>15)
-            if len(high_mask)>0:
-                high_times = times[high_mask]
-                high_circuits[i] += len(high_times)
-                for h in range(len(high_times)):
-                    high_times_list = np.append(high_times_list, high_times[h].hour)
-                    high_hours[high_times[h].hour] += 1
-            # remove zeros
-            powerList = np.append(powerList, np.take(power,np.nonzero(power)))
-
-        current_date += dt.timedelta(days=1)
-
-
-    print 'circuits'
-    for item in range(len(circuit_list)):
-        print repr(circuit_list[item]).rjust(3),
-    print '\n'
-    for item in range(len(high_circuits)):
-        print repr(int(high_circuits[item])).rjust(3),
-    print '\n'
-    high_cs = np.nonzero(high_circuits>0)
-    print high_cs
-    if len(high_cs)>0:
-        print 'circuits with high power: ',[circuit_list[list(high_cs[0])[x]] for x in range(len(list(high_cs[0])))]
-
-    print 'hours of day'
-    hrs = np.arange(0,24)
-    for hour in range(len(hrs)):
-        print repr(hrs[hour]).rjust(2),
-    print '\n'
-    for hour in range(len(high_hours)):
-        print repr(int(high_hours[hour])).rjust(2),
-    print '\n'
-    #print max(high_hours)
-
-    fig = plt.figure()
-    ax = fig.add_axes((0.1,0.3,0.8,0.6))
-    # range depends on data
-    if bins == None:
-        high = int(np.ceil(max(powerList)) + 5)
-        #bins = [0,1] + range(5,high,5)
-        bins = range(0, high, 5)
-        if high < 65:
-            bins = range(0, high, 2)
-    ax.hist(powerList, bins=bins, normed=False, facecolor='#dddddd')
-    ax.set_xlabel("Hourly Power Consumption")    #, fontproperties=labelFont)
-    ax.set_ylabel("Hours of Usage")  #, fontproperties=labelFont)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotPowerHistogram.__name__)
-    annotation.append('circuits = ' + str(circuit_list))
-    annotation.append('date start = ' + str(dateStart))
-    annotation.append('date end = ' + str(dateEnd))
-    for ann in annotation:
-        tw.log.info(ann)
-    annotation = '\n'.join(annotation)
-
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    titleString = 'powerHistogram-meter' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax.set_title(titleString)
-    fig.savefig('power/' + titleString + '.pdf', transparent=True)
-
-    fig0 = plt.figure()
-    ax0 = fig0.add_axes((0.1,0.3,0.8,0.6))
-    ax0.hist(high_times_list, bins=range(0,25,1), normed=False, facecolor='#dddddd')
-    ax0.set_ylabel('number of instances of high power')
-    ax0.set_xlabel('hour of day')
-    y_increment =1
-    if max(high_hours) >=10:
-        rem = np.remainder(int(max(high_hours)+1)/5,5)
-        if rem == 0:
-            y_increment *= int(max(high_hours)+1)/5
-        elif rem>0 and (int(max(high_hours)+1)/5) > 5:
-            y_increment *= ((int(max(high_hours)+1)/5) - rem)
-        else: y_increment *= ((int(max(high_hours)+1)/5) - (5-rem))
-    yticks = np.arange(0,int(max(high_hours))+1,y_increment)
-    ax0.set_yticks(yticks, minor=False)
-    ax0.set_xticks(np.arange(0,24,1), minor=False)
-    titleString0 = 'hours_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax0.set_title(titleString0)
-    fig0.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    fig0.savefig( 'power/' + titleString0 + '.pdf', transparent=True)
-
-    fig1 = plt.figure()
-    ax1 = fig1.add_axes((0.1,0.3,0.8,0.6))
-    #ax1.hist(high_cs, bins=range(0,len(circuit_list)+1,1), normed=False, facecolor='#dddddd')
-    ax1.bar(np.arange(0,len(circuit_list),1), high_circuits, width=0.8, bottom=0)
-    ax1.set_ylabel('number of instances of high power')
-    ax1.set_xlabel('circuits on meter '+str(meter_id))
-    maxytick = 1
-    if len(high_cs[0])>0:
-        maxytick = int(max(high_circuits))+1
-    y_increment = 1
-    if maxytick >= 10:
-        remain = np.remainder(maxytick/5, 5)
-        if remain == 0:
-            y_increment *= (maxytick/5)
-        elif remain>0 and (maxytick/5)>5:
-            y_increment *= ((maxytick/5) - remain)
-        else: y_increment *= ((maxytick/5) + (5-remain))
-    yticks = np.arange(0, maxytick, y_increment)
-    ax1.set_yticks(yticks, minor=False)
-    ax1.set_xticks(np.arange(0,len(circuit_list)+1,1), minor=False)
-    ax1.set_xticklabels(circuit_list, ha='left')
-    fig1.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    titleString1 = 'ccts_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax1.set_title(titleString1)
-    fig1.savefig( 'power/' + titleString1 + '.pdf', transparent=True)
-
-def maxMeterPower(meter_id=[4,6,7,8,9,12,15],
-                        dateStart=dt.datetime(2011,6,1),
-                        dateEnd=today,
-                        bins=None):
-
-    tw.log.info('entering maxMeterPower')
-    meters = []
-    for m in range(len(meter_id)):
-        meter = session.query(Meter).get(meter_id[m])
-        mains_id = meter.getMainCircuit().id
-        #print mains_id
-        meters.append(mains_id)
-    print meters
-    #circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('meter ids = ' + str(meters))
-    #tw.log.info('customer circuits = ' + str(circuit_list))
-
-    maxpowerList = np.zeros(len(meters))
-    max_times_list = np.ndarray((len(meters)), dtype=object)
-    high_circuits = np.zeros(len(meters))
-    power200 = np.zeros(len(meters))
-    max_hours = np.zeros(24)
-    current_date = dateStart
-    while current_date < dateEnd:
-        for i,c in enumerate(meters):
-            tw.log.info('current_date = ' + str(current_date))
-            power=[]
-            max_power = 0
-            # grab energy data for circuit
-            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
-            # find times and log circuits of high power
-            if len(power)>0:
-                max_power = np.max(power)
-            print max_power
-            max_mask = np.nonzero(power==max_power)
-            print max_mask
-            if max_power>0:
-                max_time = times[max_mask[0]]
-                if max_power > 200:
-                    power200[i] += 1
-            # adjust max power for circuit
-            if max_power > maxpowerList[i]:
-                maxpowerList[i] = max_power
-                if max_time:
-                    print max_time
-                    max_times_list[i] = max_time[0]
-
-        current_date += dt.timedelta(days=1)
-
-
-    print 'meters (circuit id) - max power (watts) - date - # times above 200W'
-    for item in range(len(meters)):
-        '''
-        if maxpowerList[item]>0:
-            maxpowerList[item] = np.round(maxpowerList[item],decimals=1)
-        '''
-        #maxpowerList[item] = np.round(maxpowerList[item], decimals=1)
-        maxpowerList[item] = np.rint(maxpowerList[item])
-        if max_times_list[item] is not None:
-            max_time = max_times_list[item].strftime("%m/%d/%y/ %I:%M%p")
-            #max_time = max_time.replace("'", "")
-        else: max_time = max_times_list[item]
-        print repr(meters[item]).rjust(5), repr(int(maxpowerList[item])).rjust(7), '  ',repr(max_time).rjust(5), repr(int(power200[item])).rjust(5)
-    print '\n'
-
