@@ -98,8 +98,8 @@ def calculatePower(circuit,
 
 
 def graphPower(circuit,
-               timeStart=datetime(2011,6,2),
-               timeEnd=datetime(2011,6,29),
+               timeStart=datetime(2011,6,25),
+               timeEnd=datetime(2011,6,28),
                plot_file_name=None):
     print 'graphPower', circuit, timeStart, timeEnd
 
@@ -121,6 +121,7 @@ def graphPower(circuit,
     ax.set_ylabel("Power")
     ax.set_xlabel("Time (hours passed)")
     ax.set_title("Circuit %s between %s and %s" % (circuit, timeStart, timeEnd))
+    ax.set_xlim((matplotlib.dates.date2num(timeStart),matplotlib.dates.date2num(timeEnd)))
     fig.autofmt_xdate()
     if plot_file_name==None:
         plot_file_name = 'power '+str(circuit)+'.pdf'
@@ -134,7 +135,7 @@ def graphDailyWattHours(circuit,
                         timeEnd=datetime(2011,6,29),
                         plot_file_name=None):
 
-    dates, data, credit = getCleanDataForCircuit(circuit, timeStart, timeEnd)
+    dates, data, credit, watts = getCleanDataForCircuit(circuit, timeStart, timeEnd)
     #dates, data, credit = getRawDataForCircuit(circuit, timeStart, timeEnd)
     dates = matplotlib.dates.date2num(dates)
 
@@ -157,7 +158,7 @@ def graphDailyWattHours(circuit,
 if __name__ == "__main__":
     cid_list = range(1,22)
     for cid in cid_list:
-        #graphDailyWattHours(cid, datetime(2011,6,2), datetime(2011,6,29), plot_file_name='clean'+str(cid)+'.pdf')
+        #graphDailyWattHours(cid, datetime(2011,6,25), datetime(2011,6,28), plot_file_name='clean'+str(cid)+'.pdf')
         #calculateDailyEnergyForCircuit(cid, datetime(2011,6,2), datetime(2011,6,29))
-        #graphPower(cid)
-        calculatePower(cid)
+        graphPower(cid)
+        #calculatePower(cid)

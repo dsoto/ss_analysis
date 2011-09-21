@@ -594,7 +594,7 @@ def calculatePowerListForCircuit(circuit_id,
     if len(dates) == 0:
         tw.log.info('returning empty lists')
         #print 'no data for circuit', circuit_id, 'between', dateStart, 'and', dateEnd
-        return [],[], 0
+        return [],[]
     for i in range(len(dates)):
         # if 1am energy sample is energy over last hour
         if dates[i].hour == 1:
