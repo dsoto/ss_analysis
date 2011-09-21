@@ -155,8 +155,6 @@ def augustMessages():
     fig.autofmt_xdate()
     fig.savefig(fileNameString)
 
-#plotMessageRateOfMeters()
-
 def printEnergyUsedPerDayByCircuitsOnMeter(circuit_id_list, dateStart=dateStart, dateEnd=dateEnd):
     dataList = np.array([])
     for i,c in enumerate(circuit_id_list):
@@ -200,8 +198,6 @@ def writeEnergyUsedPerDayByCircuitsOnMeter(meter=8, dateStart = dt.datetime(2011
         currentDate += dt.timedelta(days=1)
         f.write('\n')
     f.close()
-
-#writeEnergyUsedPerDayByCircuitsOnMeter()
 
 def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2011,6,22), dateEnd = dateStart+dt.timedelta(days=1)):
 
@@ -917,6 +913,489 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
             for k in range(len(cctdates[i])):
                 plotDatasForCircuit(c, cctdates[i][k], cctdates[i][k] + dt.timedelta(days=1), titleString='whdrops/cct '+str(c)+'on'+str(cctdates[i][k].date()))
 
+def plotSelfConsumption(meter_id=8,
+                        dateStart=dt.datetime(2011, 7, 1),
+                        dateEnd=dt.datetime(2011, 7, 8),
+                        num_drop_threshold=1,
+                        num_samples_threshold=16,
+                        verbose=0):
+
+    tw.log.info('entering plotSelfConsumption')
+
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(customer_circuit_list))
+    print 'total # of circuits = ',len(customer_circuit_list)
+    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
+    expectedMainsWatthours_allon = expectedMainsWatts_allon*24
+    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
+    expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
+    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
+    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
+    print 'mains expected to consume between ', expectedMainsWatthours_allon, ' and ', expectedMainsWatthours_alloff, ' wh per day'
+
+    # loop through days
+    # for each day total household consumption and infer mains consumption
+    # create list of dates, household consumption and mains consumption
+    dates = []
+    household_consumption = []
+    mains_consumption = []
+    perc_ccts_off=[]
+    number_ccts_off=[]
+
+    fig = plt.figure()
+    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax = fig.add_axes((.1,.3,.8,.6))
+
+    current_date = dateStart
+    while current_date < dateEnd:
+
+        print current_date
+        mains_energy = getEnergyForCircuitForDayByMax(mains_id, current_date)
+        print 'mains energy =', mains_energy[0]
+
+        total_energy = 0
+        num_ccts_off=0
+        for cid in customer_circuit_list:
+
+            customer_energy = getEnergyForCircuitForDayByMax(cid,
+                                             current_date)
+            #print customer_energy[0]
+            if customer_energy[0]==0:
+                # better to check if credit is 0 at same time
+                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
+                if np.average(credit)<1:
+                    num_ccts_off +=1
+            total_energy += customer_energy[0]
+
+        print 'total energy =', total_energy
+        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
+        number_ccts_off.append(num_ccts_off)
+
+
+        if mains_energy[1] > num_samples_threshold and mains_energy[2] < num_drop_threshold and mains_energy[0]>total_energy:
+            dates.append(current_date)
+            mains_consumption.append(mains_energy[0] - total_energy)
+            household_consumption.append(total_energy)
+            tw.log.info(str(current_date))
+            tw.log.info('mains energy for day ' + str(mains_energy[0] - total_energy))
+            tw.log.info('household consumpition ' + str(total_energy))
+        else:
+            tw.log.info('rejecting date ' + str(current_date))
+            if mains_energy[1] <= num_samples_threshold:
+                tw.log.info('rejected for too few samples')
+            if mains_energy[2] >= num_drop_threshold:
+                tw.log.info('rejected for too many watthour drops')
+            if mains_energy[0] < total_energy:
+                tw.log.info('rejected for mains < household consumption')
+
+        current_date += dt.timedelta(days=1)
+
+    print mains_consumption
+    print 'average mains consumption = ', np.average(mains_consumption)
+    dates = matplotlib.dates.date2num(dates)
+    expMainsOn = np.ones(len(dates))*expectedMainsWatthours_allon
+    expMainsOff = np.ones(len(dates))*expectedMainsWatthours_alloff
+    expMains = []
+    for i in range(len(dates)):
+        expMains.append(24*(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35)))
+
+    ax.plot_date(dates, household_consumption, 'o-', label='Household Total')
+    ax.plot_date(dates, mains_consumption, 'x-', label='Meter Consumption')
+    ax.plot_date(dates, expMainsOn, '-', color='0.9')
+    ax.plot_date(dates, expMainsOff, '-', color='0.75')
+    ax.plot_date(dates, expMains, '-', color='k', label='expected Mains consumption')
+    ax.legend()
+    ax.set_ylim((0,2000))
+    ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Energy Consumption (watthours)')
+    fileNameString = 'selfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(fileNameString)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotSelfConsumption.__name__)
+    annotation.append('meter = ' + str(getMeterName(meter_id)))
+    annotation.append('# circuits = ' + str(len(customer_circuit_list)))
+    annotation.append('mains expected to consume between ' + str(expectedMainsWatthours_allon) +' and '+str(expectedMainsWatthours_alloff)+ ' wh daily')
+    annotation.append('number of circuits off each day = ' + str(number_ccts_off))
+    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(fileNameString+'.pdf')
+    tw.log.info('exiting plotSelfConsumption')
+
+def plotHourlySelfConsumption(meter_id=8,
+                        dateStart=dt.datetime(2011, 7, 1),
+                        dateEnd=dt.datetime(2011, 7, 8),
+                        num_drop_threshold=1,
+                        num_samples_threshold=23,
+                        verbose=0):
+
+    tw.log.info('entering plotHourlySelfConsumption')
+
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(customer_circuit_list))
+    print 'total # of circuits = ',len(customer_circuit_list)
+    expectedMainsWatts_allon = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6-1.35))
+    #expectedMainsWatthours_allon = expectedMainsWatts_allon*24
+    expectedMainsWatts_alloff = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6))
+    #expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
+    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
+    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
+    print 'mains expected to consume between ', expectedMainsWatts_allon, ' and ', expectedMainsWatts_alloff, ' wh per day'
+
+    # loop through days
+    # for each day total household consumption and infer mains consumption
+    # create list of dates, household consumption and mains consumption
+    dates = []
+    dates2 = []
+    household_consumption = []
+    mains_consumption = []
+    total_consumption = []
+    perc_ccts_off=[]
+    number_ccts_off=[]
+
+
+    fig = plt.figure()
+    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
+    ax = fig.add_axes((.1,.25,.8,.65))    # used to be (.1, .3, .8, .6)
+
+    current_date = dateStart
+    while current_date < dateEnd:
+
+        print current_date
+        mains_power = calculatePowerListForCircuit(mains_id, current_date, current_date+dt.timedelta(days=1))
+        print 'mains energy =', mains_power[1]
+
+        # add 24 hours for each fully reported day of power
+        #allcustomers_power = np.append(allcustomers_power,np.zeros(24))
+        allcustomers_power = np.zeros(24)
+        num_ccts_off=np.zeros(24)
+        for cid in customer_circuit_list:
+
+            customer_power = calculatePowerListForCircuit(cid, current_date, current_date+dt.timedelta(days=1))
+            if len(customer_power[1])==24:
+                # better to check if credit is 0 at same time
+                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
+                #add cct to 'off' category
+                for k in range(len(customer_power[1])):
+                    if customer_power[1][k]<0.1 and credit[k]<0.1:
+                            num_ccts_off[k] +=1
+                            #print 'circuit ', cid, ' is off at ', customer_power[0][k]
+
+                # add to allcustomer power array
+                for h in range(24):
+                    allcustomers_power[h] += customer_power[1][h]
+
+        #print 'total energy =', total_energy
+        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
+        #number_ccts_off.append(num_ccts_off)
+
+
+        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold: # and np.sum(mains_power[1])>np.sum(allcustomers_power):
+            dates.append(current_date)
+            for x in range(len(num_ccts_off)):
+                number_ccts_off=np.append(number_ccts_off, num_ccts_off[x])
+            #print number_ccts_off, ' ccts off'
+                mains_consumption=np.append(mains_consumption,(mains_power[1] - allcustomers_power)[x])
+                total_consumption=np.append(total_consumption,(mains_power[1][x]))
+                household_consumption=np.append(household_consumption,allcustomers_power[x])
+                dates2=np.append(dates2,mains_power[0][x])
+            tw.log.info(str(current_date))
+            tw.log.info('mains energy for day ' + str(mains_power[1] - allcustomers_power))
+            tw.log.info('household consumpition ' + str(allcustomers_power))
+        else:
+            tw.log.info('rejecting date ' + str(current_date))
+            if len(mains_power[1]) <= num_samples_threshold:
+                tw.log.info('rejected for too few samples')
+            if mains_power[2] >= num_drop_threshold:
+                tw.log.info('rejected for too many watthour drops')
+            if np.sum(mains_power[1]) < np.sum(allcustomers_power):
+                tw.log.info('rejected for mains < household consumption')
+
+        current_date += dt.timedelta(days=1)
+
+
+    print mains_consumption
+    print 'average mains consumption = ', np.average(mains_consumption)
+    hours = []
+    for d in range(len(dates)):
+        hours = np.append(hours,np.append(np.arange(1,24),0))
+    dates = matplotlib.dates.date2num(dates)
+    #dates2 = matplotlib.dates.date2num(dates2)
+    expMainsOn = np.ones(len(hours))*expectedMainsWatts_allon
+    expMainsOff = np.ones(len(hours))*expectedMainsWatts_alloff
+    expMains = []
+    for i in range(len(hours)):
+        expMains.append(7.3+(2*2.6)+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
+
+    ax.plot(dates2, household_consumption, 'o-', label='Household Total')
+    ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
+    ax.plot(dates2, total_consumption, '*-', label='Total Consumption')
+    ax.plot(dates2, expMainsOn, '-', color='0.9')
+    ax.plot(dates2, expMainsOff, '-', color='0.75')
+    ax.plot(dates2, expMains, '-', color='k', label='expected Mains consumption')
+    ax.legend(loc=0)
+    y_high = max(total_consumption)
+    ax.set_ylim((0,y_high))
+    #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
+    #ax.set_xlabel('Date')
+    ax.set_ylabel('Power Consumption (watts)')
+    plt.setp(ax.get_xticklabels(), rotation=30)
+    fileNameString = 'hourlyselfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(fileNameString)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotHourlySelfConsumption.__name__)
+    annotation.append('meter = ' + str(getMeterName(meter_id)) + ' with ' + str(len(customer_circuit_list)) + ' # of circuits')
+    annotation.append('mains expected to consume between ' + str(expectedMainsWatts_allon) +' and '+str(expectedMainsWatts_alloff)+ ' watts hourly')
+    #annotation.append('number of circuits off each day = ' + str(number_ccts_off))
+    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    annotation = '\n'.join(annotation)
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig.savefig(fileNameString+'.pdf')
+    tw.log.info('exiting plotHourlySelfConsumption')
+
+def plotPowerHistogram(meter_id=8,
+                        dateStart=dateStart,
+                        dateEnd=dateEnd,
+                        bins=None):
+
+    tw.log.info('entering plotPowerHistogram')
+    meter = session.query(Meter).get(meter_id)
+    mains_id = meter.getMainCircuit().id
+    circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('mains circuit = ' + str(mains_id))
+    tw.log.info('customer circuits = ' + str(circuit_list))
+
+    powerList = np.array([])
+    high_times_list = np.array([])
+    high_circuits = np.zeros(len(circuit_list))
+    high_hours = np.zeros(24)
+    current_date = dateStart
+    while current_date < dateEnd:
+        for i,c in enumerate(circuit_list):
+            tw.log.info('current_date = ' + str(current_date))
+            power=[]
+            # grab energy data for circuit
+            '''
+            dates, watthours = getDataListForCircuit(c, current_date,
+                                             current_date+dt.timedelta(days=1),
+                                             quantity='watthours')
+            # convert energy data to hourly power
+            watthours = np.insert(watthours, 0, 0)
+            if len(watthours)>1:
+                power = np.append(power,np.diff(watthours))
+            else: power = np.append(power,watthours[0])
+            #make watthour drops = zero
+            '''
+            '''
+            for p in range(len(power)):
+                if power[p]<0:
+                    power[p]=0
+                    '''
+            '''
+            # append power data onto master list of power
+            for p in range(len(power)):
+                if power[p]>0:
+                    powerList = np.append(powerList, power[p])
+            #tw.log.info('len dataList = ' + str(len(dataList)))
+            '''
+            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
+            # find times and log circuits of high power
+            high_mask = np.nonzero(power>15)
+            if len(high_mask)>0:
+                high_times = times[high_mask]
+                high_circuits[i] += len(high_times)
+                for h in range(len(high_times)):
+                    high_times_list = np.append(high_times_list, high_times[h].hour)
+                    high_hours[high_times[h].hour] += 1
+            # remove zeros
+            powerList = np.append(powerList, np.take(power,np.nonzero(power)))
+
+        current_date += dt.timedelta(days=1)
+
+
+    print 'circuits'
+    for item in range(len(circuit_list)):
+        print repr(circuit_list[item]).rjust(3),
+    print '\n'
+    for item in range(len(high_circuits)):
+        print repr(int(high_circuits[item])).rjust(3),
+    print '\n'
+    high_cs = np.nonzero(high_circuits>0)
+    print high_cs
+    if len(high_cs)>0:
+        print 'circuits with high power: ',[circuit_list[list(high_cs[0])[x]] for x in range(len(list(high_cs[0])))]
+
+    print 'hours of day'
+    hrs = np.arange(0,24)
+    for hour in range(len(hrs)):
+        print repr(hrs[hour]).rjust(2),
+    print '\n'
+    for hour in range(len(high_hours)):
+        print repr(int(high_hours[hour])).rjust(2),
+    print '\n'
+    #print max(high_hours)
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    # range depends on data
+    if bins == None:
+        high = int(np.ceil(max(powerList)) + 5)
+        #bins = [0,1] + range(5,high,5)
+        bins = range(0, high, 5)
+        if high < 65:
+            bins = range(0, high, 2)
+    ax.hist(powerList, bins=bins, normed=False, facecolor='#dddddd')
+    ax.set_xlabel("Hourly Power Consumption")    #, fontproperties=labelFont)
+    ax.set_ylabel("Hours of Usage")  #, fontproperties=labelFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotPowerHistogram.__name__)
+    annotation.append('circuits = ' + str(circuit_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    for ann in annotation:
+        tw.log.info(ann)
+    annotation = '\n'.join(annotation)
+
+    #plt.show()
+    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    titleString = 'powerHistogram-meter' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax.set_title(titleString)
+    fig.savefig('power/' + titleString + '.pdf', transparent=True)
+
+    fig0 = plt.figure()
+    ax0 = fig0.add_axes((0.1,0.3,0.8,0.6))
+    ax0.hist(high_times_list, bins=range(0,25,1), normed=False, facecolor='#dddddd')
+    ax0.set_ylabel('number of instances of high power')
+    ax0.set_xlabel('hour of day')
+    y_increment =1
+    if max(high_hours) >=10:
+        rem = np.remainder(int(max(high_hours)+1)/5,5)
+        if rem == 0:
+            y_increment *= int(max(high_hours)+1)/5
+        elif rem>0 and (int(max(high_hours)+1)/5) > 5:
+            y_increment *= ((int(max(high_hours)+1)/5) - rem)
+        else: y_increment *= ((int(max(high_hours)+1)/5) - (5-rem))
+    yticks = np.arange(0,int(max(high_hours))+1,y_increment)
+    ax0.set_yticks(yticks, minor=False)
+    ax0.set_xticks(np.arange(0,24,1), minor=False)
+    titleString0 = 'hours_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax0.set_title(titleString0)
+    fig0.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    fig0.savefig( 'power/' + titleString0 + '.pdf', transparent=True)
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_axes((0.1,0.3,0.8,0.6))
+    #ax1.hist(high_cs, bins=range(0,len(circuit_list)+1,1), normed=False, facecolor='#dddddd')
+    ax1.bar(np.arange(0,len(circuit_list),1), high_circuits, width=0.8, bottom=0)
+    ax1.set_ylabel('number of instances of high power')
+    ax1.set_xlabel('circuits on meter '+str(meter_id))
+    maxytick = 1
+    if len(high_cs[0])>0:
+        maxytick = int(max(high_circuits))+1
+    y_increment = 1
+    if maxytick >= 10:
+        remain = np.remainder(maxytick/5, 5)
+        if remain == 0:
+            y_increment *= (maxytick/5)
+        elif remain>0 and (maxytick/5)>5:
+            y_increment *= ((maxytick/5) - remain)
+        else: y_increment *= ((maxytick/5) + (5-remain))
+    yticks = np.arange(0, maxytick, y_increment)
+    ax1.set_yticks(yticks, minor=False)
+    ax1.set_xticks(np.arange(0,len(circuit_list)+1,1), minor=False)
+    ax1.set_xticklabels(circuit_list, ha='left')
+    fig1.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    titleString1 = 'ccts_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
+    ax1.set_title(titleString1)
+    fig1.savefig( 'power/' + titleString1 + '.pdf', transparent=True)
+
+def maxMeterPower(meter_id=[4,6,7,8,9,12,15],
+                        dateStart=dt.datetime(2011,6,1),
+                        dateEnd=today,
+                        bins=None):
+
+    tw.log.info('entering maxMeterPower')
+    meters = []
+    for m in range(len(meter_id)):
+        meter = session.query(Meter).get(meter_id[m])
+        mains_id = meter.getMainCircuit().id
+        #print mains_id
+        meters.append(mains_id)
+    print meters
+    #circuit_list = [c.id for c in meter.getConsumerCircuits()]
+
+    tw.log.info('meter ids = ' + str(meters))
+    #tw.log.info('customer circuits = ' + str(circuit_list))
+
+    maxpowerList = np.zeros(len(meters))
+    max_times_list = np.ndarray((len(meters)), dtype=object)
+    high_circuits = np.zeros(len(meters))
+    power200 = np.zeros(len(meters))
+    max_hours = np.zeros(24)
+    current_date = dateStart
+    while current_date < dateEnd:
+        for i,c in enumerate(meters):
+            tw.log.info('current_date = ' + str(current_date))
+            power=[]
+            max_power = 0
+            # grab energy data for circuit
+            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
+            # find times and log circuits of high power
+            if len(power)>0:
+                max_power = np.max(power)
+            print max_power
+            max_mask = np.nonzero(power==max_power)
+            print max_mask
+            if max_power>0:
+                max_time = times[max_mask[0]]
+                if max_power > 200:
+                    power200[i] += 1
+            # adjust max power for circuit
+            if max_power > maxpowerList[i]:
+                maxpowerList[i] = max_power
+                if max_time:
+                    print max_time
+                    max_times_list[i] = max_time[0]
+
+        current_date += dt.timedelta(days=1)
+
+
+    print 'meters (circuit id) - max power (watts) - date - # times above 200W'
+    for item in range(len(meters)):
+        '''
+        if maxpowerList[item]>0:
+            maxpowerList[item] = np.round(maxpowerList[item],decimals=1)
+        '''
+        #maxpowerList[item] = np.round(maxpowerList[item], decimals=1)
+        maxpowerList[item] = np.rint(maxpowerList[item])
+        if max_times_list[item] is not None:
+            max_time = max_times_list[item].strftime("%m/%d/%y/ %I:%M%p")
+            #max_time = max_time.replace("'", "")
+        else: max_time = max_times_list[item]
+        print repr(meters[item]).rjust(5), repr(int(maxpowerList[item])).rjust(7), '  ',repr(max_time).rjust(5), repr(int(power200[item])).rjust(5)
+    print '\n'
+
+# -------------non-gateway-dependent functions below------------------
+
 def flashlight():
 
     voltage = np.flipud(np.arange(1.0,3.3,0.1))
@@ -1210,263 +1689,6 @@ def PCUefficiency():
     ax1.set_title("PCU efficiency")
     fig1.savefig('PCUefficiencyPercent.pdf')
 
-def plotSelfConsumption(meter_id=8,
-                        dateStart=dt.datetime(2011, 7, 1),
-                        dateEnd=dt.datetime(2011, 7, 8),
-                        num_drop_threshold=1,
-                        num_samples_threshold=16,
-                        verbose=0):
-
-    tw.log.info('entering plotSelfConsumption')
-
-    meter = session.query(Meter).get(meter_id)
-    mains_id = meter.getMainCircuit().id
-    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('mains circuit = ' + str(mains_id))
-    tw.log.info('customer circuits = ' + str(customer_circuit_list))
-    print 'total # of circuits = ',len(customer_circuit_list)
-    expectedMainsWatts_allon = 12.6+2.6+(len(customer_circuit_list)*(2.6-1.35))
-    expectedMainsWatthours_allon = expectedMainsWatts_allon*24
-    expectedMainsWatts_alloff = 12.6+2.6+(len(customer_circuit_list)*(2.6))
-    expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
-    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
-    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
-    print 'mains expected to consume between ', expectedMainsWatthours_allon, ' and ', expectedMainsWatthours_alloff, ' wh per day'
-
-    # loop through days
-    # for each day total household consumption and infer mains consumption
-    # create list of dates, household consumption and mains consumption
-    dates = []
-    household_consumption = []
-    mains_consumption = []
-    perc_ccts_off=[]
-    number_ccts_off=[]
-
-    fig = plt.figure()
-    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax = fig.add_axes((.1,.3,.8,.6))
-
-    current_date = dateStart
-    while current_date < dateEnd:
-
-        print current_date
-        mains_energy = getEnergyForCircuitForDayByMax(mains_id, current_date)
-        print 'mains energy =', mains_energy[0]
-
-        total_energy = 0
-        num_ccts_off=0
-        for cid in customer_circuit_list:
-
-            customer_energy = getEnergyForCircuitForDayByMax(cid,
-                                             current_date)
-            #print customer_energy[0]
-            if customer_energy[0]==0:
-                # better to check if credit is 0 at same time
-                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
-                if np.average(credit)<1:
-                    num_ccts_off +=1
-            total_energy += customer_energy[0]
-
-        print 'total energy =', total_energy
-        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
-        number_ccts_off.append(num_ccts_off)
-
-
-        if mains_energy[1] > num_samples_threshold and mains_energy[2] < num_drop_threshold and mains_energy[0]>total_energy:
-            dates.append(current_date)
-            mains_consumption.append(mains_energy[0] - total_energy)
-            household_consumption.append(total_energy)
-            tw.log.info(str(current_date))
-            tw.log.info('mains energy for day ' + str(mains_energy[0] - total_energy))
-            tw.log.info('household consumpition ' + str(total_energy))
-        else:
-            tw.log.info('rejecting date ' + str(current_date))
-            if mains_energy[1] <= num_samples_threshold:
-                tw.log.info('rejected for too few samples')
-            if mains_energy[2] >= num_drop_threshold:
-                tw.log.info('rejected for too many watthour drops')
-            if mains_energy[0] < total_energy:
-                tw.log.info('rejected for mains < household consumption')
-
-        current_date += dt.timedelta(days=1)
-
-    print mains_consumption
-    print 'average mains consumption = ', np.average(mains_consumption)
-    dates = matplotlib.dates.date2num(dates)
-    expMainsOn = np.ones(len(dates))*expectedMainsWatthours_allon
-    expMainsOff = np.ones(len(dates))*expectedMainsWatthours_alloff
-    expMains = []
-    for i in range(len(dates)):
-        expMains.append(24*(12.6+2.6+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35)))
-
-    ax.plot_date(dates, household_consumption, 'o-', label='Household Total')
-    ax.plot_date(dates, mains_consumption, 'x-', label='Meter Consumption')
-    ax.plot_date(dates, expMainsOn, '-', color='0.9')
-    ax.plot_date(dates, expMainsOff, '-', color='0.75')
-    ax.plot_date(dates, expMains, '-', color='k', label='expected Mains consumption')
-    ax.legend()
-    ax.set_ylim((0,2000))
-    ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Energy Consumption (watthours)')
-    fileNameString = 'selfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax.set_title(fileNameString)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotSelfConsumption.__name__)
-    annotation.append('meter = ' + str(getMeterName(meter_id)))
-    annotation.append('# circuits = ' + str(len(customer_circuit_list)))
-    annotation.append('mains expected to consume between ' + str(expectedMainsWatthours_allon) +' and '+str(expectedMainsWatthours_alloff)+ ' wh daily')
-    annotation.append('number of circuits off each day = ' + str(number_ccts_off))
-    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
-    annotation.append('date start = ' + str(dateStart))
-    annotation.append('date end = ' + str(dateEnd))
-    annotation = '\n'.join(annotation)
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    fig.savefig(fileNameString+'.pdf')
-    tw.log.info('exiting plotSelfConsumption')
-
-def plotHourlySelfConsumption(meter_id=8,
-                        dateStart=dt.datetime(2011, 7, 1),
-                        dateEnd=dt.datetime(2011, 7, 8),
-                        num_drop_threshold=1,
-                        num_samples_threshold=23,
-                        verbose=0):
-
-    tw.log.info('entering plotHourlySelfConsumption')
-
-    meter = session.query(Meter).get(meter_id)
-    mains_id = meter.getMainCircuit().id
-    customer_circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('mains circuit = ' + str(mains_id))
-    tw.log.info('customer circuits = ' + str(customer_circuit_list))
-    print 'total # of circuits = ',len(customer_circuit_list)
-    expectedMainsWatts_allon = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6-1.35))
-    #expectedMainsWatthours_allon = expectedMainsWatts_allon*24
-    expectedMainsWatts_alloff = 7.3+(2*2.6)+(len(customer_circuit_list)*(2.6))
-    #expectedMainsWatthours_alloff = expectedMainsWatts_alloff*24
-    #expMainsOn = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_allon
-    #expMainsOff = np.ones((dateEnd-dateStart).days)*expectedMainsWatthours_alloff
-    print 'mains expected to consume between ', expectedMainsWatts_allon, ' and ', expectedMainsWatts_alloff, ' wh per day'
-
-    # loop through days
-    # for each day total household consumption and infer mains consumption
-    # create list of dates, household consumption and mains consumption
-    dates = []
-    dates2 = []
-    household_consumption = []
-    mains_consumption = []
-    total_consumption = []
-    perc_ccts_off=[]
-    number_ccts_off=[]
-
-
-    fig = plt.figure()
-    #ax = fig.add_axes((0.1,0.1,0.8,0.8))
-    ax = fig.add_axes((.1,.25,.8,.65))    # used to be (.1, .3, .8, .6)
-
-    current_date = dateStart
-    while current_date < dateEnd:
-
-        print current_date
-        mains_power = calculatePowerListForCircuit(mains_id, current_date, current_date+dt.timedelta(days=1))
-        print 'mains energy =', mains_power[1]
-
-        # add 24 hours for each fully reported day of power
-        #allcustomers_power = np.append(allcustomers_power,np.zeros(24))
-        allcustomers_power = np.zeros(24)
-        num_ccts_off=np.zeros(24)
-        for cid in customer_circuit_list:
-
-            customer_power = calculatePowerListForCircuit(cid, current_date, current_date+dt.timedelta(days=1))
-            if len(customer_power[1])==24:
-                # better to check if credit is 0 at same time
-                c_dates, credit = getDataListForCircuit(cid,current_date,current_date+dt.timedelta(days=1),quantity='credit')
-                #add cct to 'off' category
-                for k in range(len(customer_power[1])):
-                    if customer_power[1][k]<0.1 and credit[k]<0.1:
-                            num_ccts_off[k] +=1
-                            #print 'circuit ', cid, ' is off at ', customer_power[0][k]
-
-                # add to allcustomer power array
-                for h in range(24):
-                    allcustomers_power[h] += customer_power[1][h]
-
-        #print 'total energy =', total_energy
-        perc_ccts_off.append(num_ccts_off/float(len(customer_circuit_list)))
-        #number_ccts_off.append(num_ccts_off)
-
-
-        if len(mains_power[1])==24 and mains_power[2] < num_drop_threshold: # and np.sum(mains_power[1])>np.sum(allcustomers_power):
-            dates.append(current_date)
-            for x in range(len(num_ccts_off)):
-                number_ccts_off=np.append(number_ccts_off, num_ccts_off[x])
-            #print number_ccts_off, ' ccts off'
-                mains_consumption=np.append(mains_consumption,(mains_power[1] - allcustomers_power)[x])
-                total_consumption=np.append(total_consumption,(mains_power[1][x]))
-                household_consumption=np.append(household_consumption,allcustomers_power[x])
-                dates2=np.append(dates2,mains_power[0][x])
-            tw.log.info(str(current_date))
-            tw.log.info('mains energy for day ' + str(mains_power[1] - allcustomers_power))
-            tw.log.info('household consumpition ' + str(allcustomers_power))
-        else:
-            tw.log.info('rejecting date ' + str(current_date))
-            if len(mains_power[1]) <= num_samples_threshold:
-                tw.log.info('rejected for too few samples')
-            if mains_power[2] >= num_drop_threshold:
-                tw.log.info('rejected for too many watthour drops')
-            if np.sum(mains_power[1]) < np.sum(allcustomers_power):
-                tw.log.info('rejected for mains < household consumption')
-
-        current_date += dt.timedelta(days=1)
-
-
-    print mains_consumption
-    print 'average mains consumption = ', np.average(mains_consumption)
-    hours = []
-    for d in range(len(dates)):
-        hours = np.append(hours,np.append(np.arange(1,24),0))
-    dates = matplotlib.dates.date2num(dates)
-    #dates2 = matplotlib.dates.date2num(dates2)
-    expMainsOn = np.ones(len(hours))*expectedMainsWatts_allon
-    expMainsOff = np.ones(len(hours))*expectedMainsWatts_alloff
-    expMains = []
-    for i in range(len(hours)):
-        expMains.append(7.3+(2*2.6)+(len(customer_circuit_list)*2.6) - ((len(customer_circuit_list)-number_ccts_off[i])*1.35))
-
-    ax.plot(dates2, household_consumption, 'o-', label='Household Total')
-    ax.plot(dates2, mains_consumption, 'x-', label='Meter Consumption')
-    ax.plot(dates2, total_consumption, '*-', label='Total Consumption')
-    ax.plot(dates2, expMainsOn, '-', color='0.9')
-    ax.plot(dates2, expMainsOff, '-', color='0.75')
-    ax.plot(dates2, expMains, '-', color='k', label='expected Mains consumption')
-    ax.legend(loc=0)
-    y_high = max(total_consumption)
-    ax.set_ylim((0,y_high))
-    #ax.set_xlim((matplotlib.dates.date2num(dateStart), matplotlib.dates.date2num(dateEnd)))
-    #ax.set_xlabel('Date')
-    ax.set_ylabel('Power Consumption (watts)')
-    plt.setp(ax.get_xticklabels(), rotation=30)
-    fileNameString = 'hourlyselfconsumption-' +  ' ' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax.set_title(fileNameString)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotHourlySelfConsumption.__name__)
-    annotation.append('meter = ' + str(getMeterName(meter_id)) + ' with ' + str(len(customer_circuit_list)) + ' # of circuits')
-    annotation.append('mains expected to consume between ' + str(expectedMainsWatts_allon) +' and '+str(expectedMainsWatts_alloff)+ ' watts hourly')
-    #annotation.append('number of circuits off each day = ' + str(number_ccts_off))
-    annotation.append('average percentage of circuits off = ' + str(np.round(100*np.average(perc_ccts_off))))
-    annotation.append('date start = ' + str(dateStart))
-    annotation.append('date end = ' + str(dateEnd))
-    annotation = '\n'.join(annotation)
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    fig.savefig(fileNameString+'.pdf')
-    tw.log.info('exiting plotHourlySelfConsumption')
-
 def plotPowerConsumptionError():
     R = [4980, 9950, 19900, 14200, 2490, 994, 500]
     R = np.flipud(np.sort(R))
@@ -1590,228 +1812,3 @@ def tripplite():
     plt.legend(loc=0)
     plt.grid(True)
     plt.show()
-
-def plotPowerHistogram(meter_id=8,
-                        dateStart=dateStart,
-                        dateEnd=dateEnd,
-                        bins=None):
-
-    tw.log.info('entering plotPowerHistogram')
-    meter = session.query(Meter).get(meter_id)
-    mains_id = meter.getMainCircuit().id
-    circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('mains circuit = ' + str(mains_id))
-    tw.log.info('customer circuits = ' + str(circuit_list))
-
-    powerList = np.array([])
-    high_times_list = np.array([])
-    high_circuits = np.zeros(len(circuit_list))
-    high_hours = np.zeros(24)
-    current_date = dateStart
-    while current_date < dateEnd:
-        for i,c in enumerate(circuit_list):
-            tw.log.info('current_date = ' + str(current_date))
-            power=[]
-            # grab energy data for circuit
-            '''
-            dates, watthours = getDataListForCircuit(c, current_date,
-                                             current_date+dt.timedelta(days=1),
-                                             quantity='watthours')
-            # convert energy data to hourly power
-            watthours = np.insert(watthours, 0, 0)
-            if len(watthours)>1:
-                power = np.append(power,np.diff(watthours))
-            else: power = np.append(power,watthours[0])
-            #make watthour drops = zero
-            '''
-            '''
-            for p in range(len(power)):
-                if power[p]<0:
-                    power[p]=0
-                    '''
-            '''
-            # append power data onto master list of power
-            for p in range(len(power)):
-                if power[p]>0:
-                    powerList = np.append(powerList, power[p])
-            #tw.log.info('len dataList = ' + str(len(dataList)))
-            '''
-            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
-            # find times and log circuits of high power
-            high_mask = np.nonzero(power>15)
-            if len(high_mask)>0:
-                high_times = times[high_mask]
-                high_circuits[i] += len(high_times)
-                for h in range(len(high_times)):
-                    high_times_list = np.append(high_times_list, high_times[h].hour)
-                    high_hours[high_times[h].hour] += 1
-            # remove zeros
-            powerList = np.append(powerList, np.take(power,np.nonzero(power)))
-
-        current_date += dt.timedelta(days=1)
-
-
-    print 'circuits'
-    for item in range(len(circuit_list)):
-        print repr(circuit_list[item]).rjust(3),
-    print '\n'
-    for item in range(len(high_circuits)):
-        print repr(int(high_circuits[item])).rjust(3),
-    print '\n'
-    high_cs = np.nonzero(high_circuits>0)
-    print high_cs
-    if len(high_cs)>0:
-        print 'circuits with high power: ',[circuit_list[list(high_cs[0])[x]] for x in range(len(list(high_cs[0])))]
-
-    print 'hours of day'
-    hrs = np.arange(0,24)
-    for hour in range(len(hrs)):
-        print repr(hrs[hour]).rjust(2),
-    print '\n'
-    for hour in range(len(high_hours)):
-        print repr(int(high_hours[hour])).rjust(2),
-    print '\n'
-    #print max(high_hours)
-
-    fig = plt.figure()
-    ax = fig.add_axes((0.1,0.3,0.8,0.6))
-    # range depends on data
-    if bins == None:
-        high = int(np.ceil(max(powerList)) + 5)
-        #bins = [0,1] + range(5,high,5)
-        bins = range(0, high, 5)
-        if high < 65:
-            bins = range(0, high, 2)
-    ax.hist(powerList, bins=bins, normed=False, facecolor='#dddddd')
-    ax.set_xlabel("Hourly Power Consumption")    #, fontproperties=labelFont)
-    ax.set_ylabel("Hours of Usage")  #, fontproperties=labelFont)
-    annotation = []
-    annotation.append('plot generated ' + today.__str__() )
-    annotation.append('function = ' + plotPowerHistogram.__name__)
-    annotation.append('circuits = ' + str(circuit_list))
-    annotation.append('date start = ' + str(dateStart))
-    annotation.append('date end = ' + str(dateEnd))
-    for ann in annotation:
-        tw.log.info(ann)
-    annotation = '\n'.join(annotation)
-
-    #plt.show()
-    fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    titleString = 'powerHistogram-meter' + str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax.set_title(titleString)
-    fig.savefig('power/' + titleString + '.pdf', transparent=True)
-
-    fig0 = plt.figure()
-    ax0 = fig0.add_axes((0.1,0.3,0.8,0.6))
-    ax0.hist(high_times_list, bins=range(0,25,1), normed=False, facecolor='#dddddd')
-    ax0.set_ylabel('number of instances of high power')
-    ax0.set_xlabel('hour of day')
-    y_increment =1
-    if max(high_hours) >=10:
-        rem = np.remainder(int(max(high_hours)+1)/5,5)
-        if rem == 0:
-            y_increment *= int(max(high_hours)+1)/5
-        elif rem>0 and (int(max(high_hours)+1)/5) > 5:
-            y_increment *= ((int(max(high_hours)+1)/5) - rem)
-        else: y_increment *= ((int(max(high_hours)+1)/5) - (5-rem))
-    yticks = np.arange(0,int(max(high_hours))+1,y_increment)
-    ax0.set_yticks(yticks, minor=False)
-    ax0.set_xticks(np.arange(0,24,1), minor=False)
-    titleString0 = 'hours_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax0.set_title(titleString0)
-    fig0.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    fig0.savefig( 'power/' + titleString0 + '.pdf', transparent=True)
-
-    fig1 = plt.figure()
-    ax1 = fig1.add_axes((0.1,0.3,0.8,0.6))
-    #ax1.hist(high_cs, bins=range(0,len(circuit_list)+1,1), normed=False, facecolor='#dddddd')
-    ax1.bar(np.arange(0,len(circuit_list),1), high_circuits, width=0.8, bottom=0)
-    ax1.set_ylabel('number of instances of high power')
-    ax1.set_xlabel('circuits on meter '+str(meter_id))
-    maxytick = 1
-    if len(high_cs[0])>0:
-        maxytick = int(max(high_circuits))+1
-    y_increment = 1
-    if maxytick >= 10:
-        remain = np.remainder(maxytick/5, 5)
-        if remain == 0:
-            y_increment *= (maxytick/5)
-        elif remain>0 and (maxytick/5)>5:
-            y_increment *= ((maxytick/5) - remain)
-        else: y_increment *= ((maxytick/5) + (5-remain))
-    yticks = np.arange(0, maxytick, y_increment)
-    ax1.set_yticks(yticks, minor=False)
-    ax1.set_xticks(np.arange(0,len(circuit_list)+1,1), minor=False)
-    ax1.set_xticklabels(circuit_list, ha='left')
-    fig1.text(0.01,0.01, annotation) #, fontproperties=textFont)
-    titleString1 = 'ccts_of_high_power-'+ str(meter_id) + '-' + dateStart.date().__str__() + '_to_' + dateEnd.date().__str__()
-    ax1.set_title(titleString1)
-    fig1.savefig( 'power/' + titleString1 + '.pdf', transparent=True)
-
-def maxMeterPower(meter_id=[4,6,7,8,9,12,15],
-                        dateStart=dt.datetime(2011,6,1),
-                        dateEnd=today,
-                        bins=None):
-
-    tw.log.info('entering maxMeterPower')
-    meters = []
-    for m in range(len(meter_id)):
-        meter = session.query(Meter).get(meter_id[m])
-        mains_id = meter.getMainCircuit().id
-        #print mains_id
-        meters.append(mains_id)
-    print meters
-    #circuit_list = [c.id for c in meter.getConsumerCircuits()]
-
-    tw.log.info('meter ids = ' + str(meters))
-    #tw.log.info('customer circuits = ' + str(circuit_list))
-
-    maxpowerList = np.zeros(len(meters))
-    max_times_list = np.ndarray((len(meters)), dtype=object)
-    high_circuits = np.zeros(len(meters))
-    power200 = np.zeros(len(meters))
-    max_hours = np.zeros(24)
-    current_date = dateStart
-    while current_date < dateEnd:
-        for i,c in enumerate(meters):
-            tw.log.info('current_date = ' + str(current_date))
-            power=[]
-            max_power = 0
-            # grab energy data for circuit
-            times,power,decs = calculatePowerListForCircuit(c, current_date, current_date+dt.timedelta(days=1))
-            # find times and log circuits of high power
-            if len(power)>0:
-                max_power = np.max(power)
-            print max_power
-            max_mask = np.nonzero(power==max_power)
-            print max_mask
-            if max_power>0:
-                max_time = times[max_mask[0]]
-                if max_power > 200:
-                    power200[i] += 1
-            # adjust max power for circuit
-            if max_power > maxpowerList[i]:
-                maxpowerList[i] = max_power
-                if max_time:
-                    print max_time
-                    max_times_list[i] = max_time[0]
-
-        current_date += dt.timedelta(days=1)
-
-
-    print 'meters (circuit id) - max power (watts) - date - # times above 200W'
-    for item in range(len(meters)):
-        '''
-        if maxpowerList[item]>0:
-            maxpowerList[item] = np.round(maxpowerList[item],decimals=1)
-        '''
-        #maxpowerList[item] = np.round(maxpowerList[item], decimals=1)
-        maxpowerList[item] = np.rint(maxpowerList[item])
-        if max_times_list[item] is not None:
-            max_time = max_times_list[item].strftime("%m/%d/%y/ %I:%M%p")
-            #max_time = max_time.replace("'", "")
-        else: max_time = max_times_list[item]
-        print repr(meters[item]).rjust(5), repr(int(maxpowerList[item])).rjust(7), '  ',repr(max_time).rjust(5), repr(int(power200[item])).rjust(5)
-    print '\n'
-
