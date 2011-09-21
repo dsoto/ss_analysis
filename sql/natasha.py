@@ -239,6 +239,7 @@ def specificTimeIssues(circuit_id_list=[81,82,84,89,90], dateStart=dt.datetime(2
     f.close()
 
 def watthourCreditMismatches(meters=[4,6,7,8,9,12,15,16,17,20], dateStart=dt.datetime(2011,6,1), dateEnd=today):
+    tw.log.info('entering watthourCreditMismatches')
     filename = str(meters) + str(dateStart.date()) + '_to_' + str(dateEnd.date()) + '.csv'
     f = open(filename, 'w')
     header = ['date', 'meter', 'circuit', 'watthour', 'credit', 'wh diffs', 'credit diffs, nm' , 'size of diff', 'creditjump', 'notes']
@@ -257,6 +258,7 @@ def watthourCreditMismatches(meters=[4,6,7,8,9,12,15,16,17,20], dateStart=dt.dat
 
     while currentDate < dateEnd:
         #f.write(str(currentDate)); f.write('\t')
+        tw.log.info('current_date = ' + str(current_date))
         for m in range(len(meters)):
             meter = session.query(Meter).get(meters[m])
             mains_id = meter.getMainCircuit().id
@@ -879,6 +881,7 @@ def plotCreditDiffs(meter_id, dateStart=dt.datetime(2011,5,13),
 def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24), dateEnd=dt.datetime(2011,6,28),
                           verbose=0):
 
+    tw.log.info('entering plotCctsWithWatthourDrops')
     #meters = [4,6,7,8]
     if isinstance(meters, int) is False:
         circuit_id_list=[]
@@ -895,6 +898,7 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
     beg_day = dateStart
     print len(circuit_id_list)
     for k in range(num_days.days):
+        tw.log.info('current_date = ' + str(beg_day))
         for i,c in enumerate(circuit_id_list):
             print c
             errortimes = inspectDayOfWatthours(c, beg_day)
@@ -907,6 +911,7 @@ def plotCctsWithWatthourDrops(meters=[4,6,7,8], dateStart=dt.datetime(2011,6,24)
                     cctdates[i].append(dt.datetime(errortimes[k].year, errortimes[k].month, errortimes[k].day))
         beg_day = beg_day + dt.timedelta(days=1)
     print cctdates
+    tw.log.info('plotting....')
     for i,c in enumerate(circuit_id_list):
         if cctdates[i]:                 #if there are entries for that cct
             for k in range(len(cctdates[i])):
@@ -1125,7 +1130,7 @@ def victronInverter():
     ax.legend(loc=0)
     ax.set_xlabel("load (watts)")
     ax.set_ylabel("power consumed (watts)")
-    ax.set_title("power consumed vs. load power")
+    ax.set_title("power consumed vs. load power (purely resistive loads)")
     fig.savefig('inverterPowerConsumption.pdf')
 
     fig1 = plt.figure()
@@ -1141,6 +1146,40 @@ def victronInverter():
     ax1.grid(True)
     ax1.set_title("victron inverter efficiency vs. load power, for 3 power factors")
     fig1.savefig('inverterEfficiency.pdf')
+
+def vInfinityDCconverters():
+    converters = [5, 12]
+    res = [[5.35, 2.64, 1.83, 1.42],[30.45, 15.22, 10.23, 7.72]]
+    loads = [[],[]]
+    for i in range(len(res)):
+        loads[i] = [(np.square(converters[i])/res[i][x]) for x in range(len(res[i]))]
+        loads[i] = [0] + loads[i]
+    voltage = 48.0
+    current = [[0, 0.115, 0.23, 0.34, 0.45],[0, .11, .21, .32, .43]]
+    power = [[],[]]
+    for y in range(len(current)):
+        power[y] = [(current[y][x]*voltage) for x in range(len(current[y]))]
+    print power
+    fig = plt.figure()
+    ax = fig.add_axes((.1, .3, .8, .6))
+    #ax.plot(loads, power, 'x-', label='total power consumed')
+    #ax.plot(loads, loads, '-', c='0.5', lw=3, label='loads')
+    eff=np.zeros((2,len(power[0])))
+    for x in range(len(power)):
+        for y in range(len(power[0])):
+            if y == 0:
+                eff[x][y]=1
+            else:
+                eff[x][y] = loads[x][y]/power[x][y]
+    print eff
+    for i in range(len(res)):
+        ax.plot(loads[i], eff[i], 'o-', label=str(converters[i]))
+    ax.legend(loc=0)
+    ax.set_xlabel("load (watts)")
+    ax.set_ylabel("efficiency (watts/watts)")
+    ax.set_title("DC-DC (48v to 5/12v) converter power consumed vs. load power")
+    ax.set_ylim((-0.1,1.1))
+    fig.savefig('converterPowerConsumption.pdf')
 
 def PCUefficiency():
     Vbattery = [48.12, 48.02, 48.7, 48.7, 48.1, 48.1, 48.9, 48.1, 48.05, 47.89, 48.86, 48.9, 49.19, 51.52, 54.2]
@@ -1538,12 +1577,18 @@ def tripplite():
     print 'power in = ', p_in, ' watts'
     p_out = np.square(v_out) / r
     print 'power out = ', p_out, 'watts'
+    #insert no-load-power:
     eff = p_out / p_in
+    eff = np.insert(eff,0,0)
+    p_out = np.insert(p_out,0,0)
+    #print p_out
     print 'efficiency = ', eff
     plt.plot(p_out, eff, label='efficiency')
     plt.ylabel('efficiency')
     plt.xlabel('load (watts)')
+    plt.title('tripplite inverter efficiency')
     plt.legend(loc=0)
+    plt.grid(True)
     plt.show()
 
 def plotPowerHistogram(meter_id=8,
