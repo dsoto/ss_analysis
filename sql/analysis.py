@@ -36,8 +36,11 @@ mpl.rcParams['ytick.labelsize'] = 12
 # XFCA to USD
 toUSD = 1.0/500
 
-from sql.models import *
+# this may need to change depending on where you are running this script from
+import sys
+sys.path.append('../../gateway_env/gateway/gateway/')
 
+from models import *
 #--------------------------------------------------------------------------------------------#
 # convenience and helper functions
 
@@ -563,6 +566,8 @@ def getRawDataListForCircuit(circuit_id,
                               verbose=0):
     # get query based on circuit and date
     # and sort by date received by gateway
+    initialize_sql('postgresql://postgres:postgres@localhost:5432/gateway')
+    session = DBSession()
     logs = session.query(PrimaryLog)\
                   .filter(PrimaryLog.circuit_id == circuit_id)\
                   .filter(PrimaryLog.date > dateStart)\
