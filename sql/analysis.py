@@ -543,12 +543,13 @@ def getDataListForCircuit(circuit_id,
             #tw.log.info('removing sample at ' + str(dates[i]) + ' from the future')
 
 
+    '''
     mask = np.array(mask)
     tw.log.info('removing ' + str(len(np.extract(mask==False,mask))) + ' samples from the future')
 
     dates = dates[mask]
     data = data[mask]
-
+    '''
     # put data into tuples and run set to get unique samples
     dataList = []
     for i in range(len(dates)):
@@ -1273,3 +1274,6 @@ def printCreditPurchase(cid_list,
 
 if __name__ == "__main__":
     pass
+    plotDataForCircuit(134, dateStart=dt.datetime(2011,9,25),
+                            dateEnd=dt.datetime(2011,9,26), introspect=False)
+
