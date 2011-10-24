@@ -193,6 +193,8 @@ def plotDatasForCircuit(circuit_id,
 
     # add annotation on plot of circuit ip and meter name
     annotation = []
+    initialize_sql('postgresql://postgres:postgres@localhost:5432/gateway')
+    session = DBSession()
     circuit = session.query(Circuit).get(circuit_id)
     annotation.append('circuit_id = ' + str(circuit_id))
     annotation.append('meter name =' + circuit.meter.name)
