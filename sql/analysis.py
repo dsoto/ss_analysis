@@ -241,8 +241,8 @@ def plotDataForCircuit(circuit_id,
 def plotPowerForCircuit(circuit_id,
                         dateStart=dateStart,
                         dateEnd=dateEnd,
-                        introspect=True):
-    dates, data = calculatePowerListForCircuit(circuit_id, dateStart, dateEnd)
+                        introspect=False):
+    dates, data, num_decreases = calculatePowerListForCircuit(circuit_id, dateStart, dateEnd)
 
     dates = matplotlib.dates.date2num(dates)
     fig = plt.figure()
