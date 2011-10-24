@@ -164,8 +164,8 @@ def plotDailyTotalWattHoursForAllCircuitsOnMeter(meter_id,
 
 
 def plotDatasForCircuit(circuit_id,
-                        dateStart=dt.datetime(2011,5,12),
-                        dateEnd=dt.datetime(2011,5,13),
+                        dateStart=dt.datetime(2011,10,20),
+                        dateEnd=dt.datetime(2011,10,24),
                         quantity=('watthours','credit'),
                         titleString=None,
                         introspect=False):
@@ -220,14 +220,21 @@ def plotDataForCircuit(circuit_id,
     dates = matplotlib.dates.date2num(dates)
     fig = plt.figure()
     ax = fig.add_axes((.2,.2,.6,.6))
-    ax.plot_date(dates, data, 'x-')
+    ax.grid(linestyle='-', color='#eeeeee')
+    ax.plot_date(dates, data, 'ko-')
     titleString = 'circuit ' + str(circuit_id) + quantity
-    ax.set_title(titleString)
+    #ax.set_title(titleString)
+    ax.set_xlabel('Time of Day')
+    ax.set_ylabel('Cumulative Energy Consumed (Wh)')
+    #ax.set_xlim(matplotlib.dates.date2num(dt.datetime(2011,9,25)),
+    #            matplotlib.dates.date2num(dt.datetime(2011,9,26)))
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%m-%d %H:%M'))
+    #from matplotlib.dates import HourLocator
+    #ax.xaxis.set_major_locator(HourLocator(byhour=[0,6,12,18,24]))
     fig.autofmt_xdate()
     if introspect:
         plt.show()
-    fig.savefig(titleString + '.pdf')
+    fig.savefig(titleString + '.pdf',transparent=True)
 
 def plotPowerForCircuit(circuit_id,
                         dateStart=dateStart,
