@@ -805,6 +805,70 @@ def plotAveragedAccumulatedHourlyEnergyForCircuit(circuit_id,
     fig.savefig(plotFileName)
 
 
+def plot_power_histogram_circuit(circuit_id,
+                         dateStart=dateStart,
+                         dateEnd=dateEnd,
+                         bins=None,
+                         plotFileName=None):
+    dataList = np.array([])
+    data, dates, num_decreases = calculatePowerListForCircuit(circuit_id, dateStart, dateEnd)
+    dataList = np.append(dataList, data)
+
+    # prune out zero wattage readings
+    dataList = dataList[dataList > 0]
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
+    if plotFileName == None:
+        plotFileName = 'power_histogram_' + str(circuit_id) + '.pdf'
+    fig.savefig(plotFileName, transparent=True)
+
+def plot_power_histogram(circuit_id_list,
+                         dateStart=dateStart,
+                         dateEnd=dateEnd,
+                         bins=None,
+                         plotFileName=None):
+
+    dataList = np.array([])
+    for i,c in enumerate(circuit_id_list):
+        data, dates, num_decreases = calculatePowerListForCircuit(c, dateStart, dateEnd)
+        tw.log.info('number of energy readings = ' + str(len(data)))
+        # append data onto master list of energy
+        dataList = np.append(dataList, data)
+        tw.log.info('len dataList = ' + str(len(dataList)))
+
+    dataList = dataList[dataList > 0]
+
+    fig = plt.figure()
+    ax = fig.add_axes((0.1,0.3,0.8,0.6))
+    # range depends on data
+    '''
+    if bins == None:
+        high = int(np.ceil(max(dataList)) + 5)
+        #bins = [0,1] + range(5,high,5)
+        bins = range(0, high, 5)
+    '''
+    ax.hist(dataList, bins=bins, normed=False, facecolor='#dddddd')
+    '''
+    ax.set_xlabel("Daily Watthours")    #, fontproperties=labelFont)
+    ax.set_ylabel("Days of Usage")  #, fontproperties=labelFont)
+    annotation = []
+    annotation.append('plot generated ' + today.__str__() )
+    annotation.append('function = ' + plotEnergyHistogram.__name__)
+    annotation.append('circuits = ' + str(circuit_id_list))
+    annotation.append('date start = ' + str(dateStart))
+    annotation.append('date end = ' + str(dateEnd))
+    for ann in annotation:
+        tw.log.info(ann)
+    annotation = '\n'.join(annotation)
+    '''
+    #plt.show()
+    #fig.text(0.01,0.01, annotation) #, fontproperties=textFont)
+    if plotFileName == None:
+        plotFileName = 'power_histogram_multiple.pdf'
+    fig.savefig(plotFileName, transparent=True)
+
 def plotEnergyHistogram(circuit_id_list,
                         dateStart=dateStart,
                         dateEnd=dateEnd,
