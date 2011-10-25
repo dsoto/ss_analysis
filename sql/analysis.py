@@ -38,7 +38,8 @@ toUSD = 1.0/500
 
 # this may need to change depending on where you are running this script from
 import sys
-sys.path.append('../../gateway_env/gateway/gateway/')
+# if importing 'import sql.daniel as d' from ss_analysis directory
+sys.path.append('../gateway_env/gateway/gateway/')
 
 from models import *
 #--------------------------------------------------------------------------------------------#
