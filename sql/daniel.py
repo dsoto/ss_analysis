@@ -12,6 +12,9 @@ wk_30 = dt.datetime(2011, 7, 25)
 may_1 = dt.datetime(2011, 5, 1)
 jun_1 = dt.datetime(2011, 6, 1)
 jul_1 = dt.datetime(2011, 7, 1)
+oct_1 = dt.datetime(2011, 10, 1)
+oct_15 = dt.datetime(2011, 10, 15)
+nov_1 = dt.datetime(2011, 11, 1)
 
 tw.log.info('loading daniel.py')
 
