@@ -159,6 +159,17 @@ def plotSelfConsumption(meter_id=8,
     fig.savefig('selfconsumption.pdf')
     tw.log.info('exiting plotSelfConsumption')
 
+def plot_power_for_ml03_circuits(dateStart=oct_1, dateEnd=nov_1):
+    ml03_circuits = range(213,234)
+    for cid in ml03_circuits:
+        plotPowerForCircuit(cid,oct_15,nov_1, introspect=True)
+
+def plot_power_histograms_for_ml03_circuits(dateStart=oct_1, dateEnd=nov_1):
+    ml03_circuits = range(214,234)
+    for cid in ml03_circuits:
+        plot_power_histogram_circuit(cid,oct_15,nov_1,bins=range(11))
+
+
 def generate_ictd_figures():
     print 'generating averagePower.pdf'
     plotAveragedPowerForCircuit(78, may_15, jun_15, plotFileName='ictd/averagePower.pdf')
